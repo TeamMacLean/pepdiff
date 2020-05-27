@@ -1,0 +1,135 @@
+---
+title: "Test DE"
+author: "Dan MacLean"
+date: "14/05/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load in data
+
+```{r}
+library(pepdiff)
+d <- import_data("test_data/large.csv",
+                 gene_id = "molecule_list_name",
+                 peptide = "peptide_modified_sequence",
+                 treatment = "genotype"
+                 )
+
+```
+
+## Check number of missing data points
+
+Includes at tech rep level
+
+Missing data
+
+```{r}
+missing_plot(d)
+```
+
+Singleton data
+```{r}
+singleton_plot(d)
+```
+
+## Combine tech reps
+
+```{r}
+td <- combine_tech_reps(d)
+```
+
+## Look at distribution of quantifications
+
+```{r}
+plot_quant_distributions(td)
+plot_quant_distributions(td, log = TRUE)
+norm_qqplot(td)
+norm_qqplot(td, log = TRUE)
+```
+
+
+## Do a comparison
+
+Col-0 0 seconds vs Col-0 150 seconds
+
+```{r}
+r <- calc_de(td, control = 'Col-0', c_seconds = '0', treatment = 'Col-0', t_seconds = '150', iters = 10000)
+```
+
+### Look at distribution of calculated Fold Changes
+
+```{r}
+plot_fc(r)
+fc_qqplot(r)
+plot_fc(r, log = TRUE)
+fc_qqplot(r, log = TRUE)
+```
+
+Looks like fold changes are somehwat log-normal around the middle though they have fat tails, which means there are more extreme values than expected by a normal distribution. This means that any method that looks at values in the tails as outliers could give more false positives than we would usually expect. 
+
+
+## Running tests
+
+The current analysis performs a range of tests, 
+
+  1. Iterative Normal 
+  2. Bootstrap t-test
+  3. Rank Product
+  4. Kruskal-Wallis
+  5. Wilcox (Mann-Whitney U)
+
+The results contains two versions of the Iterative Normal, one using the Global Mean, the other using the Lowest Observed Value. Given the fat tails we observe this is likely to call false positives
+
+
+The Bootstrap t-test samples `r` times from all the test and control values for each peptide (with replacement) making a new 'test' and 'control', for each new sample it calculates the distance in means as expressed by  the quantity `t` (from the standard 't'-test) and builds a distribution for them. At the end of the iterations it checks where the real `t` lies, and it gives a p-value on the position in that distribution.
+
+
+The Rank Product is a reworking of the method I tried last time, now that we always have the right number of values I can make the test sample across the peptides before it does the test so that it avoids the pairing issue from before, it will be weak on the samples with lots of replaced values, potentially falling into the same hole. There is also the complication that it only does tests 'one way up' so it needs to be looked at twice, one for the hypothesis `test > control`, once for `control > test`.
+
+
+There are also two non-parametric tests, the Kruskal and Wilcox test, which would be considered a standard test where you can't presume a normal distribution of ratios (these are the standard non-parametric tests that get used almost blindly in these situations).  
+
+## Plot p-values
+
+The plot below shows the method and the p-value at different numbers of observations. The thing to note is that the Kruskal method does nothing and the Wilcox is close to nothing, the Bootstrap t (which works on one side, showing p-values at 0 as significant, 1 is non-significant) shows a nice spread moving with the fold change, the Iterative Normal does the same, the RP works ok too. calling p-values largely in line with fold change.  
+
+```{r, fig.width=12, fig.height=12}
+plot_result(r)
+```
+
+```{r}
+readr::write_csv(r, "~/Desktop/test.csv")
+```
+
+
+## Test distribution of p-values for the different methods
+
+As a straighforward characteristic of p-values, they should be uniformly distributed. Closer to uniform is best.
+
+
+
+```{r, fig.width = 12}
+p_value_hist(r )
+```
+
+
+## Compare the significant peptides
+
+
+In this UpSet Plot which compares the sets of significant peptides the bootstrap has the lowest number of overall significant calls (~ 25), the rp next (~ 50) then the iterative normal (~ 80). The Iterative Normal
+methods call 37 peptides significant uniquely, so are likely to be the most false positive. The rp method calls 18 uniquely, the bootstrap doesn't call any uniquely. 11 are called by all methods, 35 by at least 3. 
+
+On balance, given the distribution of fold changes, the distribution of p-values and the significance call pattern I would say the Bootstrap t-test is the best test as it has statistical power but remains specific. 
+The others give more significant calls which are likely to be more false positive laden, so are going to give more errors downstream. As the size of the larger sets is ~ 2x that of the smaller sets, you are looking at half of the calls being false positives.
+
+```{r}
+
+compare_calls(r)
+```
+
+
+
