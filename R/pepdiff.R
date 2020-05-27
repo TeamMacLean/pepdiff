@@ -60,7 +60,7 @@ import_data <- function(file,
 }
 
 
-#' calculate the proportion of missing values in
+#' calculate the proportion of peptides with missing values per group in a data set.
 #'
 #' Group the data by treatment, seconds, bio rep and tech rep, then calculate the percent
 #' of NA in each group.
@@ -74,37 +74,57 @@ assess_missing <- function(df){
     dplyr::summarize(peptides = dplyr::n(), percent_missing = (sum(is.na(quant)) / dplyr::n() ) * 100 )
 }
 
+#' calculate the number of non- NA or NaNs in a vector
+#'
+#' @param x vector of values
+#' @return number
+#'
+is_useable <- function(x){ !is.na(x) & !is.nan(x)}
 
-#' calculate the number of peptides in each group that only have one measurement
+#' calculate number of measurements of each peptide in each treatment and time
+#'
+#' For each peptide, works out how many biologically replicated measurements are
+#' available in the different combinations of treatment and seconds
+#'
+#' @param df dataframe. Typically from `import_data()`
+#' @return dataframe
 #' @export
-count_singletons <- function(df){
-  dplyr::group_by(df, id, treatment, seconds, bio_rep, tech_rep) %>%
-    dplyr::summarize(count = dplyr::n(), na = sum(is.na(quant)) ) %>%
-    dplyr::ungroup() %>%
-    dplyr::group_by(treatment, seconds, bio_rep, tech_rep) %>%
-    dplyr::summarize(peptides = dplyr::n(), with_only_one_observation = sum(na))
+times_measured <- function(df){
+  combine_tech_reps(df) %>%
+    dplyr::group_by(gene_id, peptide, treatment, seconds) %>%
+    dplyr::summarize(times_measured = sum( is_useable(mean_tr_quant))) %>%
+    dplyr::arrange(desc(times_measured))
 }
 
-new_count_observations <- function(df){
-  dplyr::group_by(df, id, treatment, seconds, bio_rep) %>%
-    dplyr::summarize(count = dplyr::n(), na = sum(is.na(quant)) )
-}
-
-#' calculate the number of peptides with only one observation in the tech reps
-#' requires df with tech reps
+#' plot the count of the number of times peptides were measured.
+#'
+#' Calculates and plots the number of times each peptide was measured in each
+#' combination of treatment and seconds and presents a summary plot
+#'
+#' @param df dataframe. Typically from `import_data()`
+#' @return ggplot2 plot
 #' @export
-singleton_plot <- function(df){
-  count_singletons(df) %>%
+times_measured_plot <- function(df){
+  times_measured(df) %>%
+  dplyr::group_by(treatment, seconds, times_measured) %>%
+  dplyr::summarize(count = n()) %>%
   ggplot2::ggplot() +
-  ggplot2::aes(bio_rep, tech_rep) +
-  ggplot2::geom_point(ggplot2::aes(size = peptides, colour = with_only_one_observation)) +
-  ggplot2::facet_grid(treatment ~ seconds) +
-  ggplot2::scale_color_viridis_c() +
+  ggplot2::aes(times_measured, treatment) +
+  ggplot2::geom_tile(ggplot2::aes( fill = count)) +
+  ggplot2::facet_wrap( ~ seconds) +
+  ggplot2::scale_fill_viridis_c() +
   ggplot2::theme_minimal()
 }
 
+#' plot the representation of peptides in each group.
+#'
+#' Shows what proportion of the whole set of peptides is missing in each group
+#' of treatment, seconds, bio rep and tech rep.
+#'
+#' @param df dataframe with unmerged tech reps; typically from `import_data()`
+#' @return ggplot2 plot
 #' @export
-missing_plot <- function(df){
+missing_peptides_plot <- function(df){
   assess_missing(df) %>%
     ggplot2::ggplot() +
     ggplot2::aes(bio_rep, tech_rep) +
@@ -115,23 +135,28 @@ missing_plot <- function(df){
 
 }
 
-#TODO IMPUTE missing values
-#' imputes missing tech rep values
-impute_missing_tech_rep <- function(df){
-
-}
-
-#' @export
+#' combine tech replicates into one biological replicate measurement
+#' @param df dataframe; typically from `import_data()`
+#' @return dataframe
 combine_tech_reps <- function(df){
   df %>%
     dplyr::group_by(gene_id, peptide, treatment, seconds, bio_rep) %>%
     dplyr::summarize(mean_tr_quant = mean(quant, na.rm = TRUE) )
 }
 
-#' needs combined tech rep df
+
+#' draw density plots for data
+#'
+#' Plot density of quantities in data for each treatment, seconds and biological
+#' replicate
+#' @param df dataframe; typically from `import_data()`
+#' @param log perform log transform of data
+#' @param base base to use in log transform
+#' @return ggplot2 plot
 #' @export
 plot_quant_distributions <- function(df, log = FALSE, base = 2){
 
+  df <- combine_tech_reps(df)
   bio_rep_count <- length(unique(df$bio_rep))
   if(log){
     p <- dplyr::mutate(df, log_mean_tr_quant = log(mean_tr_quant, base = base)) %>%
@@ -148,9 +173,17 @@ plot_quant_distributions <- function(df, log = FALSE, base = 2){
 
 }
 
+#' draw qqplots for data
+#'
+#' Plot qqplot of distribution of quantifications in data for each treatment,
+#' seconds and biological replicate
+#' @param df dataframe; typically from `import_data()`
+#' @param log perform log transform of data
+#' @param base base to use in log transform
+#' @return ggplot2 plot
 #' @export
 norm_qqplot <- function(df, log = FALSE, base = 2){
-
+  df <- combine_tech_reps(df)
   if(log){
     p <- dplyr::mutate(df, log_mean_tr_quant = log(mean_tr_quant, base = base)) %>%
       ggplot2::ggplot() +   ggplot2::aes(sample = log_mean_tr_quant)
@@ -169,8 +202,14 @@ norm_qqplot <- function(df, log = FALSE, base = 2){
 
 ##TODO sample PCA
 
-#' @export
+#' convert dataframe to matrix
+#'
+#' @param df dataframe, typically from `import_data()`
+#' @return list with members `row_info` - gene ID and peptide sequence and `data`
+#' a matrix version of the data in df
+#'
 matrix_data <- function(df){
+  df <- combine_tech_reps(df)
   row_info <- dplyr::group_by(df, gene_id, peptide, treatment, seconds, bio_rep) %>%
     dplyr::summarize(col_count = dplyr::n() )
 
@@ -185,7 +224,16 @@ matrix_data <- function(df){
   return(list( row_info = row_info, data = dm ))
 }
 
-#' @export
+#' extract data columns for specified contrast
+#'
+#' @param l list of data and row_info
+#' @param treatment name of treatment to use
+#' @param t_seconds value of seconds to use with treatment
+#' @param control name of control to use
+#' @param c_seconds value of seconds to use with control
+#' @return list with two members, `treatment` - matrix of treatment data; `control` -
+#' matrix of control data
+#'
 select_columns_for_contrast <- function(l, treatment = NA,
                                         t_seconds = NA,
                                         control = NA,
@@ -202,12 +250,20 @@ select_columns_for_contrast <- function(l, treatment = NA,
 
 }
 
-#' @export
+#' calculate mean fold change for peptide
+#'
+#' for each peptide calculate the mean quantification over all experiments
+#' then get the natural scale fold change.
+#'
+#' @param l list with members `treatment` and `control`; each of data
+#' @return vector of mean fold changes `mean(treatment) / mean(control)`
 mean_fold_change <- function(l){
 
   rowMeans(l$treatment, na.rm = TRUE) / rowMeans(l$control, na.rm = TRUE)
 
 }
+
+#' calculate differential
 
 #' @export
 calc_de <- function(df, iters = 1000,

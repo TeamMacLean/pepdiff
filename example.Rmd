@@ -28,27 +28,23 @@ Includes at tech rep level
 Missing data
 
 ```{r}
-missing_plot(d)
+missing_peptides_plot(d)
 ```
 
-Singleton data
+Replicate level
 ```{r}
-singleton_plot(d)
-```
 
-## Combine tech reps
-
-```{r}
-td <- combine_tech_reps(d)
+times_measured(d)
+times_measured_plot(d)
 ```
 
 ## Look at distribution of quantifications
 
 ```{r}
-plot_quant_distributions(td)
-plot_quant_distributions(td, log = TRUE)
-norm_qqplot(td)
-norm_qqplot(td, log = TRUE)
+plot_quant_distributions(d)
+plot_quant_distributions(d, log = TRUE)
+norm_qqplot(d)
+norm_qqplot(d, log = TRUE)
 ```
 
 
@@ -57,7 +53,7 @@ norm_qqplot(td, log = TRUE)
 Col-0 0 seconds vs Col-0 150 seconds
 
 ```{r}
-r <- calc_de(td, control = 'Col-0', c_seconds = '0', treatment = 'Col-0', t_seconds = '150', iters = 10000)
+r <- calc_de(d, control = 'Col-0', c_seconds = '0', treatment = 'Col-0', t_seconds = '150', iters = 10000)
 ```
 
 ### Look at distribution of calculated Fold Changes

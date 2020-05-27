@@ -33,7 +33,7 @@ import_data(
 \item{peptide_sequence}{Column containing the sequence of this peptide}
 }
 \value{
-tibble with columns gene_id, peptide, treatment, bio_rep, tech_rep, quant
+tibble with columns id, gene_id, peptide, treatment, seconds, bio_rep, tech_rep, quant
 }
 \description{
 reads data, renames columns appropriately, discards unused columns, factors and
