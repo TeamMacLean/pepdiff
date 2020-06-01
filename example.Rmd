@@ -53,12 +53,16 @@ norm_qqplot(d, log = TRUE)
 Col-0 0 seconds vs Col-0 150 seconds
 
 ```{r}
-r <- calc_de(d, control = 'Col-0', c_seconds = '0', treatment = 'Col-0', t_seconds = '150', iters = 10000)
+r <- compare(d, iters = 1000, metrics=c("bootstrap_t", "wilcoxon", "rank_product"), control = 'Col-0', c_seconds = '0', treatment = 'Col-0', t_seconds = '150')
+
+r
 ```
+
+
 
 ### Look at distribution of calculated Fold Changes
 
-```{r}
+```{r, eval = TRUE}
 plot_fc(r)
 fc_qqplot(r)
 plot_fc(r, log = TRUE)
@@ -93,11 +97,11 @@ There are also two non-parametric tests, the Kruskal and Wilcox test, which woul
 
 The plot below shows the method and the p-value at different numbers of observations. The thing to note is that the Kruskal method does nothing and the Wilcox is close to nothing, the Bootstrap t (which works on one side, showing p-values at 0 as significant, 1 is non-significant) shows a nice spread moving with the fold change, the Iterative Normal does the same, the RP works ok too. calling p-values largely in line with fold change.  
 
-```{r, fig.width=12, fig.height=12}
+```{r, eval=TRUE, fig.width=12, fig.height=12}
 plot_result(r)
 ```
 
-```{r}
+```{r, eval=FALSE}
 readr::write_csv(r, "~/Desktop/test.csv")
 ```
 
@@ -108,7 +112,7 @@ As a straighforward characteristic of p-values, they should be uniformly distrib
 
 
 
-```{r, fig.width = 12}
+```{r, eval=TRUE, fig.width = 12}
 p_value_hist(r )
 ```
 
@@ -122,10 +126,31 @@ methods call 37 peptides significant uniquely, so are likely to be the most fals
 On balance, given the distribution of fold changes, the distribution of p-values and the significance call pattern I would say the Bootstrap t-test is the best test as it has statistical power but remains specific. 
 The others give more significant calls which are likely to be more false positive laden, so are going to give more errors downstream. As the size of the larger sets is ~ 2x that of the smaller sets, you are looking at half of the calls being false positives.
 
-```{r}
-
+```{r, eval = TRUE}
 compare_calls(r)
 ```
 
+```{r}
+comparisons <- data.frame(
+  control = c('Col-0','Col-0'),
+  c_seconds = c(0,150),
+  treatment = c('Col-0','Col-0'),
+  t_seconds = c(150, 0)
+)
 
+many <- compare_many(d, comparisons, metrics = c("bootstrap_t", "rank_product"))
+many
+
+
+plot_heatmap(many, metric = "bootstrap_t", log = TRUE,  col_order = c("Col-0_150-Col-0_0", "Col-0_0-Col-0_150"))
+
+plot_heatmap(many, metric = "rank_product", log = TRUE,  col_order = c("Col-0_150-Col-0_0", "Col-0_0-Col-0_150"))
+
+```
+
+```{r}
+plot_pca(d)
+
+plot_kmeans(d)
+```
 
