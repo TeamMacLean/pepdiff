@@ -9,7 +9,7 @@
 times_measured_plot <- function(df){
   times_measured(df) %>%
     dplyr::group_by(treatment, seconds, times_measured) %>%
-    dplyr::summarize(count = n()) %>%
+    dplyr::summarize(count = dplyr::n()) %>%
     ggplot2::ggplot() +
     ggplot2::aes(times_measured, treatment) +
     ggplot2::geom_tile(ggplot2::aes( fill = count)) +
