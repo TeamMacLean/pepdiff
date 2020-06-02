@@ -169,9 +169,7 @@ compare_many <- function(df, comparison, iters = 1000, metrics = NA) {
   if (!is.data.frame(comparison)) {
     comparison <- readr::read_csv(comparison )
   }
-  else {
-    #comparison <- tibble::as_tibble(comparison)
-  }
+
   comparison <- dplyr::transmute_all(comparison, .funs = as.character )
 
   get_names <- function(r){
