@@ -21,10 +21,10 @@ library(pepdiff)
 
 ## Load in data
 ```{r}
-d <- import_data(here("test_data", "large.csv"),
-                 gene_id = "molecule_list_name",
-                 peptide = "peptide_modified_sequence",
-                 treatment = "genotype"
+d <- import_data(here("test_data", "anon.csv"),
+                 gene_id = "gene_name",
+                 peptide = "peptide_sequence",
+                 treatment = "treatment_name"
                  )
 
 ```
@@ -68,10 +68,10 @@ norm_qqplot(d, log = TRUE)
 
 ## Do a comparison
 
-Col-0 0 seconds vs Col-0 150 seconds
+665e6428 0 seconds vs 665e6428 150 seconds
 
 ```{r}
-r <- compare(d, iters = 1000, metrics=c("bootstrap_t", "wilcoxon", "rank_product"), control = 'Col-0', c_seconds = '0', treatment = 'Col-0', t_seconds = '150')
+r <- compare(d, iters = 1000, metrics=c("bootstrap_t", "wilcoxon", "rank_product"), control = '665e6428', c_seconds = '0', treatment = '665e6428', t_seconds = '150')
 
 r
 ```
@@ -147,9 +147,9 @@ compare_calls(r)
 
 ```{r}
 comparisons <- data.frame(
-  control = c('Col-0','Col-0'),
+  control = c('665e6428','665e6428'),
   c_seconds = c(0,150),
-  treatment = c('Col-0','Col-0'),
+  treatment = c('665e6428','665e6428'),
   t_seconds = c(150, 0)
 )
 
@@ -157,6 +157,6 @@ many <- compare_many(d, comparisons, metrics = c("bootstrap_t", "rank_product"))
 many
 
 
-plot_heatmap(many, metric = "bootstrap_t", log = TRUE,  col_order = c("Col-0_150-Col-0_0", "Col-0_0-Col-0_150"))
+plot_heatmap(many, metric = "bootstrap_t", log = TRUE,  col_order = c("665e6428_150-665e6428_0", "665e6428_0-665e6428_150"))
 
-plot_heatmap(many, metric = "rank_product", log = TRUE,  col_order = c("Col-0_150-Col-0_0", "Col-0_0-Col-0_150"))
+plot_heatmap(many, metric = "rank_product", log = TRUE,  col_order = c("665e6428_150-665e6428_0", "665e6428_0-665e6428_150"))
