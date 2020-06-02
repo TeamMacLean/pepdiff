@@ -269,7 +269,13 @@ plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_
 }
 
 
-
+#' plots a pca on the treatment, seconds, bio-rep
+#'
+#' Performs and draws a PCA plot with four panels, PCA with sample names
+#' coloured by treatment, seconds and biorep and a scree plot of the PCA dimensions
+#'
+#' @param df dataframe, typically from `import_data()`
+#' @return ggplot2 plot
 #' @export
 plot_pca <- function(df) {
   #lowest_vals <- min_peptide_values(d)
@@ -306,6 +312,15 @@ plot_pca <- function(df) {
   cowplot::plot_grid(a,b,c,d, nrow = 2, ncol=2)
 }
 
+#' K-means cluster the data on the samples
+#'
+#'Performs and draws a K-means cluster on the samples. Estimates number of clusters
+#'as the product of the number of treatments and seconds. So tries to group the bio reps together
+#'
+#' @param df dataframe, typically from `import_data()`
+#' @param nstart nstart points for `kmeans()` function
+#' @param iter.max max iterations to perform for `kmeans()` function
+#' @return ggplot2 plot
 #' @export
 plot_kmeans <- function(df, nstart = 25, iter.max = 1000){
   n <- length(unique(df$treatment)) * length(unique(df$seconds))

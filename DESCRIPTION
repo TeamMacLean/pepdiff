@@ -22,3 +22,7 @@ Imports:
     tidyr,
     UpSetR,
     viridis
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
