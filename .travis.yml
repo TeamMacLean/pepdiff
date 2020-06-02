@@ -3,3 +3,5 @@
 language: R
 r: bioc-release
 cache: packages
+before_install:
+  - sudo apt-get install libmpfr-dev
