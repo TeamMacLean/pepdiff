@@ -6,14 +6,15 @@
 #' @param df dataframe. Typically from `import_data()`
 #' @return ggplot2 plot
 #' @export
+#' @importFrom rlang .data
 times_measured_plot <- function(df){
   times_measured(df) %>%
-    dplyr::group_by(treatment, seconds, times_measured) %>%
+    dplyr::group_by(.data$treatment, .data$seconds, .data$times_measured) %>%
     dplyr::summarize(count = dplyr::n()) %>%
     ggplot2::ggplot() +
-    ggplot2::aes(times_measured, treatment) +
-    ggplot2::geom_tile(ggplot2::aes( fill = count)) +
-    ggplot2::geom_text(ggplot2::aes(label= count)) +
+    ggplot2::aes(.data$times_measured, .data$treatment) +
+    ggplot2::geom_tile(ggplot2::aes( fill = .data$count)) +
+    ggplot2::geom_text(ggplot2::aes(label= .data$count)) +
     ggplot2::facet_wrap( ~ seconds) +
     ggplot2::scale_fill_viridis_c() +
     ggplot2::theme_minimal()
@@ -27,11 +28,12 @@ times_measured_plot <- function(df){
 #' @param df dataframe with unmerged tech reps; typically from `import_data()`
 #' @return ggplot2 plot
 #' @export
+#' @importFrom rlang .data
 missing_peptides_plot <- function(df){
   assess_missing(df) %>%
     ggplot2::ggplot() +
-    ggplot2::aes(bio_rep, tech_rep) +
-    ggplot2::geom_tile(  ggplot2::aes(fill = percent_missing)) +
+    ggplot2::aes(.data$bio_rep, .data$tech_rep) +
+    ggplot2::geom_tile(  ggplot2::aes(fill = .data$percent_missing)) +
     ggplot2::facet_grid(treatment ~ seconds) +
     ggplot2::scale_fill_viridis_c() +
     ggplot2::theme_minimal()
@@ -47,19 +49,24 @@ missing_peptides_plot <- function(df){
 #' @param base base to use in log transform
 #' @return ggplot2 plot
 #' @export
+#' @importFrom rlang .data
 plot_quant_distributions <- function(df, log = FALSE, base = 2){
 
   df <- combine_tech_reps(df)
   bio_rep_count <- length(unique(df$bio_rep))
+  p <- NULL
   if(log){
-    p <- dplyr::mutate(df, log_mean_tr_quant = log(mean_tr_quant, base = base)) %>%
-      ggplot2::ggplot() +   ggplot2::aes(log_mean_tr_quant)
+    p <- dplyr::mutate(df, log_mean_tr_quant = log(.data$mean_tr_quant, base = base)) %>%
+      ggplot2::ggplot() +
+      ggplot2::aes(x = .data$log_mean_tr_quant) +
+      ggplot2::geom_density(  ggplot2::aes(fill = .data$bio_rep), alpha = I(1/bio_rep_count))
   } else {
     p <- ggplot2::ggplot(df) +
-      ggplot2::aes(mean_tr_quant)
+      ggplot2::aes(x = .data$mean_tr_quant) +
+      ggplot2::geom_density(ggplot2::aes(fill = .data$bio_rep),alpha = I(1/bio_rep_count))
   }
   p +
-    ggplot2::geom_density(  ggplot2::aes(fill = bio_rep), alpha = I(1/bio_rep_count)) +
+
     ggplot2::facet_grid(treatment ~ seconds) +
     ggplot2::scale_fill_viridis_d() +
     ggplot2::theme_minimal()
@@ -75,18 +82,20 @@ plot_quant_distributions <- function(df, log = FALSE, base = 2){
 #' @param base base to use in log transform
 #' @return ggplot2 plot
 #' @export
+#' @importFrom rlang .data
 norm_qqplot <- function(df, log = FALSE, base = 2){
+  #return(NULL)
   df <- combine_tech_reps(df)
   if(log){
-    p <- dplyr::mutate(df, log_mean_tr_quant = log(mean_tr_quant, base = base)) %>%
-      ggplot2::ggplot() +   ggplot2::aes(sample = log_mean_tr_quant)
+    p <- dplyr::mutate(df, log_mean_tr_quant = log(.data$mean_tr_quant, base = base)) %>%
+      ggplot2::ggplot() +   ggplot2::aes(sample = .data$log_mean_tr_quant)
   } else {
     p <-   ggplot2::ggplot(df) +
-      ggplot2::aes(sample = mean_tr_quant)
+      ggplot2::aes(sample = .data$mean_tr_quant)
   }
   p +
-    ggplot2::geom_qq(  ggplot2::aes(colour = bio_rep)) +
-    ggplot2::geom_qq_line(  ggplot2::aes(colour = bio_rep)) +
+    ggplot2::geom_qq(  ggplot2::aes(colour = .data$bio_rep)) +
+    ggplot2::geom_qq_line(  ggplot2::aes(colour = .data$bio_rep)) +
     ggplot2::facet_grid(treatment ~ seconds)  +
     ggplot2::scale_color_viridis_d() +
     ggplot2::theme_minimal()
@@ -100,13 +109,14 @@ norm_qqplot <- function(df, log = FALSE, base = 2){
 #' @param df result dataframe typically from `compare()`
 #' @return ggplot2 plot
 #' @export
+#' @importFrom rlang .data
 plot_result <- function(df){
 
   long_results(df) %>%
-    dplyr::mutate(fold_change, replicates = paste(treatment_replicates, "-", control_replicates)) %>%
+    dplyr::mutate(replicates = paste(.data$treatment_replicates, "-", .data$control_replicates)) %>%
     ggplot2::ggplot() +
-    ggplot2::aes(log(fold_change, base = 2), value) +
-    ggplot2::geom_point(shape = 21, ggplot2::aes(colour = replicates)) +
+    ggplot2::aes(log(.data$fold_change, base = 2), .data$value) +
+    ggplot2::geom_point(shape = 21, ggplot2::aes(colour = .data$replicates)) +
     ggplot2::theme_minimal() +
     #ggplot2::scale_x_continuous(trans = "log2") +
     #ggplot2::coord_trans(x = "log2") +
@@ -117,14 +127,15 @@ plot_result <- function(df){
 
 #' plot histograms of p-values for each test used
 #'
-#' @param df result dataframe typically from `compare()`
+#' @param r list of result dataframes typically from `compare()`
 #' @return ggplot2 plot
 #'
 #' @export
+#' @importFrom rlang .data
 p_value_hist <- function(r){
   r %>% long_results() %>%
     ggplot2::ggplot() +
-    ggplot2::aes(value) +
+    ggplot2::aes(.data$value) +
     ggplot2::geom_histogram(bins = 20) +
     ggplot2::facet_grid( ~ test, scales = 'free') +
     ggplot2::theme_minimal()
@@ -137,12 +148,13 @@ p_value_hist <- function(r){
 #' @param base base of the log, if used
 #' @return ggplot2 plot
 #' @export
+#' @importFrom rlang .data
 plot_fc <- function(df, log = FALSE, base = 2){
   p <- ggplot2::ggplot(df)
   if (log) {
-    p <- p + ggplot2::aes(log(fold_change, base = base))
+    p <- p + ggplot2::aes(log(.data$fold_change, base = base))
   } else {
-    p <- p + ggplot2::aes( fold_change )
+    p <- p + ggplot2::aes( .data$fold_change )
   }
   p +
     ggplot2::geom_histogram(bins = 25) +
@@ -154,13 +166,14 @@ plot_fc <- function(df, log = FALSE, base = 2){
 #' @param log log the fold change values
 #' @param base base of the log, if used
 #' @export
+#' @importFrom rlang .data
 fc_qqplot <- function(df, log = FALSE, base = 2 ){
 
   p <- ggplot2::ggplot(df)
   if (log){
-    p <- p + ggplot2::aes(sample = log(fold_change, base = base))
+    p <- p + ggplot2::aes(sample = log(.data$fold_change, base = base))
   } else {
-    p <- p + ggplot2::aes(sample = fold_change)
+    p <- p + ggplot2::aes(sample = .data$fold_change)
   }
   p +  ggplot2::geom_qq() +
     ggplot2::geom_qq_line(  ) +
@@ -206,6 +219,26 @@ compare_calls <- function(r, sig = 0.05){
   UpSetR::upset(UpSetR::fromList(sets), order.by = "freq")
 }
 
+#' @importFrom rlang .data
+drop_columns <- function(df, sig, metric, log, base){
+
+  small <- df %>%
+    dplyr::select(.data$gene_id, .data$peptide, .data$fold_change, dplyr::ends_with('p_val'))
+
+  if('rank_prod_p1_p_val' %in% names(small) | 'rank_prod_p2_p_val' %in% names(small)){
+    small <- small %>%
+      dplyr::rowwise() %>%
+      dplyr::mutate(rank_product_p_val = min(c(.data$rank_prod_p1_p_val, .data$rank_prod_p2_p_val))) %>%
+      dplyr::select(-.data$rank_prod_p1_p_val, -.data$rank_prod_p2_p_val)
+  }
+
+  small <- small %>% dplyr::select(.data$gene_id, .data$peptide, .data$fold_change, dplyr::starts_with(metric)) %>%
+    dplyr::filter_at(dplyr::vars(dplyr::ends_with('p_val')), dplyr::any_vars((.data$. <= sig))) %>%
+    dplyr::select(.data$gene_id, .data$peptide, .data$fold_change) %>%
+    dplyr::ungroup()
+  return(small)
+}
+
 #' makes heatmap from all experiments, pass a single metric and sig value
 #' reduces dataframes and makeslong list, makes a heatmap
 #' @param l list of results data frames, typically from `compare_many()`
@@ -213,59 +246,60 @@ compare_calls <- function(r, sig = 0.05){
 #' @param metric one metric to use for the source of p-values
 #' @param log log the fold change values to show in the heatmap
 #' @param base base to use for logs
+#' @param col_order specify a column order for the plot, default is names(l)
+#' @param rotate_x_labels make the X-axis labels stand on end
 #' @return ggplot2 plot
 #' @export
-plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_order = NA) {
+#' @importFrom rlang .data
+plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_order = NULL, rotate_x_labels = TRUE) {
 
-  drop_columns <- function(df, sig, metric, log, base){
-
-    small <- df %>%
-      dplyr::select(gene_id, peptide, fold_change, dplyr::ends_with('p_val'))
-
-    if (log){
-      small <- small %>%
-        dplyr::mutate(fold_change = log(fold_change, base = base))
-    }
-
-    if('rank_prod_p1_p_val' %in% names(small) | 'rank_prod_p2_p_val' %in% names(small)){
-      small <- small %>%
-        dplyr::rowwise() %>%
-        dplyr::mutate(rank_product_p_val = min(c(rank_prod_p1_p_val, rank_prod_p2_p_val))) %>%
-        dplyr::select(-rank_prod_p1_p_val, -rank_prod_p2_p_val)
-    }
-
-    small <- small %>% dplyr::select(gene_id, peptide, fold_change, dplyr::starts_with(metric)) %>%
-      dplyr::filter_at(dplyr::vars(dplyr::ends_with('p_val')), dplyr::any_vars((. <= sig))) %>%
-      dplyr::select(gene_id, peptide, fold_change) %>%
-      dplyr::ungroup()
+  if (is.null(col_order)) {
+    col_order <- names(l)
   }
 
   filtered <- lapply(l, drop_columns, sig, metric, log, base)
 
   ## calculate a clustered row-order for the plot
   x <- dplyr::bind_rows(filtered, .id = "comparison") %>%
-    dplyr::mutate(gene_peptide = paste(gene_id, peptide, sep = " " )) %>%
-    dplyr::select(-gene_id, -peptide) %>%
-    tidyr::pivot_wider(gene_peptide, names_from = comparison, values_from = fold_change )
+    dplyr::mutate(gene_peptide = paste(.data$gene_id, .data$peptide, sep = " " )) %>%
+    dplyr::select(-.data$gene_id, -.data$peptide) %>%
+    tidyr::pivot_wider(.data$gene_peptide, names_from = .data$comparison, values_from = .data$fold_change )
 
   rownames <- x$gene_peptide
   x$gene_peptide <- NULL
   x <- as.matrix(x)
-  if (log){x[is.na(x)] <- 0}
-  else { x[is.na(x)] <- 1} #hack for distance measure on missing values, if a gene_id wasn't sig in a comparison but is in others, make its values 0 or 1 according to log
+  x[is.na(x)] <- 1
+#  if (log){x[is.na(x)] <- 0}
+#  else { x[is.na(x)] <- 1} #hack for distance measure on missing values, if a gene_id wasn't sig in a comparison but is in others, make its values 0 or 1 according to log
 
-  row_order <- rownames[hclust(dist(x))$order]
+  row_order <- rownames[stats::hclust(stats::dist(x))$order]
   ##
 
-  dplyr::bind_rows(filtered, .id = "comparison") %>%
-    dplyr::mutate(gene_peptide = paste(gene_id, peptide, sep = " " )) %>%
+  p <-   dplyr::bind_rows(filtered, .id = "comparison") %>%
+    dplyr::mutate(gene_peptide = paste(.data$gene_id, .data$peptide, sep = " " )) %>%
     ggplot2::ggplot() +
-    ggplot2::aes(comparison, gene_peptide) +
-    ggplot2::geom_tile(ggplot2::aes(fill = fold_change)) +
+    ggplot2::aes(.data$comparison, .data$gene_peptide)
+
+
+  if (log) {
+    legend_name <- paste0("Log ", base, " Fold Change")
+    p <- p +  ggplot2::geom_tile(ggplot2::aes(fill = log(.data$fold_change, base = base))) +
+      ggplot2::labs(fill = legend_name)
+  }
+  else {
+    p <- p + ggplot2::geom_tile(ggplot2::aes(fill = .data$fold_change))
+  }
+  p <- p +
+    #ggplot2::geom_tile(ggplot2::aes(fill = fold_change)) +
     ggplot2::theme_minimal() +
     ggplot2::scale_fill_viridis_c() +
     ggplot2::scale_y_discrete(limits = row_order) +
     ggplot2::scale_x_discrete(limits = col_order)
+
+  if(rotate_x_labels){
+    p <-  p + ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90))
+  }
+  return(p)
 }
 
 
@@ -277,33 +311,34 @@ plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_
 #' @param df dataframe, typically from `import_data()`
 #' @return ggplot2 plot
 #' @export
+#' @importFrom rlang .data
 plot_pca <- function(df) {
   #lowest_vals <- min_peptide_values(d)
    d <- matrix_data(df)
   lowest_vals <- min_peptide_values(d)
   d$data <- apply(d$data, MARGIN = 2, replace_vals, lowest_vals)
-  pca <- prcomp(d$data, scale = TRUE, center = TRUE)
+  pca <- stats::prcomp(d$data, scale = TRUE, center = TRUE)
   sample_names <- colnames(d$data)
   pca_df <- as.data.frame(pca$rotation)
   pca_df$sample_key <- sample_names
-  pca_df <- tidyr::separate(pca_df, sample_key, into = c("treatment", "seconds", "bio_rep"), sep = "_", remove= FALSE ) %>%
-    dplyr::mutate(sample = paste0(treatment, "_", seconds))
+  pca_df <- tidyr::separate(pca_df, .data$sample_key, into = c("treatment", "seconds", "bio_rep"), sep = "_", remove= FALSE ) %>%
+    dplyr::mutate(sample = paste0(.data$treatment, "_", .data$seconds))
 
   a <-  ggplot2::ggplot(pca_df) +
-    ggplot2::aes(x = PC1,y = PC2,label=sample, color = bio_rep ) +
+    ggplot2::aes(x = .data$PC1,y = .data$PC2,label=.data$sample, color = .data$bio_rep ) +
     ggplot2::geom_text(size = 3) +
     ggplot2::theme_minimal() +
     ggplot2::scale_color_viridis_d()
 
 
   b <- ggplot2::ggplot(pca_df) +
-    ggplot2::aes(x = PC1,y = PC2,label=sample, color = treatment ) +
+    ggplot2::aes(x = .data$PC1,y = .data$PC2,label=.data$sample, color = .data$treatment ) +
     ggplot2::geom_text(size = 3) +
     ggplot2::theme_minimal() +
     ggplot2::scale_color_viridis_d()
 
   c <-  ggplot2::ggplot(pca_df) +
-    ggplot2::aes(x = PC1,y = PC2,label=sample, color = seconds ) +
+    ggplot2::aes(x = .data$PC1,y = .data$PC2,label=.data$sample, color = .data$seconds ) +
     ggplot2::geom_text(size = 3) +
     ggplot2::theme_minimal() +
     ggplot2::scale_color_viridis_d()
@@ -330,9 +365,9 @@ plot_kmeans <- function(df, nstart = 25, iter.max = 1000){
   d <- matrix_data(df)
   lowest_vals <- min_peptide_values(d)
   d$data <- apply(d$data, MARGIN = 2, replace_vals, lowest_vals)
-  pca <- prcomp(d$data, scale = TRUE, center = TRUE)
+  pca <- stats::prcomp(d$data, scale = TRUE, center = TRUE)
   main_components <- pca$rotation[,1:3]
-  km <- kmeans(main_components, n, nstart=nstart, iter.max = iter.max)
+  km <- stats::kmeans(main_components, n, nstart=nstart, iter.max = iter.max)
   factoextra::fviz_cluster(km, data = main_components, palette = viridis::viridis(n),
                ggtheme = ggplot2::theme_minimal(),
                main = paste0("k-Means Sample: ", n, " Cluster(s)"))

@@ -21,7 +21,7 @@ library(pepdiff)
 
 ## Load in data
 ```{r}
-d <- import_data(here("test_data", "anon.csv"),
+d <- import_data(here("inst", "extdata", "anon.csv"),
                  gene_id = "gene_name",
                  peptide = "peptide_sequence",
                  treatment = "treatment_name"
@@ -145,7 +145,7 @@ The others give more significant calls which are likely to be more false positiv
 compare_calls(r)
 ```
 
-```{r}
+```{r,fig.width=6, fig.height=6}
 comparisons <- data.frame(
   control = c('665e6428','665e6428'),
   c_seconds = c(0,150),
@@ -155,8 +155,10 @@ comparisons <- data.frame(
 
 many <- compare_many(d, comparisons, metrics = c("bootstrap_t", "rank_product"))
 many
+```
 
-
+```{r,eval=TRUE}
 plot_heatmap(many, metric = "bootstrap_t", log = TRUE,  col_order = c("665e6428_150-665e6428_0", "665e6428_0-665e6428_150"))
 
-plot_heatmap(many, metric = "rank_product", log = TRUE,  col_order = c("665e6428_150-665e6428_0", "665e6428_0-665e6428_150"))
+plot_heatmap(many, metric = "rank_product", log = TRUE)
+```

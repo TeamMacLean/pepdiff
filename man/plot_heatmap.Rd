@@ -5,7 +5,15 @@
 \title{makes heatmap from all experiments, pass a single metric and sig value
 reduces dataframes and makeslong list, makes a heatmap}
 \usage{
-plot_heatmap(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_order = NA)
+plot_heatmap(
+  l,
+  sig = 0.05,
+  metric = NA,
+  log = FALSE,
+  base = 2,
+  col_order = NULL,
+  rotate_x_labels = TRUE
+)
 }
 \arguments{
 \item{l}{list of results data frames, typically from `compare_many()`}
@@ -17,6 +25,10 @@ plot_heatmap(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_order = NA)
 \item{log}{log the fold change values to show in the heatmap}
 
 \item{base}{base to use for logs}
+
+\item{col_order}{specify a column order for the plot, default is names(l)}
+
+\item{rotate_x_labels}{make the X-axis labels stand on end}
 }
 \value{
 ggplot2 plot

@@ -7,19 +7,19 @@
 get_percentile_lowest_observed_value_iterative <- function(treatment, control, iters = 1000){
 
   peptide_means <- apply(control, MARGIN = 1, mean, na.rm = TRUE)
-  peptide_sds <- apply(control, MARGIN = 1, sd, na.rm = TRUE)
+  peptide_sds <- apply(control, MARGIN = 1, stats::sd, na.rm = TRUE)
 
   ## control samples
   nobs <- dim(control)[1]
   m <- matrix(NA, nrow = nobs, ncol = iters)
   for (i in 1:iters) {
-    m[,i] <-  rnorm(nobs, peptide_means, peptide_sds)
+    m[,i] <-  stats::rnorm(nobs, peptide_means, peptide_sds)
   }
 
   #vector of treatment means
   t_means <- apply(treatment, MARGIN = 1, mean, na.rm = TRUE)
 
-  find_p <- function(x, perc){ecdf(x)(perc)}
+  find_p <- function(x, perc){stats::ecdf(x)(perc)}
   r <- rep(NA, nobs)
   for (i in 1:nobs ){
     r[i] <- find_p(m[i,], t_means[i])
@@ -50,7 +50,7 @@ get_bootstrap_percentile <- function(treatment, control, iters){
 
     result[i] <- bstrap$p.value
   }
-  return(data.frame(bootstrap_t_p_val = result, bootstrap_t_fdr = p.adjust(result, method = 'bonferroni')))
+  return(data.frame(bootstrap_t_p_val = result, bootstrap_t_fdr = stats::p.adjust(result, method = 'bonferroni')))
 }
 
 #' get p values for contrast using Wilcoxon test
@@ -65,7 +65,7 @@ get_wilcoxon_percentile <- function(treatment, control){
   result <- rep(NA, peptide_count)
   for (i in 1:peptide_count){
     tryCatch(
-      {wcox <- wilcox.test(treatment[i,], control[i,]) },
+      {wcox <- stats::wilcox.test(treatment[i,], control[i,]) },
       warning = function(w){ list(p.value = NA) },
       error = function(e){
         return( list(p.value = NA) )
@@ -74,7 +74,7 @@ get_wilcoxon_percentile <- function(treatment, control){
 
     result[i] <- wcox$p.value
   }
-  return(data.frame(wilcoxon_p_val = result, wilcoxon_fdr = p.adjust(result, method = 'bonferroni')))
+  return(data.frame(wilcoxon_p_val = result, wilcoxon_fdr = stats::p.adjust(result, method = 'bonferroni')))
 }
 
 #' get p values for contrast using Kruskal-Wallis test
@@ -90,7 +90,7 @@ get_kruskal_percentile <- function(treatment, control){
   for (i in 1:peptide_count){
     tryCatch(
       { d <- data.frame(t = treatment[i,], c = control[i,])
-      kw <- kruskal.test(t ~ c, data = d) },
+      kw <- stats::kruskal.test(t ~ c, data = d) },
       warning = function(w){ list(p.value = NA) },
       error = function(e){
         return( list(p.value = NA) )
@@ -99,7 +99,7 @@ get_kruskal_percentile <- function(treatment, control){
 
     result[i] <- kw$p.value
   }
-  return(data.frame(kruskal_p_val = result, kruskal_fdr = p.adjust(result, method = 'bonferroni')))
+  return(data.frame(kruskal_p_val = result, kruskal_fdr = stats::p.adjust(result, method = 'bonferroni')))
 }
 
 #' get p values for contrast using Rank Products test

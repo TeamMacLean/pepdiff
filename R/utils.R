@@ -9,10 +9,11 @@ is_useable <- function(x){ !is.na(x) & !is.nan(x)}
 #'
 #' @param df dataframe; typically from `import_data()`
 #' @return dataframe
+#' @importFrom rlang .data
 combine_tech_reps <- function(df){
   df %>%
-    dplyr::group_by(gene_id, peptide, treatment, seconds, bio_rep) %>%
-    dplyr::summarize(mean_tr_quant = mean(quant, na.rm = TRUE) )
+    dplyr::group_by(.data$gene_id, .data$peptide, .data$treatment, .data$seconds, .data$bio_rep) %>%
+    dplyr::summarize(mean_tr_quant = mean(.data$quant, na.rm = TRUE) )
 }
 
 #' convert dataframe to matrix
@@ -20,14 +21,14 @@ combine_tech_reps <- function(df){
 #' @param df dataframe, typically from `import_data()`
 #' @return list with members `row_info` - gene ID and peptide sequence and `data`
 #' a matrix version of the data in df
-#'
+#' @importFrom rlang .data
 matrix_data <- function(df){
   df <- combine_tech_reps(df)
-  row_info <- dplyr::group_by(df, gene_id, peptide, treatment, seconds, bio_rep) %>%
+  row_info <- dplyr::group_by(df, .data$gene_id, .data$peptide, .data$treatment, .data$seconds, .data$bio_rep) %>%
     dplyr::summarize(col_count = dplyr::n() )
 
   dm <- df %>%
-    tidyr::pivot_wider(names_from = c(treatment, seconds, bio_rep), values_from = mean_tr_quant) %>%
+    tidyr::pivot_wider(names_from = c(.data$treatment, .data$seconds, .data$bio_rep), values_from = .data$mean_tr_quant) %>%
     as.matrix()
 
   row_info <- dm[,c("gene_id", "peptide")]
@@ -107,9 +108,10 @@ replace_vals <- function(x, lowest_vals){
 #' @param r results dataframe typically from `compare()`
 #' @return dataframe in long format missing some columns from r
 #' @export
+#' @importFrom rlang .data
 long_results <- function(r){
   r %>%
-    dplyr::select(gene_id, peptide, treatment_replicates, control_replicates, fold_change, dplyr::ends_with("p_val" ) ) %>%
+    dplyr::select(.data$gene_id, .data$peptide, .data$treatment_replicates, .data$control_replicates, .data$fold_change, dplyr::ends_with("p_val" ) ) %>%
     tidyr::pivot_longer(dplyr::ends_with("p_val"), names_to = 'test')
 }
 

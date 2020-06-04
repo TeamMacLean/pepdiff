@@ -1,4 +1,3 @@
-
 #' read data from a file
 #'
 #' reads data, renames columns appropriately, discards unused columns, factors and
@@ -11,7 +10,7 @@
 #' @param quant Column containing the quantitation data
 #' @param seconds Column containing timepoint of observation
 #' @param gene_id Column containing the id of the gene this hit
-#' @param peptide_sequence Column containing the sequence of this peptide
+#' @param peptide Column containing the sequence of this peptide
 #' @return tibble with columns id, gene_id, peptide, treatment, seconds, bio_rep, tech_rep, quant
 #' @export
 import_data <- function(file,
@@ -33,15 +32,15 @@ import_data <- function(file,
                   seconds = seconds,
                   gene_id = gene_id,
                   peptide = peptide) %>%
-    dplyr::mutate(id = paste0(gene_id, ":", peptide)) %>%
-    dplyr::transmute(id = as.character(id),
-                     gene_id = as.character(gene_id),
-                     peptide = as.character(peptide),
-                     treatment = as.character(treatment),
-                     seconds = as.numeric(seconds),
-                     bio_rep = as.character(bio_rep),
-                     tech_rep = as.character(tech_rep),
-                     quant = as.numeric(quant)
+    dplyr::mutate(id = paste0(.data$gene_id, ":", .data$peptide)) %>%
+    dplyr::transmute(id = as.character(.data$id),
+                     gene_id = as.character(.data$gene_id),
+                     peptide = as.character(.data$peptide),
+                     treatment = as.character(.data$treatment),
+                     seconds = as.numeric(.data$seconds),
+                     bio_rep = as.character(.data$bio_rep),
+                     tech_rep = as.character(.data$tech_rep),
+                     quant = as.numeric(.data$quant)
                      ) %>%
     dplyr::distinct()
 
@@ -57,10 +56,11 @@ import_data <- function(file,
 #' @param df dataframe with unmerged tech reps; typically from `import_data()`
 #' @return grouped summary dataframe
 #' @export
+#' @importFrom rlang .data
 assess_missing <- function(df){
 
-  dplyr::group_by( df, treatment, seconds, bio_rep, tech_rep) %>%
-    dplyr::summarize(peptides = dplyr::n(), percent_missing = (sum(is.na(quant)) / dplyr::n() ) * 100 )
+  dplyr::group_by( df, .data$treatment, .data$seconds, .data$bio_rep, .data$tech_rep) %>%
+    dplyr::summarize(peptides = dplyr::n(), percent_missing = (sum(is.na(.data$quant)) / dplyr::n() ) * 100 )
 }
 
 #' calculate number of measurements of each peptide in each treatment and time
@@ -71,11 +71,12 @@ assess_missing <- function(df){
 #' @param df dataframe. Typically from `import_data()`
 #' @return dataframe
 #' @export
+#' @importFrom rlang .data
 times_measured <- function(df){
   combine_tech_reps(df) %>%
-    dplyr::group_by(gene_id, peptide, treatment, seconds) %>%
-    dplyr::summarize(times_measured = sum( is_useable(mean_tr_quant))) %>%
-    dplyr::arrange(desc(times_measured))
+    dplyr::group_by(.data$gene_id, .data$peptide, .data$treatment, .data$seconds) %>%
+    dplyr::summarize(times_measured = sum( is_useable(.data$mean_tr_quant))) %>%
+    dplyr::arrange(dplyr::desc(.data$times_measured))
 }
 
 

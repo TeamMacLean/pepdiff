@@ -30,7 +30,7 @@ import_data(
 
 \item{gene_id}{Column containing the id of the gene this hit}
 
-\item{peptide_sequence}{Column containing the sequence of this peptide}
+\item{peptide}{Column containing the sequence of this peptide}
 }
 \value{
 tibble with columns id, gene_id, peptide, treatment, seconds, bio_rep, tech_rep, quant

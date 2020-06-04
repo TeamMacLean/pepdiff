@@ -7,7 +7,7 @@
 p_value_hist(r)
 }
 \arguments{
-\item{df}{result dataframe typically from `compare()`}
+\item{r}{list of result dataframes typically from `compare()`}
 }
 \value{
 ggplot2 plot

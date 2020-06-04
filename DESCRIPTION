@@ -21,6 +21,10 @@ Imports:
     MKinfer,
     RankProd,
     readr,
+    rlang,
+    stats,
+    stringr,
+    tibble,
     tidyr,
     UpSetR,
     viridis
