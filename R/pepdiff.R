@@ -122,10 +122,15 @@ compare <- function(df,
   control <- apply(selected_cols$control, MARGIN = 2, replace_vals, lowest_vals)
   fc <- mean_fold_change(treatment, control)
 
+  treatment_mean_count <- rowMeans(treatment, na.rm = TRUE)
+  control_mean_count <- rowMeans(control, na.rm = TRUE)
+
   result$info <- as.data.frame(d$row_info)
   result$treatment <- as.data.frame(treatment)
   result$control <- as.data.frame(control)
   result$fold_change <- data.frame(fold_change = fc)
+  result$treatment_mean_count <- data.frame(treatment_mean_count = treatment_mean_count)
+  result$control_mean_count <- data.frame(control_mean_count = control_mean_count)
 
   result$unreplaced_treatment <- as.data.frame(selected_cols$treatment)
   names(result$unreplaced_treatment) <- paste0("unreplaced_", names(result$unreplaced_treatment))

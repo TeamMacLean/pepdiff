@@ -391,3 +391,41 @@ plot_kmeans <- function(df, nstart = 25, iter.max = 1000){
                ggtheme = ggplot2::theme_minimal(),
                main = paste0("k-Means Sample: ", n, " Cluster(s)"))
 }
+
+
+#' volcano plot the data
+#'
+#' draws a plot of peptide count against log fc at either protein or peptide level for samples
+#' @param l list of results data frames, typically from `compare_many()`
+#' @param metric single metric to use for volcano plot
+#' @return ggplot2 plot
+#' @export
+#'
+volcano_plot <- function(l, log = FALSE, base = 2, by="peptide", sig = 0.05, metric = NA ) {
+
+  dplyr::bind_rows(l, .id = "comparison")  %>%
+    dplyr::select(comparison, gene_id, peptide, treatment_mean_count, control_mean_count, fold_change, dplyr::starts_with(metric)) %>%
+    dplyr::rename(p_val = dplyr::ends_with('p_val') ) %>%
+    dplyr::mutate(
+                  gene_peptide = paste(gene_id, peptide, sep = " "),
+                  log_fc = log(fold_change, base = base),
+                  signal = log((treatment_mean_count + control_mean_count), base) * -1,
+                  change = dplyr::if_else(log_fc > 0 & p_val <= sig, "Up",
+                            dplyr::if_else(log_fc < 0 & p_val <= sig, "Down", "None")),
+                  change = forcats::fct_relevel(change, rev)
+                  ) %>%
+    dplyr::select(comparison, gene_peptide, signal, log_fc, change) %>%
+    ggplot2::ggplot() +
+    ggplot2::aes(log_fc, signal) +
+    ggplot2::geom_point(ggplot2::aes(colour = change)) +
+    ggplot2::facet_wrap( ~ comparison) +
+    ggplot2::theme_minimal() +
+    ggplot2::scale_colour_viridis_d() +
+    ggplot2::xlab("Log 2 Fold Change") +
+    ggplot2::ylab("-Log 2 Mean Total Signal") +
+    ggplot2::labs(colour = "Change")
+
+
+
+
+}
