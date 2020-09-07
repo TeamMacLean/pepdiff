@@ -246,7 +246,7 @@ drop_columns <- function(df, sig, metric, log, base, only_sig_points = TRUE){
     #return(genes_to_keep)
     small <- small %>%
       dplyr::select(.data$gene_id, .data$peptide, .data$fold_change) %>%
-      dplyr::mutate(.data$unique_id = paste0(.data$gene_id, "_", .data$peptide)) %>%
+      dplyr::mutate(unique_id = paste0(.data$gene_id, "_", .data$peptide)) %>%
       dplyr::filter(.data$unique_id %in% genes_to_keep$unique_id) %>%
       dplyr::ungroup()
     return(small)
