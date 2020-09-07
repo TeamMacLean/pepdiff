@@ -12,7 +12,8 @@ plot_heatmap(
   log = FALSE,
   base = 2,
   col_order = NULL,
-  rotate_x_labels = TRUE
+  rotate_x_labels = TRUE,
+  only_sig_points = TRUE
 )
 }
 \arguments{
