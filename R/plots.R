@@ -220,7 +220,7 @@ compare_calls <- function(r, sig = 0.05){
 }
 
 #' @importFrom rlang .data
-drop_columns <- function(df, sig, metric, log, base){
+drop_columns <- function(df, sig, metric, log, base, only_sig_points = TRUE){
 
   small <- df %>%
     dplyr::select(.data$gene_id, .data$peptide, .data$fold_change, dplyr::ends_with('p_val'))
@@ -232,11 +232,25 @@ drop_columns <- function(df, sig, metric, log, base){
       dplyr::select(-.data$rank_prod_p1_p_val, -.data$rank_prod_p2_p_val)
   }
 
-  small <- small %>% dplyr::select(.data$gene_id, .data$peptide, .data$fold_change, dplyr::starts_with(metric)) %>%
-    dplyr::filter_at(dplyr::vars(dplyr::ends_with('p_val')), dplyr::any_vars((.data$. <= sig))) %>%
-    dplyr::select(.data$gene_id, .data$peptide, .data$fold_change) %>%
-    dplyr::ungroup()
-  return(small)
+  if(only_sig_points){
+    small <- small %>% dplyr::select(.data$gene_id, .data$peptide, .data$fold_change, dplyr::starts_with(metric)) %>%
+      dplyr::filter_at(dplyr::vars(dplyr::ends_with('p_val')), dplyr::any_vars((.data$. <= sig))) %>%
+      dplyr::select(.data$gene_id, .data$peptide, .data$fold_change) %>%
+      dplyr::ungroup()
+      return(small)
+  }
+  else{
+    genes_to_keep <- small %>% dplyr::select(.data$gene_id, .data$peptide, .data$fold_change, dplyr::starts_with(metric)) %>%
+      dplyr::filter_at(dplyr::vars(dplyr::ends_with('p_val')), dplyr::any_vars((.data$. <= sig))) %>%
+      dplyr::mutate(unique_id = paste0(gene_id, "_", peptide))
+    #return(genes_to_keep)
+    small <- small %>%
+      dplyr::select(.data$gene_id, .data$peptide, .data$fold_change) %>%
+      dplyr::mutate(unique_id = paste0(gene_id, "_", peptide)) %>%
+      dplyr::filter(.data$unique_id %in% genes_to_keep$unique_id) %>%
+      dplyr::ungroup()
+    return(small)
+    }
 }
 
 #' makes heatmap from all experiments, pass a single metric and sig value
@@ -251,14 +265,14 @@ drop_columns <- function(df, sig, metric, log, base){
 #' @return ggplot2 plot
 #' @export
 #' @importFrom rlang .data
-plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_order = NULL, rotate_x_labels = TRUE) {
+plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_order = NULL, rotate_x_labels = TRUE, only_sig_points = TRUE) {
 
   if (is.null(col_order)) {
     col_order <- names(l)
   }
 
-  filtered <- lapply(l, drop_columns, sig, metric, log, base)
-
+  filtered <- lapply(l, drop_columns, sig, metric, log, base, only_sig_points=only_sig_points)
+  #return(filtered)
   ## calculate a clustered row-order for the plot
   x <- dplyr::bind_rows(filtered, .id = "comparison") %>%
     dplyr::mutate(gene_peptide = paste(.data$gene_id, .data$peptide, sep = " " )) %>%
