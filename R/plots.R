@@ -293,8 +293,7 @@ plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_
   hc_obj <- stats::hclust(stats::dist(x))
   row_order <- rownames[hc_obj$order]
   ##
-  library(ggdendro)
-  return(ggdendro::ggdendrogram(hc_obj))
+
   p <-   dplyr::bind_rows(filtered, .id = "comparison") %>%
     dplyr::mutate(gene_peptide = paste(.data$gene_id, .data$peptide, sep = " " )) %>%
     ggplot2::ggplot() +
