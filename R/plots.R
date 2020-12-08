@@ -261,7 +261,7 @@ drop_columns <- function(df, sig, metric, log, base, rows_to_keep = NULL){
 #' @return ggplot2 plot
 #' @export
 #' @importFrom rlang .data
-plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_order = NULL, rotate_x_labels = TRUE, only_sig_points = TRUE) {
+plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_order = NULL, rotate_x_labels = TRUE, only_sig_points = TRUE, option="E", direction=-1) {
 
   if (is.null(col_order)) {
     col_order <- names(l)
@@ -311,7 +311,7 @@ plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_
   p <- p +
     #ggplot2::geom_tile(ggplot2::aes(fill = fold_change)) +
     ggplot2::theme_minimal() +
-    ggplot2::scale_fill_viridis_c() +
+    ggplot2::scale_fill_viridis_c(option=option, direction=direction) +
     ggplot2::scale_y_discrete(limits = row_order) +
     ggplot2::scale_x_discrete(limits = col_order)
 
