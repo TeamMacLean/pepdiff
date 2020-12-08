@@ -401,7 +401,7 @@ plot_kmeans <- function(df, nstart = 25, iter.max = 1000){
 #' @return ggplot2 plot
 #' @export
 #'
-volcano_plot <- function(l, log = FALSE, base = 2, by="peptide", sig = 0.05, metric = NA ) {
+volcano_plot <- function(l, log = FALSE, base = 2, by="peptide", sig = 0.05, metric = NA, option="E", direction=1  ) {
 
   dplyr::bind_rows(l, .id = "comparison")  %>%
     dplyr::select(comparison, gene_id, peptide, treatment_mean_count, control_mean_count, fold_change, dplyr::starts_with(metric)) %>%
@@ -420,7 +420,7 @@ volcano_plot <- function(l, log = FALSE, base = 2, by="peptide", sig = 0.05, met
     ggplot2::geom_point(ggplot2::aes(colour = change)) +
     ggplot2::facet_wrap( ~ comparison) +
     ggplot2::theme_minimal() +
-    ggplot2::scale_colour_viridis_d() +
+    ggplot2::scale_colour_viridis_d(option=option, direction=direction) +
     ggplot2::xlab("Log 2 Fold Change") +
     ggplot2::ylab("-Log 2 Mean Total Signal") +
     ggplot2::labs(colour = "Change")
