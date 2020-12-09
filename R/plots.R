@@ -328,12 +328,12 @@ plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_
   }
 
   if (dendro){
-    p <- p + ggplot2::theme(#axis.text.x = ggplot2::element_blank(),
+    p <- p + ggplot2::theme(legend.position = "left",
                             axis.title.y = ggplot2::element_blank())
-    ddro <- ggtree::ggtree(hc_obj) #+
+    ddro <- ggtree::ggtree(hc_obj) + ggplot2::scale_x_reverse() #+
       #ggplot2::theme(axis.text.x = ggplot2::element_blank(),
        #              axis.text.y = ggplot2::element_blank() )
-    p <- cowplot::plot_grid(ddro, p, nrow=1, align = "h", rel_widths = c(1,4))
+    p <- cowplot::plot_grid(p, ddro, nrow=1, align = "h", rel_widths = c(4,1))
   }
 
   return(p)
