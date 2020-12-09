@@ -283,12 +283,6 @@ plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_
     rows_to_keep <- unique(rows_to_keep$gene_peptide)
     filtered <- lapply(l, drop_columns, sig, metric, log, base, rows_to_keep)
 
-    if (debug){
-      return(filtered)
-    }
-  }
-  if (debug){
-    return(filtered)
   }
 
   ## calculate a clustered row-order for the plot
