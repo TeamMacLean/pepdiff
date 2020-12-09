@@ -440,7 +440,7 @@ volcano_plot <- function(l, log = FALSE, base = 2, by="peptide", sig = 0.05, met
                   ) %>%
     dplyr::select(comparison, gene_peptide, signal, log_p, change) %>%
     ggplot2::ggplot() +
-    ggplot2::aes(log_p, signal) +
+    ggplot2::aes(log_fc, log_p) +
     ggplot2::geom_point(ggplot2::aes(colour = change)) +
     ggplot2::facet_wrap( ~ comparison) +
     ggplot2::theme_minimal() +
