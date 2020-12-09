@@ -261,22 +261,35 @@ drop_columns <- function(df, sig, metric, log, base, rows_to_keep = NULL){
 #' @return ggplot2 plot
 #' @export
 #' @importFrom rlang .data
-plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_order = NULL, rotate_x_labels = TRUE, only_sig_points = TRUE, option="E", direction=1, use_y_labels=TRUE, dendro = FALSE, y_labels_on_right=FALSE) {
+plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_order = NULL, rotate_x_labels = TRUE, only_sig_points = TRUE, option="E", direction=1, use_y_labels=TRUE, dendro = FALSE, debug = FALSE, all_points = FALSE) {
 
   if (is.null(col_order)) {
     col_order <- names(l)
   }
 
-  filtered <- lapply(l, drop_columns, sig, metric, log, base)
+  filtered <- NA
+  if (all_points){
+    rows_to_keep <- dplyr::bind_rows(l) %>%
+      dplyr::mutate(gene_peptide = paste(.data$gene_id, .data$peptide, sep = " " ))
+    rows_to_keep <- unique(rows_to_keep$gene_peptide)
+    filtered <- lapply(l, drop_columns, sig, metric, log, base, rows_to_keep)
+  }
+  else {
+    filtered <- lapply(l, drop_columns, sig, metric, log, base)
+  }
   if (! only_sig_points){
     rows_to_keep <- dplyr::bind_rows(filtered) %>%
       dplyr::mutate(gene_peptide = paste(.data$gene_id, .data$peptide, sep = " " ))
     rows_to_keep <- unique(rows_to_keep$gene_peptide)
-
     filtered <- lapply(l, drop_columns, sig, metric, log, base, rows_to_keep)
-  }
 
-  #filtered <- lapply(l, drop_columns, sig, metric, log, base)
+    if (debug){
+      return(filtered)
+    }
+  }
+  if (debug){
+    return(filtered)
+  }
 
   ## calculate a clustered row-order for the plot
   x <- dplyr::bind_rows(filtered, .id = "comparison") %>%
@@ -323,9 +336,6 @@ plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_
     p <- p +ggplot2::theme(axis.text.y = ggplot2::element_blank())
   }
 
-  if (y_labels_on_right){
-    p <- p + ggplot2::scale_y_discrete(position = "right")
-  }
 
   if (dendro){
     p <- p + ggplot2::theme(legend.position = "left",
