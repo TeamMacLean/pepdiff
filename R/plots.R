@@ -324,7 +324,7 @@ plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_
   }
 
   if (y_labels_on_right){
-    p <- p + ggplot2::scale_y_continuous(position = "right")
+    p <- p + ggplot2::scale_y_discrete(position = "right")
   }
 
   if (dendro){
