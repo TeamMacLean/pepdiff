@@ -434,11 +434,11 @@ volcano_plot <- function(l, log = FALSE, base = 2, by="peptide", sig = 0.05, met
                   log_fc = log(fold_change, base = base),
                   log_p = log(p_val, base=base) * -1,
                   signal = log((treatment_mean_count + control_mean_count), base) * -1,
-                  change = dplyr::if_else(log_fc > 0 & p_val <= sig, "Up",
-                            dplyr::if_else(log_fc < 0 & p_val <= sig, "Down", "None")),
+                  change = dplyr::if_else(p_val <= sig, "Up",
+                            dplyr::if_else(p_val <= sig, "Down", "None")),
                   change = forcats::fct_relevel(change, rev)
                   ) %>%
-    dplyr::select(comparison, gene_peptide, signal, log_fc, change) %>%
+    dplyr::select(comparison, gene_peptide, signal, log_p, change) %>%
     ggplot2::ggplot() +
     ggplot2::aes(log_p, signal) +
     ggplot2::geom_point(ggplot2::aes(colour = change)) +
