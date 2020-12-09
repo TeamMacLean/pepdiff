@@ -261,7 +261,7 @@ drop_columns <- function(df, sig, metric, log, base, rows_to_keep = NULL){
 #' @return ggplot2 plot
 #' @export
 #' @importFrom rlang .data
-plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_order = NULL, rotate_x_labels = TRUE, only_sig_points = TRUE, option="E", direction=-1, use_y_labels=TRUE, dendro = FALSE, y_labels_on_right=FALSE) {
+plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_order = NULL, rotate_x_labels = TRUE, only_sig_points = TRUE, option="E", direction=1, use_y_labels=TRUE, dendro = FALSE, y_labels_on_right=FALSE) {
 
   if (is.null(col_order)) {
     col_order <- names(l)
@@ -333,7 +333,7 @@ plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_
     ddro <- ggtree::ggtree(hc_obj) #+
       #ggplot2::theme(axis.text.x = ggplot2::element_blank(),
        #              axis.text.y = ggplot2::element_blank() )
-    p <- cowplot::plot_grid(ddro, p, nrow=1, align = "hv", rel_widths = c(1,3))
+    p <- cowplot::plot_grid(ddro, p, nrow=1, align = "h", rel_widths = c(1,4))
   }
 
   return(p)
