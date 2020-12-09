@@ -327,8 +327,8 @@ plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_
   if (dendro){
 
     library(ggtree)
-    #p <- p + ggplot2::theme(#axis.text.x = ggplot2::element_blank(),
-                            #axis.title.x = ggplot2::element_blank())
+    p <- p + ggplot2::theme(#axis.text.x = ggplot2::element_blank(),
+                            axis.title.y = ggplot2::element_blank())
     ddro <- ggtree(hc_obj) #+
       #ggplot2::theme(axis.text.x = ggplot2::element_blank(),
        #              axis.text.y = ggplot2::element_blank() )
