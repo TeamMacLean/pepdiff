@@ -367,14 +367,14 @@ plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_
     tidybulk::impute_missing_abundance(~1, .sample=comparison, .transcript=gene_peptide, .abundance=fold_change) %>%
     tidyHeatmap::heatmap(gene_peptide, comparison, fold_change,
                          column_order = col_order,
+                         row_km = row_kms,
+                         column_km = col_kms,
+                         column_title = col_title,
+                         row_title = row_title,
+                         name = name,
                        palette_value =  circlize::colorRamp2(
                            seq(scale_min, scale_max, length.out = 11),
-                           RColorBrewer::brewer.pal(11, "RdBu"),
-                           row_km = row_kms,
-                           column_km = col_kms,
-                           col_title = col_title,
-                           row_title = row_title,
-                           name = name
+                           RColorBrewer::brewer.pal(11, "RdBu")
                          )
                          )
 
