@@ -263,7 +263,7 @@ drop_columns <- function(df, sig, metric, log, base, rows_to_keep = NULL){
 #' @return ggplot2 plot
 #' @export
 #' @importFrom rlang .data
-plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_order = NULL, rotate_x_labels = TRUE, only_sig_points = TRUE, option="E", direction=1, use_y_labels=TRUE, dendro = FALSE, all_points = FALSE, pal="cbrewer") {
+plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_order = NULL, rotate_x_labels = TRUE, only_sig_points = TRUE, option="E", direction=1, use_y_labels=TRUE, dendro = FALSE, all_points = FALSE, pal="cbrewer", row_kms = NULL, col_kms = NULL, scale_min = -2, scale_max = 2) {
 
   if (is.null(col_order)) {
     col_order <- names(l)
@@ -351,8 +351,12 @@ plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_
 
   x <- dplyr::bind_rows(filtered, .id = "comparison")
 
+  row_title <- "Comparison"
+  col_title <- "Gene Peptide"
+  name <- "Fold Change"
   if (log){
     x$fold_change <- log(x$fold_change, base = base)
+    name <- paste("Log", base, "Fold Change")
   }
 
   max_val <- max(x$fold_change[is.finite(x$fold_change)])
@@ -364,8 +368,13 @@ plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_
     tidyHeatmap::heatmap(gene_peptide, comparison, fold_change,
                          column_order = col_order,
                        palette_value =  circlize::colorRamp2(
-                           seq(-3, 3, length.out = 11),
-                           RColorBrewer::brewer.pal(11, "RdBu")
+                           seq(scale_min, scale_max, length.out = 11),
+                           RColorBrewer::brewer.pal(11, "RdBu"),
+                           row_km = row_kms,
+                           column_km = col_kms,
+                           col_title = col_title,
+                           row_title = row_title,
+                           name = name
                          )
                          )
 
