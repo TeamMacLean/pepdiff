@@ -350,6 +350,11 @@ plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_
   # }
 
   x <- dplyr::bind_rows(filtered, .id = "comparison")
+
+  if (log){
+    x$fold_change <- log(x$fold_change, base = base)
+  }
+
   max_val <- max(x$fold_change[is.finite(x$fold_change)])
   #return(max_val)
 
