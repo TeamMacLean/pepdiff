@@ -349,10 +349,11 @@ plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_
   #   p <- cowplot::plot_grid(p, ddro, nrow=1, align = "h", rel_widths = c(4,1))
   # }
 
-  max_val <- max(filtered$fold_change[is.finite(filtered$fold_change)])
+  x <- dplyr::bind_rows(filtered, .id = "comparison")
+  max_val <- max(x$fold_change[is.finite(x$fold_change)])
   return(max_val)
 
-  p <- dplyr::bind_rows(filtered, .id = "comparison") %>%
+  p <- x %>%
        dplyr::mutate(gene_peptide = paste(.data$gene_id, .data$peptide, sep = " " )) %>%
     tidybulk::impute_missing_abundance(~1, .sample=comparison, .transcript=gene_peptide, .abundance=fold_change) %>%
     tidyHeatmap::heatmap(gene_peptide, comparison, fold_change,
