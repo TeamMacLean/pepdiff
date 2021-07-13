@@ -24,7 +24,7 @@ library(pepdiff)
 d <- import_data(here("inst", "extdata", "anon.csv"),
                  gene_id = "gene_name",
                  peptide = "peptide_sequence",
-                 treatment = "treatment_name"
+                 treatment = "treatment_name",
                  )
 
 ```
@@ -125,13 +125,13 @@ many <- compare_many(d, comparisons, metrics = c("bootstrap_t", "rank_product"))
 many
 ```
 
-```{r,eval=TRUE, fig.width=10}
+```{r,eval=TRUE, fig.height=10, fig.width=10}
 plot_heatmap(many, metric = "bootstrap_t", log = TRUE,  col_order = c("665e6428_150-665e6428_0", "665e6428_0-665e6428_150"))
 
 plot_heatmap(many, metric = "rank_product", log = TRUE)
 ```
 
-```{r, fig.width=10}
+```{r, fig.height=10,fig.width=10}
 #add colour even when the point isn't significant
 plot_heatmap(many, metric = "bootstrap_t", log = TRUE,  col_order = c("665e6428_150-665e6428_0", "665e6428_0-665e6428_150"), only_sig_points = FALSE)
 ```

@@ -303,51 +303,61 @@ plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_
   row_order <- rownames[hc_obj$order]
   ##
 
-  p <-   dplyr::bind_rows(filtered, .id = "comparison") %>%
-    dplyr::mutate(gene_peptide = paste(.data$gene_id, .data$peptide, sep = " " )) %>%
-    ggplot2::ggplot() +
-    ggplot2::aes(.data$comparison, .data$gene_peptide)
+  # p <-   dplyr::bind_rows(filtered, .id = "comparison") %>%
+  #   dplyr::mutate(gene_peptide = paste(.data$gene_id, .data$peptide, sep = " " )) %>%
+  #   ggplot2::ggplot() +
+  #   ggplot2::aes(.data$comparison, .data$gene_peptide)
+  #
+  #
+  # if (log) {
+  #   legend_name <- paste0("Log ", base, " Fold Change")
+  #   p <- p +  ggplot2::geom_tile(ggplot2::aes(fill = log(.data$fold_change, base = base))) +
+  #     ggplot2::labs(fill = legend_name)
+  # }
+  # else {
+  #   p <- p + ggplot2::geom_tile(ggplot2::aes(fill = .data$fold_change))
+  # }
+  # p <- p +
+  #   #ggplot2::geom_tile(ggplot2::aes(fill = fold_change)) +
+  #   ggplot2::theme_minimal()
+  #
+  # if (pal == "viridis"){
+  #     p <- p + ggplot2::scale_fill_viridis_c(option=option, direction=direction)
+  # }
+  # else if (pal == "cbrewer"){
+  #   p <-  p + ggplot2::scale_fill_distiller(palette = "RdBu")
+  # }
+  #  p <- p +
+  #   ggplot2::scale_y_discrete(limits = row_order) +
+  #   ggplot2::scale_x_discrete(limits = col_order)
+  #
+  # if(rotate_x_labels){
+  #   p <-  p + ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90))
+  # }
+  #
+  # if (! use_y_labels){
+  #   p <- p +ggplot2::theme(axis.text.y = ggplot2::element_blank())
+  # }
+  #
+  #
+  # if (dendro){
+  #   p <- p + ggplot2::theme(legend.position = "left",
+  #                           axis.title.y = ggplot2::element_blank())
+  #   ddro <- ggtree::ggtree(hc_obj) + ggplot2::scale_x_reverse() #+
+  #     #ggplot2::theme(axis.text.x = ggplot2::element_blank(),
+  #      #              axis.text.y = ggplot2::element_blank() )
+  #   p <- cowplot::plot_grid(p, ddro, nrow=1, align = "h", rel_widths = c(4,1))
+  # }
 
-
-  if (log) {
-    legend_name <- paste0("Log ", base, " Fold Change")
-    p <- p +  ggplot2::geom_tile(ggplot2::aes(fill = log(.data$fold_change, base = base))) +
-      ggplot2::labs(fill = legend_name)
-  }
-  else {
-    p <- p + ggplot2::geom_tile(ggplot2::aes(fill = .data$fold_change))
-  }
-  p <- p +
-    #ggplot2::geom_tile(ggplot2::aes(fill = fold_change)) +
-    ggplot2::theme_minimal()
-
-  if (pal == "viridis"){
-      p <- p + ggplot2::scale_fill_viridis_c(option=option, direction=direction)
-  }
-  else if (pal == "cbrewer"){
-    p <-  p + ggplot2::scale_fill_distiller(palette = "RdBu")
-  }
-   p <- p +
-    ggplot2::scale_y_discrete(limits = row_order) +
-    ggplot2::scale_x_discrete(limits = col_order)
-
-  if(rotate_x_labels){
-    p <-  p + ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90))
-  }
-
-  if (! use_y_labels){
-    p <- p +ggplot2::theme(axis.text.y = ggplot2::element_blank())
-  }
-
-
-  if (dendro){
-    p <- p + ggplot2::theme(legend.position = "left",
-                            axis.title.y = ggplot2::element_blank())
-    ddro <- ggtree::ggtree(hc_obj) + ggplot2::scale_x_reverse() #+
-      #ggplot2::theme(axis.text.x = ggplot2::element_blank(),
-       #              axis.text.y = ggplot2::element_blank() )
-    p <- cowplot::plot_grid(p, ddro, nrow=1, align = "h", rel_widths = c(4,1))
-  }
+  p <- dplyr::bind_rows(filtered, .id = "comparison") %>%
+       dplyr::mutate(gene_peptide = paste(.data$gene_id, .data$peptide, sep = " " )) %>%
+    tidybulk::impute_missing_abundance(~1, gene_peptide, comparison, fold_change) %>%
+    tidyHeatmap::heatmap(gene_peptide, comparison, fold_change)
+      #                   palette_value =  circlize::colorRamp2(
+    #                       seq(-2, 2, length.out = 11),
+    #                       RColorBrewer::brewer.pal(11, "RdBu")
+    #                     )
+    #                     )
 
   return(p)
 }
