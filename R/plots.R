@@ -255,15 +255,15 @@ drop_columns <- function(df, sig, metric, log, base, rows_to_keep = NULL){
 #' @param sig significance level at which to call peptides
 #' @param metric one metric to use for the source of p-values
 #' @param log log the fold change values to show in the heatmap
-#' @param base base to use for logs
+#' @param base base to use for log transformation
 #' @param col_order specify a column order for the plot, default is names(l)
-#' @param rotate_x_labels make the X-axis labels stand on end
-#' @param pal use "viridis" or "cbrewere" pallete
-#' @param option name of viridis or cbrewer palette to use
+#' @param row_kms k for kmeans splitting of heatmap along rows
+#' @param col_kms k for kmeans splitting of heatmap on columns
+#' @param pal cbrewer palette to use "RdBu"
 #' @return ggplot2 plot
 #' @export
 #' @importFrom rlang .data
-plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_order = NULL, rotate_x_labels = TRUE, only_sig_points = TRUE, option="E", direction=1, use_y_labels=TRUE, dendro = FALSE, all_points = FALSE, pal="cbrewer", row_kms = NULL, col_kms = NULL, scale_min = -2, scale_max = 2) {
+plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_order = NULL, rotate_x_labels = TRUE, all_points = FALSE, pal="RdBu", row_kms = NULL, col_kms = NULL, scale_min = -2, scale_max = 2) {
 
   if (is.null(col_order)) {
     col_order <- names(l)
@@ -279,88 +279,17 @@ plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_
   else {
     filtered <- lapply(l, drop_columns, sig, metric, log, base)
   }
-  if (! only_sig_points){
-    rows_to_keep <- dplyr::bind_rows(filtered) %>%
-      dplyr::mutate(gene_peptide = paste(.data$gene_id, .data$peptide, sep = " " ))
-    rows_to_keep <- unique(rows_to_keep$gene_peptide)
-    filtered <- lapply(l, drop_columns, sig, metric, log, base, rows_to_keep)
-
-  }
-
-  ## calculate a clustered row-order for the plot
-  x <- dplyr::bind_rows(filtered, .id = "comparison") %>%
-    dplyr::mutate(gene_peptide = paste(.data$gene_id, .data$peptide, sep = " " )) %>%
-    dplyr::select(-.data$gene_id, -.data$peptide) %>%
-    tidyr::pivot_wider(.data$gene_peptide, names_from = .data$comparison, values_from = .data$fold_change )
-
-  rownames <- x$gene_peptide
-  x$gene_peptide <- NULL
-  x <- as.matrix(x)
-  x[is.na(x)] <- 1
-#  if (log){x[is.na(x)] <- 0}
-#  else { x[is.na(x)] <- 1} #hack for distance measure on missing values, if a gene_id wasn't sig in a comparison but is in others, make its values 0 or 1 according to log
-  hc_obj <- stats::hclust(stats::dist(x))
-  row_order <- rownames[hc_obj$order]
-  ##
-
-  # p <-   dplyr::bind_rows(filtered, .id = "comparison") %>%
-  #   dplyr::mutate(gene_peptide = paste(.data$gene_id, .data$peptide, sep = " " )) %>%
-  #   ggplot2::ggplot() +
-  #   ggplot2::aes(.data$comparison, .data$gene_peptide)
-  #
-  #
-  # if (log) {
-  #   legend_name <- paste0("Log ", base, " Fold Change")
-  #   p <- p +  ggplot2::geom_tile(ggplot2::aes(fill = log(.data$fold_change, base = base))) +
-  #     ggplot2::labs(fill = legend_name)
-  # }
-  # else {
-  #   p <- p + ggplot2::geom_tile(ggplot2::aes(fill = .data$fold_change))
-  # }
-  # p <- p +
-  #   #ggplot2::geom_tile(ggplot2::aes(fill = fold_change)) +
-  #   ggplot2::theme_minimal()
-  #
-  # if (pal == "viridis"){
-  #     p <- p + ggplot2::scale_fill_viridis_c(option=option, direction=direction)
-  # }
-  # else if (pal == "cbrewer"){
-  #   p <-  p + ggplot2::scale_fill_distiller(palette = "RdBu")
-  # }
-  #  p <- p +
-  #   ggplot2::scale_y_discrete(limits = row_order) +
-  #   ggplot2::scale_x_discrete(limits = col_order)
-  #
-  # if(rotate_x_labels){
-  #   p <-  p + ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90))
-  # }
-  #
-  # if (! use_y_labels){
-  #   p <- p +ggplot2::theme(axis.text.y = ggplot2::element_blank())
-  # }
-  #
-  #
-  # if (dendro){
-  #   p <- p + ggplot2::theme(legend.position = "left",
-  #                           axis.title.y = ggplot2::element_blank())
-  #   ddro <- ggtree::ggtree(hc_obj) + ggplot2::scale_x_reverse() #+
-  #     #ggplot2::theme(axis.text.x = ggplot2::element_blank(),
-  #      #              axis.text.y = ggplot2::element_blank() )
-  #   p <- cowplot::plot_grid(p, ddro, nrow=1, align = "h", rel_widths = c(4,1))
-  # }
 
   x <- dplyr::bind_rows(filtered, .id = "comparison")
 
   row_title <- "Comparison"
   col_title <- "Gene Peptide"
   name <- "Fold Change"
-  if (log){
+
+    if (log){
     x$fold_change <- log(x$fold_change, base = base)
     name <- paste("Log", base, "Fold Change")
   }
-
-  max_val <- max(x$fold_change[is.finite(x$fold_change)])
-  #return(max_val)
 
   p <- x %>%
        dplyr::mutate(gene_peptide = paste(.data$gene_id, .data$peptide, sep = " " )) %>%
@@ -374,7 +303,7 @@ plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_
                          name = name,
                        palette_value =  circlize::colorRamp2(
                            seq(scale_min, scale_max, length.out = 11),
-                           RColorBrewer::brewer.pal(11, "RdBu")
+                           RColorBrewer::brewer.pal(11, pal)
                          )
                          )
 
