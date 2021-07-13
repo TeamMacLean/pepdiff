@@ -351,7 +351,7 @@ plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_
 
   x <- dplyr::bind_rows(filtered, .id = "comparison")
   max_val <- max(x$fold_change[is.finite(x$fold_change)])
-  return(max_val)
+  #return(max_val)
 
   p <- x %>%
        dplyr::mutate(gene_peptide = paste(.data$gene_id, .data$peptide, sep = " " )) %>%
