@@ -359,7 +359,7 @@ plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_
     tidyHeatmap::heatmap(gene_peptide, comparison, fold_change,
                          column_order = col_order,
                        palette_value =  circlize::colorRamp2(
-                           seq(max_val * -1, max_val, length.out = 11),
+                           seq(-3, 3, length.out = 11),
                            RColorBrewer::brewer.pal(11, "RdBu")
                          )
                          )
