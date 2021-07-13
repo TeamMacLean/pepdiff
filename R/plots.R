@@ -263,7 +263,7 @@ drop_columns <- function(df, sig, metric, log, base, rows_to_keep = NULL){
 #' @return ggplot2 plot
 #' @export
 #' @importFrom rlang .data
-plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_order = NULL, rotate_x_labels = TRUE, all_points = FALSE, pal="RdBu", row_kms = NULL, col_kms = NULL, scale_min = -2, scale_max = 2) {
+plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_order = NULL, rotate_x_labels = TRUE, all_points = FALSE, only_sig_points = TRUE, pal="RdBu", row_kms = NULL, col_kms = NULL, scale_min = -2, scale_max = 2) {
 
   if (is.null(col_order)) {
     col_order <- names(l)
@@ -278,6 +278,14 @@ plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_
   }
   else {
     filtered <- lapply(l, drop_columns, sig, metric, log, base)
+  }
+
+  if (! only_sig_points){
+    rows_to_keep <- dplyr::bind_rows(filtered) %>%
+      dplyr::mutate(gene_peptide = paste(.data$gene_id, .data$peptide, sep = " " ))
+    rows_to_keep <- unique(rows_to_keep$gene_peptide)
+    filtered <- lapply(l, drop_columns, sig, metric, log, base, rows_to_keep)
+
   }
 
   x <- dplyr::bind_rows(filtered, .id = "comparison")
