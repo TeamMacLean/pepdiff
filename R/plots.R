@@ -349,7 +349,7 @@ plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_
   #   p <- cowplot::plot_grid(p, ddro, nrow=1, align = "h", rel_widths = c(4,1))
   # }
 
-  max_val <- max(filtered$fold_change)
+  max_val <- max(filtered$fold_change) + 0.00001
 
 
   p <- dplyr::bind_rows(filtered, .id = "comparison") %>%
