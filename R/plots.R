@@ -351,13 +351,13 @@ plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_
 
   p <- dplyr::bind_rows(filtered, .id = "comparison") %>%
        dplyr::mutate(gene_peptide = paste(.data$gene_id, .data$peptide, sep = " " )) %>%
-    tidybulk::impute_missing_abundance(~1, gene_peptide, comparison, fold_change) %>%
-    tidyHeatmap::heatmap(gene_peptide, comparison, fold_change)
-      #                   palette_value =  circlize::colorRamp2(
-    #                       seq(-2, 2, length.out = 11),
-    #                       RColorBrewer::brewer.pal(11, "RdBu")
-    #                     )
-    #                     )
+    tidybulk::impute_missing_abundance(~1, .sample=comparison, .transcript=gene_peptide, .abundance=fold_change) %>%
+    tidyHeatmap::heatmap(gene_peptide, comparison, fold_change,
+                       palette_value =  circlize::colorRamp2(
+                           seq(-2, 2, length.out = 11),
+                           RColorBrewer::brewer.pal(11, "RdBu")
+                         )
+                         )
 
   return(p)
 }
