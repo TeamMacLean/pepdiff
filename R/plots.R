@@ -258,10 +258,12 @@ drop_columns <- function(df, sig, metric, log, base, rows_to_keep = NULL){
 #' @param base base to use for logs
 #' @param col_order specify a column order for the plot, default is names(l)
 #' @param rotate_x_labels make the X-axis labels stand on end
+#' @param pal use "viridis" or "cbrewere" pallete
+#' @param option name of viridis or cbrewer palette to use
 #' @return ggplot2 plot
 #' @export
 #' @importFrom rlang .data
-plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_order = NULL, rotate_x_labels = TRUE, only_sig_points = TRUE, option="E", direction=1, use_y_labels=TRUE, dendro = FALSE, all_points = FALSE) {
+plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_order = NULL, rotate_x_labels = TRUE, only_sig_points = TRUE, option="E", direction=1, use_y_labels=TRUE, dendro = FALSE, all_points = FALSE, pal="cbrewer") {
 
   if (is.null(col_order)) {
     col_order <- names(l)
@@ -317,8 +319,15 @@ plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_
   }
   p <- p +
     #ggplot2::geom_tile(ggplot2::aes(fill = fold_change)) +
-    ggplot2::theme_minimal() +
-    ggplot2::scale_fill_viridis_c(option=option, direction=direction) +
+    ggplot2::theme_minimal()
+
+  if (pal == "viridis"){
+      p <- p + ggplot2::scale_fill_viridis_c(option=option, direction=direction)
+  }
+  else if (pal == "cbrewer"){
+    p <-  p + ggplot2::scale_fill_distiller(palette = "RdBu")
+  }
+   p <- p +
     ggplot2::scale_y_discrete(limits = row_order) +
     ggplot2::scale_x_discrete(limits = col_order)
 
