@@ -303,12 +303,12 @@ plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_
     tidybulk::impute_missing_abundance(~1, .sample=comparison, .transcript=gene_peptide, .abundance=fold_change) %>%
     dplyr::select(gene_peptide, comparison, fold_change) %>%
     tidyr::pivot_wider(names_from = comparison, values_from = fold_change)
-    #rnames <- m$gene_peptide
-    #cnames <- colnames(m)
+    rnames <- m$gene_peptide
+    cnames <- colnames(m)
     m <- dplyr::select(m, !gene_peptide) %>%
       as.matrix()
-    #rownames(m) <- rnames
-    #colnames(m) <- cnames
+    rownames(m) <- rnames
+    colnames(m) <- cnames
     return(m)
     #tidyHeatmap::heatmap(gene_peptide, comparison, fold_change,
     p <- ComplexHeatmap::Heatmap(m,
