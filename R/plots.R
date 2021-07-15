@@ -311,7 +311,7 @@ plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_
     #colnames(m) <- cnames
     #tidyHeatmap::heatmap(gene_peptide, comparison, fold_change,
     p <- ComplexHeatmap::Heatmap(m,
-                         column_order = col_order,
+                         #column_order = col_order,
                          row_km = row_kms,
                          column_km = col_kms,
                          column_title = col_title,
