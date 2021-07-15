@@ -309,7 +309,6 @@ plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_
     m <-  as.matrix(m)
     rownames(m) <- rnames
     colnames(m) <- cnames
-    return(m)
     #tidyHeatmap::heatmap(gene_peptide, comparison, fold_change,
     p <- ComplexHeatmap::Heatmap(m,
                          #column_order = col_order,
