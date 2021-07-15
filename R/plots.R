@@ -461,7 +461,7 @@ plot_ridges <- function(r, log = TRUE, base=2) {
     x$fold_change <- log(x$fold_change, base = base)
   }
 
-  ggplot2::ggplot(x, ggplot2::aes(comparison, fold_change)) +
+  ggplot2::ggplot(x, ggplot2::aes(comparison, gene_id, height=fold_change)) +
              ggridges::geom_ridgeline()
 
 }
