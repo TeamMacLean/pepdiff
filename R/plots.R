@@ -454,8 +454,14 @@ estimate_result_clusters <- function(r) {
 }
 
 #' @export
-cluster_profile <- function(r, n=3, nstart=25, iter.max=1000) {
-  results_mat <- list2mat(r)
-  km <- stats::kmeans(results_mat, n, nstart=nstart, iter.max = iter.max)
-  return(km$centers)
+plot_ridges <- function(r, log = TRUE, base=2) {
+  x <- dplyr::bind_rows(r, .id = "comparison") %>%
+    dplyr::mutate(gene_peptide = paste(.data$gene_id, .data$peptide, sep = " " ))
+  if (log){
+    x$fold_change <- log(x$fold_change, base = base)
+  }
+
+  ggplot2::ggplot(x, ggplot2::aes(comparison, fold_change)) +
+             ggridges::geom_ridgeline()
+
 }
