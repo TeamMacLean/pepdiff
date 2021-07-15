@@ -299,10 +299,18 @@ plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_
     name <- paste("Log", base, "Fold Change")
   }
 
-  p <- x %>%
+  m <- x %>%
        dplyr::mutate(gene_peptide = paste(.data$gene_id, .data$peptide, sep = " " )) %>%
     tidybulk::impute_missing_abundance(~1, .sample=comparison, .transcript=gene_peptide, .abundance=fold_change) %>%
-    tidyHeatmap::heatmap(gene_peptide, comparison, fold_change,
+    tidyr::pivot_wider(names_from = comparison, values_from = fold_change)
+    rnames <- m$gene_peptide
+    cnames <- colnames(m)
+    m <- dplyr::select(m, !gene_peptide) %>%
+      as.matrix()
+    rownames(m) <- rnames
+    cnames(m) <- cnames
+    #tidyHeatmap::heatmap(gene_peptide, comparison, fold_change,
+    p <- ComplexHeatmap::Heatmap(m,
                          column_order = col_order,
                          row_km = row_kms,
                          column_km = col_kms,
@@ -453,35 +461,4 @@ estimate_result_clusters <- function(r) {
   factoextra::fviz_nbclust(results_mat, kmeans, method="wss")
 }
 
-#' @export
-plot_ridges <- function(r, log = TRUE, base=2, col_order=NULL, all_points = FALSE, sig = 0.05, metric = "bootstrap_t") {
 
-  filtered <- NA
-  if (all_points){
-    rows_to_keep <- dplyr::bind_rows(r) %>%
-      dplyr::mutate(gene_peptide = paste(.data$gene_id, .data$peptide, sep = " " ))
-    rows_to_keep <- unique(rows_to_keep$gene_peptide)
-    filtered <- lapply(r, drop_columns, sig, metric, log, base, rows_to_keep)
-  }
-  else {
-    filtered <- lapply(r, drop_columns, sig, metric, log, base)
-  }
-
-
-  x <- dplyr::bind_rows(filtered, .id = "comparison") %>%
-    dplyr::mutate(gene_peptide = paste(.data$gene_id, .data$peptide, sep = " " ))
-
-  if (log){
-    x$fold_change <- log(x$fold_change, base = base)
-  }
-  if (is.null(col_order)) {
-    col_order <- names(r)
-  }
-
-
-
-
-  ggplot2::ggplot(x, ggplot2::aes(comparison, gene_id, height=fold_change, group=gene_id, min_height=-4)) +
-             ggridges::geom_ridgeline()
-
-}
