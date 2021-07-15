@@ -452,3 +452,10 @@ estimate_result_clusters <- function(r) {
   results_mat <- list2mat(r)
   factoextra::fviz_nbclust(results_mat, kmeans, method="wss")
 }
+
+#' @export
+cluster_profile <- function(r, n=3, nstart=25, iter.max=1000) {
+  results_mat <- list2mat(r)
+  km <- stats::kmeans(results_mat, n, nstart=nstart, iter.max = iter.max)
+  return(km$centers)
+}
