@@ -454,7 +454,7 @@ estimate_result_clusters <- function(r) {
 }
 
 #' @export
-plot_ridges <- function(r, log = TRUE, base=2, col_order=NULL, all_points = FALSE, sig = 0.05) {
+plot_ridges <- function(r, log = TRUE, base=2, col_order=NULL, all_points = FALSE, sig = 0.05, metric = "bootstrap_t") {
 
   filtered <- NA
   if (all_points){
