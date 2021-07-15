@@ -428,10 +428,11 @@ volcano_plot <- function(l, log = FALSE, base = 2, by="peptide", sig = 0.05, met
 
 
 }
+
 #' converts a results object to a matrix as if for direct use in external heatmap functions
 #'
-list2mat <- function() {
-  x <- dplyr::bind_rows(df, .id = "comparison") %>%
+list2mat <- function(r) {
+  x <- dplyr::bind_rows(r, .id = "comparison") %>%
     dplyr::mutate(gene_peptide = paste(.data$gene_id, .data$peptide, sep = " " )) %>%
     dplyr::select(-.data$gene_id, -.data$peptide) %>%
     tidyr::pivot_wider(.data$gene_peptide, names_from = .data$comparison, values_from = .data$fold_change )
@@ -443,7 +444,10 @@ list2mat <- function() {
   rownames(x) <- rownames
 }
 
-results_kmeans <- function(r) {
+#' plots a Figure of Merit curve to help estimate the number of clusters in the results
+#' @param r the results object from compare_many()
+#' @export
+estimate_result_clusters <- function(r) {
   results_mat <- list2mat(r)
   factoextra::fviz_nbclust(results_mat, kmeans, method="wss")
 }

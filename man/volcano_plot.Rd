@@ -4,7 +4,16 @@
 \alias{volcano_plot}
 \title{volcano plot the data}
 \usage{
-volcano_plot(l, log = FALSE, base = 2, by = "peptide", sig = 0.05, metric = NA)
+volcano_plot(
+  l,
+  log = FALSE,
+  base = 2,
+  by = "peptide",
+  sig = 0.05,
+  metric = NA,
+  option = "E",
+  direction = -1
+)
 }
 \arguments{
 \item{l}{list of results data frames, typically from `compare_many()`}

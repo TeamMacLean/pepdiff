@@ -13,7 +13,13 @@ plot_heatmap(
   base = 2,
   col_order = NULL,
   rotate_x_labels = TRUE,
-  only_sig_points = TRUE
+  all_points = FALSE,
+  only_sig_points = TRUE,
+  pal = "RdBu",
+  row_kms = NULL,
+  col_kms = NULL,
+  scale_min = -2,
+  scale_max = 2
 )
 }
 \arguments{
@@ -25,11 +31,15 @@ plot_heatmap(
 
 \item{log}{log the fold change values to show in the heatmap}
 
-\item{base}{base to use for logs}
+\item{base}{base to use for log transformation}
 
 \item{col_order}{specify a column order for the plot, default is names(l)}
 
-\item{rotate_x_labels}{make the X-axis labels stand on end}
+\item{pal}{cbrewer palette to use "RdBu"}
+
+\item{row_kms}{k for kmeans splitting of heatmap along rows}
+
+\item{col_kms}{k for kmeans splitting of heatmap on columns}
 }
 \value{
 ggplot2 plot
