@@ -298,10 +298,11 @@ plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_
     x$fold_change <- log(x$fold_change, base = base)
     name <- paste("Log", base, "Fold Change")
   }
-  m <- x %>%
+  x <- x %>%
        dplyr::mutate(gene_peptide = paste(.data$gene_id, .data$peptide, sep = " " )) %>%
-    tidybulk::impute_missing_abundance(~1, .sample=comparison, .transcript=gene_peptide, .abundance=fold_change) %>%
-    dplyr::select(gene_peptide, comparison, fold_change) %>%
+    tidybulk::impute_missing_abundance(~1, .sample=comparison, .transcript=gene_peptide, .abundance=fold_change)
+
+    m <- dplyr::select(x, gene_peptide, comparison, fold_change) %>%
     tidyr::pivot_wider(names_from = comparison, values_from = fold_change)
     rnames <- m$gene_peptide
     m <- dplyr::select(m, !gene_peptide)
@@ -309,15 +310,15 @@ plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_
     m <-  as.matrix(m)
     rownames(m) <- rnames
     colnames(m) <- cnames
-    #tidyHeatmap::heatmap(gene_peptide, comparison, fold_change,
-    p <- ComplexHeatmap::Heatmap(m,
+    p <- tidyHeatmap::heatmap(x, gene_peptide, comparison, fold_change,
+    #p <- ComplexHeatmap::Heatmap(m,
                          column_order = col_order,
                          row_km = row_kms,
                          column_km = col_kms,
                          #column_title = col_title,
                          #row_title = row_title,
                          name = name,
-                       col =  circlize::colorRamp2(
+                       pallete_value =  circlize::colorRamp2(
                            seq(scale_min, scale_max, length.out = 11),
                            rev(RColorBrewer::brewer.pal(11, pal))
                          )
