@@ -428,3 +428,22 @@ volcano_plot <- function(l, log = FALSE, base = 2, by="peptide", sig = 0.05, met
 
 
 }
+#' converts a results object to a matrix as if for direct use in external heatmap functions
+#'
+list2mat <- function() {
+  x <- dplyr::bind_rows(df, .id = "comparison") %>%
+    dplyr::mutate(gene_peptide = paste(.data$gene_id, .data$peptide, sep = " " )) %>%
+    dplyr::select(-.data$gene_id, -.data$peptide) %>%
+    tidyr::pivot_wider(.data$gene_peptide, names_from = .data$comparison, values_from = .data$fold_change )
+
+  rownames <- x$gene_peptide
+  x$gene_peptide <- NULL
+  x <- as.matrix(x)
+  x[is.na(x)] <- 1
+  rownames(x) <- rownames
+}
+
+results_kmeans <- function(r) {
+  results_mat <- list2mat(r)
+  factoextra::fviz_nbclust(results_mat, kmeans, method="wss")
+}
