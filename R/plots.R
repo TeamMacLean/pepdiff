@@ -298,10 +298,10 @@ plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_
     x$fold_change <- log(x$fold_change, base = base)
     name <- paste("Log", base, "Fold Change")
   }
-  return(x)
   m <- x %>%
        dplyr::mutate(gene_peptide = paste(.data$gene_id, .data$peptide, sep = " " )) %>%
     tidybulk::impute_missing_abundance(~1, .sample=comparison, .transcript=gene_peptide, .abundance=fold_change) %>%
+    dplyr::select(gene_peptide, comparison, fold_change) %>%
     tidyr::pivot_wider(names_from = comparison, values_from = fold_change)
     #rnames <- m$gene_peptide
     #cnames <- colnames(m)
