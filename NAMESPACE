@@ -2,6 +2,7 @@
 
 export("%>%")
 export(assess_missing)
+export(cluster_profile)
 export(compare)
 export(compare_calls)
 export(compare_many)
