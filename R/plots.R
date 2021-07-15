@@ -442,6 +442,7 @@ list2mat <- function(r) {
   x <- as.matrix(x)
   x[is.na(x)] <- 1
   rownames(x) <- rownames
+  return(x)
 }
 
 #' plots a Figure of Merit curve to help estimate the number of clusters in the results
