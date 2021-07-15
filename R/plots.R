@@ -461,10 +461,10 @@ plot_ridges <- function(r, log = TRUE, base=2, col_order=NULL, all_points = FALS
     rows_to_keep <- dplyr::bind_rows(r) %>%
       dplyr::mutate(gene_peptide = paste(.data$gene_id, .data$peptide, sep = " " ))
     rows_to_keep <- unique(rows_to_keep$gene_peptide)
-    filtered <- lapply(l, drop_columns, sig, metric, log, base, rows_to_keep)
+    filtered <- lapply(r, drop_columns, sig, metric, log, base, rows_to_keep)
   }
   else {
-    filtered <- lapply(l, drop_columns, sig, metric, log, base)
+    filtered <- lapply(r, drop_columns, sig, metric, log, base)
   }
 
 
