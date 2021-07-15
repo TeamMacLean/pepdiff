@@ -311,7 +311,7 @@ plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_
                          name = name,
                        palette_value =  circlize::colorRamp2(
                            seq(scale_min, scale_max, length.out = 11),
-                           RColorBrewer::brewer.pal(11, pal)
+                           rev(RColorBrewer::brewer.pal(11, pal))
                          )
                          )
 
