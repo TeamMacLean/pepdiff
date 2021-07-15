@@ -304,9 +304,9 @@ plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_
     dplyr::select(gene_peptide, comparison, fold_change) %>%
     tidyr::pivot_wider(names_from = comparison, values_from = fold_change)
     rnames <- m$gene_peptide
+    m <- dplyr::select(m, !gene_peptide)
     cnames <- colnames(m)
-    m <- dplyr::select(m, !gene_peptide) %>%
-      as.matrix()
+    m <-  as.matrix(m)
     rownames(m) <- rnames
     colnames(m) <- cnames
     return(m)
