@@ -55,6 +55,8 @@ select_columns_for_contrast <- function(l, treatment = NA,
                                         c_seconds = NA){
   td <- paste(treatment, t_seconds, sep = "_")
   td <- paste0("^", td, "$")
+  print(td)
+  
   cd <- paste(control, c_seconds, sep = "_")
   cd <- paste0("^", cd, "$")
   t_ind <- which(stringr::str_detect(colnames(l$data), td))
