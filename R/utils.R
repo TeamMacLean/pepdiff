@@ -59,8 +59,13 @@ select_columns_for_contrast <- function(l, treatment = NA,
   
   cd <- paste(control, c_seconds, sep = "_")
   cd <- paste0("^", cd, "$")
-  t_ind <- which(stringr::str_detect(colnames(l$data), td))
-  c_ind <- which(stringr::str_detect(colnames(l$data), cd))
+  
+  cnames_no_biorep <- stringr::str_split(colnames(l$data), "_", simplify=TRUE)[1:2]
+  cnames_no_biorep <- paste(cnames_no_biorep, sep="_", collapse="_")
+  
+  
+  t_ind <- which(stringr::str_detect(cnames_no_biorep, td))
+  c_ind <- which(stringr::str_detect(cnames_no_biorep, cd))
 
   return(list(
     treatment = l$data[,t_ind],
