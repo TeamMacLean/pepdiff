@@ -67,6 +67,9 @@ select_columns_for_contrast <- function(l, treatment = NA,
   t_ind <- which(stringr::str_detect(cnames_no_biorep, td))
   c_ind <- which(stringr::str_detect(cnames_no_biorep, cd))
 
+  t_ind <- 1:3
+  c_ind <- 4:6
+  
   return(list(
     treatment = l$data[,t_ind],
     control = l$data[,c_ind]
