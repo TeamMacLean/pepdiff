@@ -12,19 +12,25 @@ LazyData: true
 RoxygenNote: 7.1.1
 biocViews:
 Imports: 
+    circlize,
+    ComplexHeatmap,
     cowplot,
     dplyr,
     factoextra,
+    forcats,
     ggplot2,
     here,
     magrittr,
     MKinfer,
     RankProd,
+    RColorBrewer,
     readr,
     rlang,
+    rmarkdown,
     stats,
     stringr,
     tibble,
+    tidybulk,
     tidyr,
     UpSetR,
     viridis

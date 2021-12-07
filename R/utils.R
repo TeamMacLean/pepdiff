@@ -55,27 +55,20 @@ select_columns_for_contrast <- function(l, treatment = NA,
                                         c_seconds = NA){
   td <- paste(treatment, t_seconds, sep = "_")
   td <- paste0("^", td, "$")
-  print(td)
-  
+
   cd <- paste(control, c_seconds, sep = "_")
   cd <- paste0("^", cd, "$")
-  
-  cnames_no_biorep <- stringr::str_split(colnames(l$data), "_", simplify=TRUE)[1:2]
-  cnames_no_biorep <- paste(cnames_no_biorep, sep="_", collapse="_")
-  
-  
+  cnames_no_biorep <- unlist(lapply(strsplit(colnames(l$data), "_"), function(x) paste0(x[1], "_", x[2])))
+
   t_ind <- which(stringr::str_detect(cnames_no_biorep, td))
   c_ind <- which(stringr::str_detect(cnames_no_biorep, cd))
 
-  t_ind <- 1:3
-  c_ind <- 4:6
-  
   return(list(
     treatment = l$data[,t_ind],
     control = l$data[,c_ind]
   ))
-
 }
+
 
 #' calculate mean fold change for peptide
 #'
