@@ -8,4 +8,4 @@
 .Rprofile
 inst/doc
 
-renv
+renv/
