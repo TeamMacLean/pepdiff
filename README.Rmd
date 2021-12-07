@@ -19,37 +19,34 @@ knitr::opts_chunk$set(
 [![Travis build status](https://travis-ci.org/TeamMacLean/pepdiff.svg?branch=master)](https://travis-ci.org/TeamMacLean/pepdiff)
 <!-- badges: end -->
 
-The goal of pepdiff is to ...
+The goal of pepdiff is to provide functions and plots for normalising peptide data from 'PRM' experiments.
 
 ## Installation
 
-And the development version from [GitHub](https://github.com/) with:
+Install direct from [GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("devtools")
 devtools::install_github("TeamMacLean/pepdiff")
 ```
-## Example
 
-This is a basic example which shows you how to solve a common problem:
+Or via `renv` . Some bioconductor packages won't automatically install this way, so do them first.
 
-```{r example}
+``` r
+renv::install("bioc::ComplexHeatmap)
+renv::install("bioc::tidybulk)
+
+renv::install("TeamMacLean/pepdiff)
+```
+
+## Use
+
+Basic functions and a typical workflow are outlined in the `basic_use` vignette.
+
+
+```{r example, eval=FALSE}
 library(pepdiff)
-## basic example code
+vignette('basic_use', package="pepdiff")
 ```
 
-What is special about using `README.Rmd` instead of just `README.md`? You can include R chunks like so:
 
-```{r cars}
-summary(cars)
-```
-
-You'll still need to render `README.Rmd` regularly, to keep `README.md` up-to-date.
-
-You can also embed plots, for example:
-
-```{r pressure, echo = FALSE}
-plot(pressure)
-```
-
-In that case, don't forget to commit and push the resulting figure files, so they display on GitHub!

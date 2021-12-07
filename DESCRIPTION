@@ -1,11 +1,12 @@
 Package: pepdiff
 Type: Package
-Title: What the Package Does (Title Case)
-Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
+Title: Analysing TSL PRM Peptide Data
+Version: 0.1.1
+Author: Dan MacLean
+Maintainer: Dan MacLean <dan.maclean@tsl.ac.uk>
+Description: Provides plots and stats functions for evaluating and pefroming
+    differential abundance analysis on experiments with Time, Genotype, Biorep and Techrep
+    variables in PRM data.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
