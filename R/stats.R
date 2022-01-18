@@ -40,15 +40,14 @@ get_bootstrap_percentile <- function(treatment, control, iters){
   peptide_count <- dim(control)[1]
   result <- rep(NA, peptide_count)
   for (i in 1:peptide_count){
-    tryCatch(
-      {bstrap <- MKinfer::boot.t.test(treatment[i,], control[i,], R = iters)},
-      warning = function(w){ NA },
+    result[i] <- tryCatch(
+      {MKinfer::boot.t.test(treatment[i,], control[i,], R = iters)$p.value},
+      warning = function(w){ return(NA) },
       error = function(e){
         return( NA )
       },
       finally = {})
 
-    result[i] <- bstrap$p.value
   }
   return(data.frame(bootstrap_t_p_val = result, bootstrap_t_fdr = stats::p.adjust(result, method = 'bonferroni')))
 }
