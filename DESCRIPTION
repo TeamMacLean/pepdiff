@@ -1,7 +1,7 @@
 Package: pepdiff
 Type: Package
 Title: Analysing TSL PRM Peptide Data
-Version: 0.1.1
+Version: 0.1.2
 Author: Dan MacLean
 Maintainer: Dan MacLean <dan.maclean@tsl.ac.uk>
 Description: Provides plots and stats functions for evaluating and pefroming
