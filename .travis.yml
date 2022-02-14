@@ -1,7 +1,6 @@
 # R for travis: see documentation at https://docs.travis-ci.com/user/languages/r
 
 language: R
-r: bioc-release
 cache: packages
-before_install:
-  - sudo apt-get install libmpfr-dev
+pandoc_version: 1.19.2.1
+r: bioc-release
