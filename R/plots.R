@@ -250,83 +250,142 @@ drop_columns <- function(df, sig, metric, log, base, rows_to_keep = NULL){
 }
 
 #' makes heatmap from all experiments, pass a single metric and sig value
-#' reduces dataframes and makeslong list, makes a heatmap
-#' @param l list of results data frames, typically from `compare_many()`
-#' @param sig significance level at which to call peptides
-#' @param metric one metric to use for the source of p-values
-#' @param log log the fold change values to show in the heatmap
-#' @param base base to use for log transformation
+#'
+#' reduces dataframes and makes long list, makes a basic heatmap, not very customisable.
+#' Use `fold_change_matrix()` to extract data in a heatmappable format
+#'
+#' @param l list of results, usually from `compare_many()`
+#' @param log whether to log the data
+#' @param base base used in logging (default = 2)
+#' @param sig_only return only rows with 1 or more values significant at `sig_level` of `metric`
+#' @param sig_level significance level cutoff
+#' @param metric the test metric used to determine significance one of:
+#' `bootstrap_t_p_val`, `bootstrap_t_fdr`
+#' `wilcoxon_p_val`, `wilcoxon_fdr`
+#' `kruskal_p_val`,  `kruskal_fdr`
+#' `rank_prod_p1_p_val`, `rank_prod_p2_p_val`, `rank_prod_p1_fdr`, `rank_prod_p2_fdr`.
 #' @param col_order specify a column order for the plot, default is names(l)
 #' @param row_kms k for kmeans splitting of heatmap along rows
 #' @param col_kms k for kmeans splitting of heatmap on columns
 #' @param pal cbrewer palette to use "RdBu"
-#' @return ggplot2 plot
+#' @return ComplexHeatmap
 #' @export
 #' @importFrom rlang .data
-plot_heatmap <- function(l, sig = 0.05, metric = NA, log = FALSE, base = 2, col_order = NULL, rotate_x_labels = TRUE, all_points = FALSE, only_sig_points = TRUE, pal="RdBu", row_kms = NULL, col_kms = NULL, scale_min = -2, scale_max = 2) {
+plot_heatmap <- function(l, sig_level = 0.05, metric = "bootstrap_t_fdr", log = TRUE, base = 2, col_order = NULL, sig_only = TRUE, pal="RdBu" ) {
 
   if (is.null(col_order)) {
     col_order <- names(l)
   }
 
-  filtered <- NA
-  if (all_points){
-    rows_to_keep <- dplyr::bind_rows(l) %>%
-      dplyr::mutate(gene_peptide = paste(.data$gene_id, .data$peptide, sep = " " ))
-    rows_to_keep <- unique(rows_to_keep$gene_peptide)
-    filtered <- lapply(l, drop_columns, sig, metric, log, base, rows_to_keep)
-  }
-  else {
-    filtered <- lapply(l, drop_columns, sig, metric, log, base)
-  }
+  leg_title <- "Fold Change"
+  if (log) leg_title <- paste("Log", base, "Fold Change")
 
-  if (! only_sig_points){
-    rows_to_keep <- dplyr::bind_rows(filtered) %>%
-      dplyr::mutate(gene_peptide = paste(.data$gene_id, .data$peptide, sep = " " ))
-    rows_to_keep <- unique(rows_to_keep$gene_peptide)
-    filtered <- lapply(l, drop_columns, sig, metric, log, base, rows_to_keep)
+  fcm <- fold_change_matrix(l, log=log, base=2, sig_only = sig_only, sig_level=sig_level, metric=metric)
+  ul <- max(abs(fcm))
+  ll <- ul * -1
 
-  }
+  ht <- ComplexHeatmap::Heatmap(fcm, column_order = col_order,
+                          col = circlize::colorRamp2(
+                            seq(ll,ul, length.out = 11),
+                            rev(RColorBrewer::brewer.pal(11, pal)),
+                          ),
+                          show_heatmap_legend = FALSE,
+                          column_names_gp = grid::gpar(fontsize=24, fontface="bold"),
+                          row_names_gp = grid::gpar(fontsize=15, fontface="bold")
+  )
+  lgd <- ComplexHeatmap::Legend(direction = "horizontal",
+                                col_fun = circlize::colorRamp2(
+                                  seq(ll, ul, length.out = 11),
+                                  rev(RColorBrewer::brewer.pal(11, "RdBu"))
+                                ),
+                                legend_width = grid::unit(3, "in"),
+                                title = leg_title)
 
-  x <- dplyr::bind_rows(filtered, .id = "comparison")
+  ComplexHeatmap::draw(ht, padding= grid::unit(c(0,0,0,3), "in"))
+  ComplexHeatmap::draw(lgd, x = grid::unit(1.7, "in"), y = grid::unit(1, "in"))
 
-  row_title <- "Comparison"
-  col_title <- "Gene Peptide"
-  name <- "Fold Change"
-
-    if (log){
-    x$fold_change <- log(x$fold_change, base = base)
-    name <- paste("Log", base, "Fold Change")
-  }
-  m <- x %>%
-       dplyr::mutate(gene_peptide = paste(.data$gene_id, .data$peptide, sep = " " )) %>%
-    tidybulk::impute_missing_abundance(~1, .sample=comparison, .transcript=gene_peptide, .abundance=fold_change) %>%
-    dplyr::select(gene_peptide, comparison, fold_change) %>%
-    tidyr::pivot_wider(names_from = comparison, values_from = fold_change)
-    rnames <- m$gene_peptide
-    m <- dplyr::select(m, !gene_peptide)
-    cnames <- colnames(m)
-    m <-  as.matrix(m)
-    rownames(m) <- rnames
-    colnames(m) <- cnames
-    #tidyHeatmap::heatmap(gene_peptide, comparison, fold_change,
-    p <- ComplexHeatmap::Heatmap(m,
-                         column_order = col_order,
-                         row_km = row_kms,
-                         column_km = col_kms,
-                         #column_title = col_title,
-                         #row_title = row_title,
-                         name = name,
-                         show_heatmap_legend = FALSE,
-                       col =  circlize::colorRamp2(
-                           seq(scale_min, scale_max, length.out = 11),
-                           rev(RColorBrewer::brewer.pal(11, pal))
-                         )
-                         )
-
-  return(p)
 }
 
+#' returns a matrix of fold change values
+#'
+#' Computes the fold change relative to the control sample and returns a
+#' matrix with comparisons in columns and peptides in rows. Use this if you want data for a
+#' customised heatmap
+#'
+#' @param l list of results, usually from `compare_many()`
+#' @param log whether to log the data
+#' @param base base used in logging (default = 2)
+#' @param sig_only return only rows with 1 or more values significant at `sig_level` of `metric`
+#' @param sig_level significance level cutoff
+#' @param metric the test metric used to determine significance one of:
+#' `bootstrap_t_p_val`, `bootstrap_t_fdr`
+#' `wilcoxon_p_val`, `wilcoxon_fdr`
+#' `kruskal_p_val`,  `kruskal_fdr`
+#' `rank_prod_p1_p_val`, `rank_prod_p2_p_val`, `rank_prod_p1_fdr`, `rank_prod_p2_fdr`.
+#' @return matrix
+fold_change_matrix <- function(l, log=TRUE, base=2, sig_only=FALSE, sig_level=0.05, metric="bootstrap_t_fdr") {
+
+  if (!metric %in% metrics() ){
+    stop("unknown metric requested.")
+  }
+
+  sm <- lapply(many, function(x){
+    srted <- dplyr::mutate(x,
+                           gene_peptide = gene_id,
+                           log_fc = log(fold_change, base=base)
+    ) %>%
+      dplyr::arrange(gene_peptide) %>%  ##crucial to sort rows to be in same order for later steps
+      dplyr::select(gene_peptide, log_fc)
+    rname <- srted$gene_peptide
+    srted$gene_peptide <- NULL
+    srted_m <- as.matrix(srted)
+    rownames(srted_m) <- rname
+    return(srted_m)
+  })
+  fcm <- do.call(cbind, sm)
+  colnames(fcm) <- names(sm)
+
+  if (!sig_only){
+    return(fcm)
+  }
+
+  sigr <- get_sig_rows(l, metric=metric, sig_level=sig_level)
+  return( fcm[sigr,] )
+
+}
+#' reports metrics available for significance values
+metrics <- function() {
+  return( c("bootstrap_t_p_val", "bootstrap_t_fdr",
+            "wilcoxon_p_val", "wilcoxon_fdr",
+            "kruskal_p_val",  "kruskal_fdr",
+            "rank_prod_p1_p_val", "rank_prod_p2_p_val", "rank_prod_p1_fdr", "rank_prod_p2_fdr")
+          )
+}
+#' works out if a row has at least one significant value in it
+get_sig_rows <- function(l, metric="bootstrap_t_pval", sig_level=0.05){
+  sig_mats <- lapply(l, function(x){
+    srted <- dplyr::mutate(x,
+                           gene_peptide = paste(gene_id, peptide, sep=" "),
+    ) %>%
+      dplyr::arrange(gene_peptide) %>%
+      dplyr::select(gene_peptide, metric)
+    rname <- srted$gene_peptide
+    srted$gene_peptide <- NULL
+    srted_m <- as.matrix(srted)
+    rownames(srted_m) <- rname
+    return(srted_m)
+  })
+  ##join the columns into a matrix
+  sig_m <- do.call(cbind, sig_mats)
+  colnames(sig_m) <- names(sig_mats)
+
+  ## work out if any rows (peptides) have any sig values <= 0.05 )
+  sig_rows <- apply(sig_m, 1, function(x) {any(x <= sig_level )})
+
+  ## deal with NAs from uncomplete bootstraps
+  sig_rows[is.na(sig_rows)] <- FALSE
+  return(sig_rows)
+}
 
 #' plots a pca on the treatment, seconds, bio-rep
 #'

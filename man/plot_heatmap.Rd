@@ -2,38 +2,37 @@
 % Please edit documentation in R/plots.R
 \name{plot_heatmap}
 \alias{plot_heatmap}
-\title{makes heatmap from all experiments, pass a single metric and sig value
-reduces dataframes and makeslong list, makes a heatmap}
+\title{makes heatmap from all experiments, pass a single metric and sig value}
 \usage{
 plot_heatmap(
   l,
-  sig = 0.05,
-  metric = NA,
-  log = FALSE,
+  sig_level = 0.05,
+  metric = "bootstrap_t_fdr",
+  log = TRUE,
   base = 2,
   col_order = NULL,
-  rotate_x_labels = TRUE,
-  all_points = FALSE,
-  only_sig_points = TRUE,
-  pal = "RdBu",
-  row_kms = NULL,
-  col_kms = NULL,
-  scale_min = -2,
-  scale_max = 2
+  sig_only = TRUE,
+  pal = "RdBu"
 )
 }
 \arguments{
-\item{l}{list of results data frames, typically from `compare_many()`}
+\item{l}{list of results, usually from `compare_many()`}
 
-\item{sig}{significance level at which to call peptides}
+\item{sig_level}{significance level cutoff}
 
-\item{metric}{one metric to use for the source of p-values}
+\item{metric}{the test metric used to determine significance one of:
+`bootstrap_t_p_val`, `bootstrap_t_fdr`
+`wilcoxon_p_val`, `wilcoxon_fdr`
+`kruskal_p_val`,  `kruskal_fdr`
+`rank_prod_p1_p_val`, `rank_prod_p2_p_val`, `rank_prod_p1_fdr`, `rank_prod_p2_fdr`.}
 
-\item{log}{log the fold change values to show in the heatmap}
+\item{log}{whether to log the data}
 
-\item{base}{base to use for log transformation}
+\item{base}{base used in logging (default = 2)}
 
 \item{col_order}{specify a column order for the plot, default is names(l)}
+
+\item{sig_only}{return only rows with 1 or more values significant at `sig_level` of `metric`}
 
 \item{pal}{cbrewer palette to use "RdBu"}
 
@@ -42,9 +41,9 @@ plot_heatmap(
 \item{col_kms}{k for kmeans splitting of heatmap on columns}
 }
 \value{
-ggplot2 plot
+ComplexHeatmap
 }
 \description{
-makes heatmap from all experiments, pass a single metric and sig value
-reduces dataframes and makeslong list, makes a heatmap
+reduces dataframes and makes long list, makes a basic heatmap, not very customisable.
+Use `fold_change_matrix()` to extract data in a heatmappable format
 }
