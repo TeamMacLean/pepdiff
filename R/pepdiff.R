@@ -93,7 +93,7 @@ times_measured <- function(df){
 #' @param control name of the experimental treatment to use as the `control` condition
 #' @param t_seconds time point of the `treatment` condition to use
 #' @param c_seconds time point of the `control` condition to use
-#' @param metrics character vector of tests to use, one or more of: `norm_quantile`, `bootstrap_t`, `wilcoxon`, `kruskal-wallis`, `rank_product`
+#' @param tests character vector of tests to use, one or more of: `norm_quantile`, `bootstrap_t`, `wilcoxon`, `kruskal-wallis`, `rank_product`
 #' @return dataframe with original and replaced quantification values, natural fold change, biological replicates and p-value / fdr for each
 #' @export
 compare <- function(df,
@@ -102,7 +102,7 @@ compare <- function(df,
                     t_seconds = NA,
                     control = NA,
                     c_seconds = NA,
-                    metrics = NA){
+                    tests = c("bootstrap_t")){
   d <- matrix_data(df)
   selected_cols <- select_columns_for_contrast(
     d,
@@ -140,19 +140,19 @@ compare <- function(df,
   result$treatment_replicates <- data.frame(treatment_replicates = treatment_reps)
   result$control_replicates <- data.frame(control_replicates = control_reps)
 
-  if ("norm_quantile" %in% metrics){
+  if ("norm_quantile" %in% tests){
     result$norm_quantile <- get_percentile_lowest_observed_value_iterative(treatment, control, iters)
   }
-  if ("bootstrap_t" %in% metrics){
+  if ("bootstrap_t" %in% tests){
     result$bootstrap_t <- get_bootstrap_percentile(treatment, control, iters)
   }
-  if ("wilcoxon" %in% metrics){
+  if ("wilcoxon" %in% tests){
     result$wilcoxon <- get_wilcoxon_percentile(treatment, control)
   }
-  if ("kruskal-wallis" %in% metrics){
+  if ("kruskal-wallis" %in% tests){
     result$kw <- get_kruskal_percentile(treatment, control)
   }
-  if ("rank_product" %in% metrics){
+  if ("rank_product" %in% tests){
     result$rp <- get_rp_percentile(treatment, control)
   }
   return(tibble::as_tibble(dplyr::bind_cols(result)))
@@ -169,9 +169,9 @@ compare <- function(df,
 #' @param df dataframe. Typically from `import_data()`
 #' @param comparison path to file or dataframe of comparisons with columns treatment, t_seconds, control, c_seconds
 #' @param iters number of iterations to perform for iterative tests
-#' @param metrics character vector of tests to use, one or more of: `norm_quantile`, `bootstrap_t`, `wilcoxon`, `kruskal-wallis`, `rank_product`
+#' @param tests character vector of tests to use, one or more of: `norm_quantile`, `bootstrap_t`, `wilcoxon`, `kruskal-wallis`, `rank_product`
 #' @export
-compare_many <- function(df, comparison, iters = 1000, metrics = NA) {
+compare_many <- function(df, comparison, iters = 1000, tests = c("bootstrap_t")) {
   if (!is.data.frame(comparison)) {
     comparison <- readr::read_csv(comparison )
   }
@@ -184,12 +184,12 @@ compare_many <- function(df, comparison, iters = 1000, metrics = NA) {
     paste(a,b, sep = "-")
   }
 
-  do_compare <- function(r, df, iters, metrics) {
+  do_compare <- function(r, df, iters, tests) {
     treatment = r['treatment']
     t_seconds = r['t_seconds']
     control = r['control']
     c_seconds = r['c_seconds']
-    compare(df, iters = iters, metrics = metrics,
+    compare(df, iters = iters, tests = tests,
             treatment = treatment,
             t_seconds = t_seconds,
             control = control,
@@ -197,7 +197,7 @@ compare_many <- function(df, comparison, iters = 1000, metrics = NA) {
 
   }
 
-  result <- apply(comparison, MARGIN = 1, do_compare, df, iters, metrics)
+  result <- apply(comparison, MARGIN = 1, do_compare, df, iters, tests)
   names(result) <- apply(comparison, MARGIN = 1, get_names)
   return(result)
 }

@@ -265,9 +265,7 @@ drop_columns <- function(df, sig, metric, log, base, rows_to_keep = NULL){
 #' `kruskal_p_val`,  `kruskal_fdr`
 #' `rank_prod_p1_p_val`, `rank_prod_p2_p_val`, `rank_prod_p1_fdr`, `rank_prod_p2_fdr`.
 #' @param col_order specify a column order for the plot, default is names(l)
-#' @param row_kms k for kmeans splitting of heatmap along rows
-#' @param col_kms k for kmeans splitting of heatmap on columns
-#' @param pal cbrewer palette to use "RdBu"
+#' @param pal cbrewer palette to use "RdBu", needs minimum 11 colours
 #' @return ComplexHeatmap
 #' @export
 #' @importFrom rlang .data
@@ -329,25 +327,10 @@ fold_change_matrix <- function(l, log=TRUE, base=2, sig_only=FALSE, sig_level=0.
     stop("unknown metric requested.")
   }
 
-  sm <- lapply(many, function(x){
-    srted <- dplyr::mutate(x,
-                           gene_peptide = gene_id,
-                           log_fc = log(fold_change, base=base)
-    ) %>%
-      dplyr::arrange(gene_peptide) %>%  ##crucial to sort rows to be in same order for later steps
-      dplyr::select(gene_peptide, log_fc)
-    rname <- srted$gene_peptide
-    srted$gene_peptide <- NULL
-    srted_m <- as.matrix(srted)
-    rownames(srted_m) <- rname
-    return(srted_m)
-  })
-  fcm <- do.call(cbind, sm)
-  colnames(fcm) <- names(sm)
+  fcm <- list2mat(l, column="fold_change")
+  if (log) fcm <- log(fcm, base=base)
+  if (!sig_only) return(fcm)
 
-  if (!sig_only){
-    return(fcm)
-  }
 
   sigr <- get_sig_rows(l, metric=metric, sig_level=sig_level)
   return( fcm[sigr,] )
@@ -361,24 +344,19 @@ metrics <- function() {
             "rank_prod_p1_p_val", "rank_prod_p2_p_val", "rank_prod_p1_fdr", "rank_prod_p2_fdr")
           )
 }
-#' works out if a row has at least one significant value in it
+#' works out if a peptide has at least one significant value across the experiment
+#' Composes a matrix of the `metric` significance values with peptides in rows, experiments
+#' in columns and works out if each peptide row has a value below the stated cut off
+#'
+#' #' returns a logical vector of length equal to row number of matrix
+#'
+#'
+#' @param l list of results, usually from `compare_many()`
+#' @param sig_level significance level cutoff
+#' @param metric the test metric used to determine significance one of:
 get_sig_rows <- function(l, metric="bootstrap_t_pval", sig_level=0.05){
-  sig_mats <- lapply(l, function(x){
-    srted <- dplyr::mutate(x,
-                           gene_peptide = paste(gene_id, peptide, sep=" "),
-    ) %>%
-      dplyr::arrange(gene_peptide) %>%
-      dplyr::select(gene_peptide, metric)
-    rname <- srted$gene_peptide
-    srted$gene_peptide <- NULL
-    srted_m <- as.matrix(srted)
-    rownames(srted_m) <- rname
-    return(srted_m)
-  })
-  ##join the columns into a matrix
-  sig_m <- do.call(cbind, sig_mats)
-  colnames(sig_m) <- names(sig_mats)
 
+  sig_m <- list2mat(l, column=metric)
   ## work out if any rows (peptides) have any sig values <= 0.05 )
   sig_rows <- apply(sig_m, 1, function(x) {any(x <= sig_level )})
 
@@ -397,7 +375,7 @@ get_sig_rows <- function(l, metric="bootstrap_t_pval", sig_level=0.05){
 #' @export
 #' @importFrom rlang .data
 plot_pca <- function(df) {
-  #lowest_vals <- min_peptide_values(d)
+
    d <- matrix_data(df)
   lowest_vals <- min_peptide_values(d)
   d$data <- apply(d$data, MARGIN = 2, replace_vals, lowest_vals)
@@ -463,29 +441,36 @@ plot_kmeans <- function(df, nstart = 25, iter.max = 1000){
 #' draws a plot of peptide count against log fc at either protein or peptide level for samples
 #' @param l list of results data frames, typically from `compare_many()`
 #' @param metric single metric to use for volcano plot
+#' @param log log the data
+#' @param base base for logging
+#' @param sig_level significance cutoff for colour
+#' @param metric metric to use for significance
+#' @param option viridis colour scheme key to use
+#' @param direction viridis colour scheme direction (1/-1)
 #' @return ggplot2 plot
 #' @export
 #'
-volcano_plot <- function(l, log = FALSE, base = 2, by="peptide", sig = 0.05, metric = NA, option="E", direction=-1  ) {
+#' @importFrom rlang .data
+volcano_plot <- function(l, log = FALSE, base = 2, sig_level = 0.05, metric = "bootstrap_t_p_val", option="E", direction=-1  ) {
   xlabtxt <- paste0("Log ",base," Fold Change")
   ylabtxt <- paste0("-Log ",base, " P")
   dplyr::bind_rows(l, .id = "comparison")  %>%
-    dplyr::select(comparison, gene_id, peptide, treatment_mean_count, control_mean_count, fold_change, dplyr::starts_with(metric)) %>%
+    dplyr::select(.data$comparison, .data$gene_id, .data$peptide, .data$treatment_mean_count, .data$control_mean_count, .data$fold_change, dplyr::starts_with(metric)) %>%
     dplyr::rename(p_val = dplyr::ends_with('p_val') ) %>%
     dplyr::mutate(
-                  gene_peptide = paste(gene_id, peptide, sep = " "),
-                  log_fc = log(fold_change, base = base),
-                  log_p = log(p_val, base=base) * -1,
-                  signal = log((treatment_mean_count + control_mean_count), base) * -1,
-                  change = dplyr::if_else(log_fc > 0 & p_val <= sig, "Up",
-                            dplyr::if_else(log_fc < 0 & p_val <= sig, "Down", "None")),
-                  change = forcats::fct_relevel(change, rev)
+                  gene_peptide = paste(.data$gene_id, .data$peptide, sep = " "),
+                  log_fc = log(.data$fold_change, base = base),
+                  log_p = log(.data$p_val, base=base) * -1,
+                  signal = log((.data$treatment_mean_count + .data$control_mean_count), base) * -1,
+                  change = dplyr::if_else(.data$log_fc > 0 & .data$p_val <= sig_level, "Up",
+                            dplyr::if_else(.data$log_fc < 0 & .data$p_val <= sig_level, "Down", "None")),
+                  change = forcats::fct_relevel(.data$change, rev)
                   ) %>%
-    dplyr::select(comparison, gene_peptide, log_fc, log_p, change) %>%
+    dplyr::select(.data$comparison, .data$gene_peptide, .data$log_fc, .data$log_p, .data$change) %>%
     ggplot2::ggplot() +
-    ggplot2::aes(log_fc, log_p) +
-    ggplot2::geom_point(ggplot2::aes(colour = change)) +
-    ggplot2::facet_wrap( ~ comparison) +
+    ggplot2::aes(.data$log_fc, .data$log_p) +
+    ggplot2::geom_point(ggplot2::aes(colour = .data$change)) +
+    ggplot2::facet_wrap( ~ .data$comparison) +
     ggplot2::theme_minimal() +
     ggplot2::scale_colour_viridis_d(option=option, direction=direction) +
     ggplot2::xlab(xlabtxt) +
@@ -498,12 +483,14 @@ volcano_plot <- function(l, log = FALSE, base = 2, by="peptide", sig = 0.05, met
 }
 
 #' converts a results object to a matrix as if for direct use in external heatmap functions
-#'
-list2mat <- function(r) {
+#' @param r results object, usually from `compare_many()`
+#' @param column column from results data to put into matrix, default = "fold_change"
+list2mat <- function(r,column="fold_change") {
   x <- dplyr::bind_rows(r, .id = "comparison") %>%
     dplyr::mutate(gene_peptide = paste(.data$gene_id, .data$peptide, sep = " " )) %>%
     dplyr::select(-.data$gene_id, -.data$peptide) %>%
-    tidyr::pivot_wider(.data$gene_peptide, names_from = .data$comparison, values_from = .data$fold_change )
+    tidyr::pivot_wider(.data$gene_peptide, names_from = .data$comparison, values_from = .data[[column]] ) %>%
+    dplyr::arrange()
 
   rownames <- x$gene_peptide
   x$gene_peptide <- NULL
@@ -514,11 +501,11 @@ list2mat <- function(r) {
 }
 
 #' plots a Figure of Merit curve to help estimate the number of clusters in the results
-#' @param r the results object from compare_many()
+#' @param r the results object from `compare_many()`
 #' @export
 estimate_result_clusters <- function(r) {
   results_mat <- list2mat(r)
-  factoextra::fviz_nbclust(results_mat, kmeans, method="wss")
+  factoextra::fviz_nbclust(results_mat, stats::kmeans, method="wss")
 }
 
 

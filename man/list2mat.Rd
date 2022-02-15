@@ -4,7 +4,12 @@
 \alias{list2mat}
 \title{converts a results object to a matrix as if for direct use in external heatmap functions}
 \usage{
-list2mat(r)
+list2mat(r, column = "fold_change")
+}
+\arguments{
+\item{r}{results object, usually from `compare_many()`}
+
+\item{column}{column from results data to put into matrix, default = "fold_change"}
 }
 \description{
 converts a results object to a matrix as if for direct use in external heatmap functions

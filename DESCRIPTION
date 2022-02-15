@@ -27,7 +27,6 @@ Imports:
     RColorBrewer,
     readr,
     rlang,
-    rmarkdown,
     stats,
     stringr,
     tibble,
@@ -38,4 +37,6 @@ Imports:
 Suggests: 
     knitr,
     rmarkdown
+Depends:
+    R (>= 4.1.0)
 VignetteBuilder: knitr

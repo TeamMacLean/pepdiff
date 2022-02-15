@@ -34,11 +34,7 @@ plot_heatmap(
 
 \item{sig_only}{return only rows with 1 or more values significant at `sig_level` of `metric`}
 
-\item{pal}{cbrewer palette to use "RdBu"}
-
-\item{row_kms}{k for kmeans splitting of heatmap along rows}
-
-\item{col_kms}{k for kmeans splitting of heatmap on columns}
+\item{pal}{cbrewer palette to use "RdBu", needs minimum 11 colours}
 }
 \value{
 ComplexHeatmap

@@ -11,7 +11,7 @@ compare(
   t_seconds = NA,
   control = NA,
   c_seconds = NA,
-  metrics = NA
+  tests = c("bootstrap_t")
 )
 }
 \arguments{
@@ -27,7 +27,7 @@ compare(
 
 \item{c_seconds}{time point of the `control` condition to use}
 
-\item{metrics}{character vector of tests to use, one or more of: `norm_quantile`, `bootstrap_t`, `wilcoxon`, `kruskal-wallis`, `rank_product`}
+\item{tests}{character vector of tests to use, one or more of: `norm_quantile`, `bootstrap_t`, `wilcoxon`, `kruskal-wallis`, `rank_product`}
 }
 \value{
 dataframe with original and replaced quantification values, natural fold change, biological replicates and p-value / fdr for each

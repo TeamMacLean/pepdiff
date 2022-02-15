@@ -8,9 +8,8 @@ volcano_plot(
   l,
   log = FALSE,
   base = 2,
-  by = "peptide",
-  sig = 0.05,
-  metric = NA,
+  sig_level = 0.05,
+  metric = "bootstrap_t_p_val",
   option = "E",
   direction = -1
 )
@@ -18,7 +17,17 @@ volcano_plot(
 \arguments{
 \item{l}{list of results data frames, typically from `compare_many()`}
 
-\item{metric}{single metric to use for volcano plot}
+\item{log}{log the data}
+
+\item{base}{base for logging}
+
+\item{sig_level}{significance cutoff for colour}
+
+\item{metric}{metric to use for significance}
+
+\item{option}{viridis colour scheme key to use}
+
+\item{direction}{viridis colour scheme direction (1/-1)}
 }
 \value{
 ggplot2 plot

@@ -4,7 +4,7 @@
 \alias{compare_many}
 \title{compare many combinations of treatment and control}
 \usage{
-compare_many(df, comparison, iters = 1000, metrics = NA)
+compare_many(df, comparison, iters = 1000, tests = c("bootstrap_t"))
 }
 \arguments{
 \item{df}{dataframe. Typically from `import_data()`}
@@ -13,7 +13,7 @@ compare_many(df, comparison, iters = 1000, metrics = NA)
 
 \item{iters}{number of iterations to perform for iterative tests}
 
-\item{metrics}{character vector of tests to use, one or more of: `norm_quantile`, `bootstrap_t`, `wilcoxon`, `kruskal-wallis`, `rank_product`}
+\item{tests}{character vector of tests to use, one or more of: `norm_quantile`, `bootstrap_t`, `wilcoxon`, `kruskal-wallis`, `rank_product`}
 }
 \description{
 for each combination of treatment and control condition, runs the `compare()` function

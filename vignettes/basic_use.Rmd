@@ -71,7 +71,7 @@ norm_qqplot(d, log = TRUE)
 665e6428 0 seconds vs 665e6428 150 seconds
 
 ```{r}
-r <- compare(d, iters = 1000, metrics=c("bootstrap_t", "wilcoxon", "rank_product"), 
+r <- compare(d, iters = 1000, tests=c("bootstrap_t", "wilcoxon", "rank_product"), 
              control = '665e6428', 
              c_seconds = '0', 
              treatment = '665e6428', 
@@ -125,19 +125,21 @@ comparisons <- data.frame(
   t_seconds = c(150, 0)
 )
   
-many <- compare_many(d, comparisons, metrics = c("bootstrap_t", "rank_product"))
+many <- compare_many(d, comparisons, tests = c("bootstrap_t", "rank_product"))
 many
 ```
 
 ```{r,eval=TRUE, fig.height=10, fig.width=10}
-plot_heatmap(many, metric = "bootstrap_t_p_val", log = TRUE,  col_order = c("665e6428_150-665e6428_0", "665e6428_0-665e6428_150"))
+plot_heatmap(many, metric = "bootstrap_t_p_val", log = TRUE,  
+             col_order = c("665e6428_150-665e6428_0", "665e6428_0-665e6428_150"))
 
 plot_heatmap(many, metric = "rank_prod_p1_p_val", log = TRUE)
 ```
 
 ```{r, fig.height=10,fig.width=10}
-#add colour even when the point isn't significant
-plot_heatmap(many, metric = "bootstrap_t_p_val", log = TRUE,  col_order = c("665e6428_150-665e6428_0", "665e6428_0-665e6428_150") )
+#plot all peptides - even those that aren't significant
+plot_heatmap(many, metric = "bootstrap_t_p_val", log = TRUE, sig_only = FALSE, 
+             col_order = c("665e6428_150-665e6428_0", "665e6428_0-665e6428_150") )
 ```
 
 ```{r, fig.width=8}

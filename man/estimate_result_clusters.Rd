@@ -7,7 +7,7 @@
 estimate_result_clusters(r)
 }
 \arguments{
-\item{r}{the results object from compare_many()}
+\item{r}{the results object from `compare_many()`}
 }
 \description{
 plots a Figure of Merit curve to help estimate the number of clusters in the results
