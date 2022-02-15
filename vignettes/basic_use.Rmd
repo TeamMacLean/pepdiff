@@ -71,7 +71,11 @@ norm_qqplot(d, log = TRUE)
 665e6428 0 seconds vs 665e6428 150 seconds
 
 ```{r}
-r <- compare(d, iters = 1000, metrics=c("bootstrap_t", "wilcoxon", "rank_product"), control = '665e6428', c_seconds = '0', treatment = '665e6428', t_seconds = '150')
+r <- compare(d, iters = 1000, metrics=c("bootstrap_t", "wilcoxon", "rank_product"), 
+             control = '665e6428', 
+             c_seconds = '0', 
+             treatment = '665e6428', 
+             t_seconds = '150')
 
 r
 ```
@@ -126,14 +130,14 @@ many
 ```
 
 ```{r,eval=TRUE, fig.height=10, fig.width=10}
-plot_heatmap(many, metric = "bootstrap_t", log = TRUE,  col_order = c("665e6428_150-665e6428_0", "665e6428_0-665e6428_150"))
+plot_heatmap(many, metric = "bootstrap_t_p_val", log = TRUE,  col_order = c("665e6428_150-665e6428_0", "665e6428_0-665e6428_150"))
 
-plot_heatmap(many, metric = "rank_product", log = TRUE)
+plot_heatmap(many, metric = "rank_prod_p1_p_val", log = TRUE)
 ```
 
 ```{r, fig.height=10,fig.width=10}
 #add colour even when the point isn't significant
-plot_heatmap(many, metric = "bootstrap_t", log = TRUE,  col_order = c("665e6428_150-665e6428_0", "665e6428_0-665e6428_150"), only_sig_points = FALSE)
+plot_heatmap(many, metric = "bootstrap_t_p_val", log = TRUE,  col_order = c("665e6428_150-665e6428_0", "665e6428_0-665e6428_150") )
 ```
 
 ```{r, fig.width=8}

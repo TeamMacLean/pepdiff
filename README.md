@@ -5,8 +5,7 @@
 
 <!-- badges: start -->
 
-[![Travis build
-status](https://travis-ci.org/TeamMacLean/pepdiff.svg?branch=master)](https://travis-ci.org/TeamMacLean/pepdiff)
+[![R-CMD-check](https://github.com/TeamMacLean/pepdiff/workflows/R-CMD-check/badge.svg)](https://github.com/TeamMacLean/pepdiff/actions)
 <!-- badges: end -->
 
 The goal of pepdiff is to provide functions and plots for normalising
