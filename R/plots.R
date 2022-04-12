@@ -268,12 +268,13 @@ drop_columns <- function(df, sig, metric, log, base, rows_to_keep = NULL){
 #' @param pal cbrewer palette to use "RdBu", needs minimum 11 colours
 #' @param lgd_x value to pass to ComplexHeatmap::draw for x position of legend in 'in'
 #' @param lgd_y value to pass to ComplexHeatmap::draw for y position of legend in 'in'
+#' @param padding vector of padding values to pass to ComplexHeatmap::draw for padding of heatmap sections
 #' @return ComplexHeatmap
 #' @export
 #' @importFrom rlang .data
 plot_heatmap <- function(l, sig_level = 0.05, metric = "bootstrap_t_fdr", log = TRUE,
                          base = 2, col_order = NULL, sig_only = TRUE, pal="RdBu",
-                         lgd_x = 1.7, lgd_y = 1) {
+                         lgd_x = 1.7, lgd_y = 1, padding=c(0,0,0,3)) {
 
   if (is.null(col_order)) {
     col_order <- names(l)
@@ -303,7 +304,7 @@ plot_heatmap <- function(l, sig_level = 0.05, metric = "bootstrap_t_fdr", log = 
                                 legend_width = grid::unit(3, "in"),
                                 title = leg_title)
 
-  ComplexHeatmap::draw(ht, padding= grid::unit(c(0,0,0,3), "in"))
+  ComplexHeatmap::draw(ht, padding= grid::unit(padding, "in"))
   ComplexHeatmap::draw(lgd, x = grid::unit(as.numeric(lgd_x), "in"), y = grid::unit(as.numeric(lgd_y), "in"))
 
 }
