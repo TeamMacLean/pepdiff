@@ -266,10 +266,14 @@ drop_columns <- function(df, sig, metric, log, base, rows_to_keep = NULL){
 #' `rank_prod_p1_p_val`, `rank_prod_p2_p_val`, `rank_prod_p1_fdr`, `rank_prod_p2_fdr`.
 #' @param col_order specify a column order for the plot, default is names(l)
 #' @param pal cbrewer palette to use "RdBu", needs minimum 11 colours
+#' @param lgd_x value to pass to ComplexHeatmap::draw for x position of legend in 'in'
+#' @param lgd_y value to pass to ComplexHeatmap::draw for y position of legend in 'in'
 #' @return ComplexHeatmap
 #' @export
 #' @importFrom rlang .data
-plot_heatmap <- function(l, sig_level = 0.05, metric = "bootstrap_t_fdr", log = TRUE, base = 2, col_order = NULL, sig_only = TRUE, pal="RdBu" ) {
+plot_heatmap <- function(l, sig_level = 0.05, metric = "bootstrap_t_fdr", log = TRUE,
+                         base = 2, col_order = NULL, sig_only = TRUE, pal="RdBu",
+                         lgd_x = 1.7, lgd_y = 1) {
 
   if (is.null(col_order)) {
     col_order <- names(l)
@@ -300,7 +304,7 @@ plot_heatmap <- function(l, sig_level = 0.05, metric = "bootstrap_t_fdr", log = 
                                 title = leg_title)
 
   ComplexHeatmap::draw(ht, padding= grid::unit(c(0,0,0,3), "in"))
-  ComplexHeatmap::draw(lgd, x = grid::unit(1.7, "in"), y = grid::unit(1, "in"))
+  ComplexHeatmap::draw(lgd, x = grid::unit(as.numeric(lgd_x), "in"), y = grid::unit(as.numeric(lgd_y), "in"))
 
 }
 
