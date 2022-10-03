@@ -10,7 +10,7 @@ Description: Provides plots and stats functions for evaluating and pefroming
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.1.1
+RoxygenNote: 7.2.1
 biocViews:
 Imports: 
     circlize,
@@ -20,7 +20,6 @@ Imports:
     factoextra,
     forcats,
     ggplot2,
-    here,
     magrittr,
     MKinfer,
     RankProd,
@@ -30,7 +29,6 @@ Imports:
     stats,
     stringr,
     tibble,
-    tidybulk,
     tidyr,
     UpSetR,
     viridis

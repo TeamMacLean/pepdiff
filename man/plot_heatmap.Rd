@@ -2,7 +2,7 @@
 % Please edit documentation in R/plots.R
 \name{plot_heatmap}
 \alias{plot_heatmap}
-\title{makes heatmap from all experiments, pass a single metric and sig value}
+\title{makes heatmap from all experiments, filter on a single metric and sig value}
 \usage{
 plot_heatmap(
   l,
@@ -12,7 +12,10 @@ plot_heatmap(
   base = 2,
   col_order = NULL,
   sig_only = TRUE,
-  pal = "RdBu"
+  pal = "RdBu",
+  lgd_x = 1.7,
+  lgd_y = 1,
+  padding = c(0, 0, 0, 3)
 )
 }
 \arguments{
@@ -35,11 +38,14 @@ plot_heatmap(
 \item{sig_only}{return only rows with 1 or more values significant at `sig_level` of `metric`}
 
 \item{pal}{cbrewer palette to use "RdBu", needs minimum 11 colours}
-}
-\value{
-ComplexHeatmap
+
+\item{lgd_x}{x offset of legend placement in `in` units}
+
+\item{lgd_y}{y offset of legend placement in `in` units}
+
+\item{padding}{vector of padding values to pass to ComplexHeatmap::draw for padding of heatmap sections}
 }
 \description{
-reduces dataframes and makes long list, makes a basic heatmap, not very customisable.
+reduces dataframes and makes long list, makes a basic heatmap.
 Use `fold_change_matrix()` to extract data in a heatmappable format
 }

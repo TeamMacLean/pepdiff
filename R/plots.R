@@ -249,9 +249,9 @@ drop_columns <- function(df, sig, metric, log, base, rows_to_keep = NULL){
   }
 }
 
-#' makes heatmap from all experiments, pass a single metric and sig value
+#' makes heatmap from all experiments, filter on a single metric and sig value
 #'
-#' reduces dataframes and makes long list, makes a basic heatmap, not very customisable.
+#' reduces dataframes and makes long list, makes a basic heatmap.
 #' Use `fold_change_matrix()` to extract data in a heatmappable format
 #'
 #' @param l list of results, usually from `compare_many()`
@@ -269,7 +269,9 @@ drop_columns <- function(df, sig, metric, log, base, rows_to_keep = NULL){
 #' @param lgd_x value to pass to ComplexHeatmap::draw for x position of legend in 'in'
 #' @param lgd_y value to pass to ComplexHeatmap::draw for y position of legend in 'in'
 #' @param padding vector of padding values to pass to ComplexHeatmap::draw for padding of heatmap sections
-#' @return ComplexHeatmap
+#' @param lgd_x x offset of legend placement in `in` units
+#' @param lgd_y y offset of legend placement in `in` units
+#' @return NULL
 #' @export
 #' @importFrom rlang .data
 plot_heatmap <- function(l, sig_level = 0.05, metric = "bootstrap_t_fdr", log = TRUE,
@@ -283,7 +285,7 @@ plot_heatmap <- function(l, sig_level = 0.05, metric = "bootstrap_t_fdr", log = 
   leg_title <- "Fold Change"
   if (log) leg_title <- paste("Log", base, "Fold Change")
 
-  fcm <- fold_change_matrix(l, log=log, base=2, sig_only = sig_only, sig_level=sig_level, metric=metric)
+  fcm <- fold_change_matrix(l, log=log, base=base, sig_only = sig_only, sig_level=sig_level, metric=metric)
   ul <- max(abs(fcm))
   ll <- ul * -1
 
