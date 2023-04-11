@@ -137,8 +137,8 @@ get_rp_percentile <- function(treatment, control){
 kmeans_by_selected_cols <- function(l, cols=NULL, log=TRUE, base=2, sig_only=TRUE, sig_level=0.05, metric="bootstrap_t_p_val", k=NA, nstart=25, itermax=1000) {
 
   fcm <- fold_change_matrix(l, log=log, base=base, sig_only = sig_only, sig_level=sig_level, metric=metric)
-  fcm <- fcm[,cols]
-  km <- kmeans(fcm, k, nstart = nstart, iter.max=itermax)
+  keep <- fcm[,cols]
+  km <- kmeans(keep, k, nstart = nstart, iter.max=itermax)
 
   lapply(1:max(km$cluster), function(x){
     idx <- which(km$cluster == x)
