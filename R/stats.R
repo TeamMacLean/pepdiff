@@ -116,3 +116,34 @@ get_rp_percentile <- function(treatment, control){
   return(data.frame(rank_prod_p2_p_val = r$pval[,1], rank_prod_p1_p_val = r$pval[,2], rank_prod_p2_fdr = r$pfp[,1], rank_prod_p1_fdr = r$pfp[,2]))
 
 }
+
+#' Perform kmeans of a dataset using just data in selected columns, then return matrices of all columns
+#' @param l list of results, usually from `compare_many()`
+#' @param cols names of columns to perform the k-means with
+#' @param log whether to log the data
+#' @param base base used in logging (default = 2)
+#' @param sig_only return only rows with 1 or more values significant at `sig_level` of `metric`
+#' @param sig_level significance level cutoff
+#' @param metric the test metric used to determine significance one of:
+#' `bootstrap_t_p_val`, `bootstrap_t_fdr`
+#' `wilcoxon_p_val`, `wilcoxon_fdr`
+#' `kruskal_p_val`,  `kruskal_fdr`
+#' `rank_prod_p1_p_val`, `rank_prod_p2_p_val`, `rank_prod_p1_fdr`, `rank_prod_p2_fdr`.
+#' @param k number of clusters to make
+#' @param nstart nstart value for `kmeans()`
+#' @param itermax  number of `kmeans()` iterations (1000)
+#' @return list of matrices
+#' @export
+kmeans_by_selected_cols <- function(l, cols=NULL, log=TRUE, base=2, sig_only=TRUE, sig_level=0.05, metric="bootstrap_t_p_val", k=NA, nstart=25, itermax=1000) {
+
+  fcm <- fold_change_matrix(l, log=log, base=base, sig_only = sig_only, sig_level=sig_level, metric=metric)
+  fcm <- fcm[,cols]
+  km <- kmeans(fcm, k, nstart = nstart, iter.max=itermax)
+
+  lapply(1:max(km$cluster), function(x){
+    idx <- which(km$cluster == x)
+    rows <- names(km$cluster)[idx]
+    fcm[rows]
+  })
+
+}
