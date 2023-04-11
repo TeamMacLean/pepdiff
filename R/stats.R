@@ -143,7 +143,7 @@ kmeans_by_selected_cols <- function(l, cols=NULL, log=TRUE, base=2, sig_only=TRU
   lapply(1:max(km$cluster), function(x){
     idx <- which(km$cluster == x)
     rows <- names(km$cluster)[idx]
-    fcm[rows]
+    fcm[rows,]
   })
 
 }
