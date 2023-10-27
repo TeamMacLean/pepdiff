@@ -1,3 +1,8 @@
+##TODO complete a full analysis and plots vignette(s) as per the analysis for Paul and Frank
+## Do a dataset health check (nreps good enough?) percent missing?
+## Make replacement strategy optional.
+## write out kmeans
+
 #' read data from a file
 #'
 #' reads data, renames columns appropriately, discards unused columns, factors and
@@ -22,9 +27,17 @@ import_data <- function(file,
                         gene_id = "gene_id",
                         peptide = "peptide_sequence"
                         ) {
+    if (is.data.frame(file)){
+      csv <- file
+    } else {
+      file_info <- file.info(file)
+      if ( !is.na(file_info$size) ){
+        csv <- readr::read_csv(file)
+      }
+    }
 
-  readr::read_csv(file
-                    ) %>%
+
+    csv %>%
     dplyr::rename(treatment = treatment,
                   bio_rep = bio_rep,
                   tech_rep = tech_rep,
@@ -72,11 +85,11 @@ assess_missing <- function(df){
 #' @return dataframe
 #' @export
 #' @importFrom rlang .data
-times_measured <- function(df){
+count_peptides_measured <- function(df){
   combine_tech_reps(df) %>%
     dplyr::group_by(.data$gene_id, .data$peptide, .data$treatment, .data$seconds) %>%
-    dplyr::summarize(times_measured = sum( is_useable(.data$mean_tr_quant))) %>%
-    dplyr::arrange(dplyr::desc(.data$times_measured))
+    dplyr::summarize(peptide_measurements = sum( is_useable(.data$mean_tr_quant))) %>%
+    dplyr::arrange(dplyr::desc(.data$peptide_measurements))
 }
 
 

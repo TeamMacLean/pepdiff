@@ -5,7 +5,7 @@
 \title{makes heatmap from all experiments, filter on a single metric and sig value}
 \usage{
 plot_heatmap(
-  l,
+  r,
   sig_level = 0.05,
   metric = "bootstrap_t_fdr",
   log = TRUE,
@@ -15,11 +15,13 @@ plot_heatmap(
   pal = "RdBu",
   lgd_x = 1.7,
   lgd_y = 1,
-  padding = c(0, 0, 0, 3)
+  padding = c(0, 0, 0, 3),
+  col_fontsize = 24,
+  row_fontsize = 15
 )
 }
 \arguments{
-\item{l}{list of results, usually from `compare_many()`}
+\item{r}{list of results, usually from `compare_many()`}
 
 \item{sig_level}{significance level cutoff}
 
@@ -44,6 +46,10 @@ plot_heatmap(
 \item{lgd_y}{y offset of legend placement in `in` units}
 
 \item{padding}{vector of padding values to pass to ComplexHeatmap::draw for padding of heatmap sections}
+
+\item{col_fontsize}{size of treatment annotation labels}
+
+\item{col_rowsize}{size of peptide annotation labels}
 }
 \description{
 reduces dataframes and makes long list, makes a basic heatmap.

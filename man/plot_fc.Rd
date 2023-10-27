@@ -4,10 +4,10 @@
 \alias{plot_fc}
 \title{plot histogram of fold change distribution for a comparison}
 \usage{
-plot_fc(df, log = FALSE, base = 2)
+plot_fc(r, log = TRUE, base = 2)
 }
 \arguments{
-\item{df}{result dataframe, typically from `compare()`}
+\item{r}{result dataframe or list, typically from `compare()` or `compare_many()`}
 
 \item{log}{log the fold change values}
 

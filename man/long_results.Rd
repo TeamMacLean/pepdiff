@@ -13,5 +13,5 @@ long_results(r)
 dataframe in long format missing some columns from r
 }
 \description{
-tidies up the wide results table from `compare()` to a long format, dropping the fdr columns and quantitie columns
+tidies up the wide results table from `compare()` to a long format, dropping the fdr columns and quantities columns
 }

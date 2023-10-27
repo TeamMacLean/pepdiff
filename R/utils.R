@@ -28,7 +28,7 @@ matrix_data <- function(df){
     dplyr::summarize(col_count = dplyr::n() )
 
   dm <- df %>%
-    tidyr::pivot_wider(names_from = c(.data$treatment, .data$seconds, .data$bio_rep), values_from = .data$mean_tr_quant) %>%
+    tidyr::pivot_wider(names_from = c("treatment", "seconds", "bio_rep"), values_from = "mean_tr_quant") %>%
     as.matrix()
 
   row_info <- dm[,c("gene_id", "peptide")]
@@ -108,7 +108,7 @@ replace_vals <- function(x, lowest_vals){
 
 #' convert wide format results table containing p-value estimates to long format
 #'
-#' tidies up the wide results table from `compare()` to a long format, dropping the fdr columns and quantitie columns
+#' tidies up the wide results table from `compare()` to a long format, dropping the fdr columns and quantities columns
 #'
 #' @param r results dataframe typically from `compare()`
 #' @return dataframe in long format missing some columns from r
@@ -116,7 +116,7 @@ replace_vals <- function(x, lowest_vals){
 #' @importFrom rlang .data
 long_results <- function(r){
   r %>%
-    dplyr::select(.data$gene_id, .data$peptide, .data$treatment_replicates, .data$control_replicates, .data$fold_change, dplyr::ends_with("p_val" ) ) %>%
+    dplyr::select(.data$comparison, .data$gene_id, .data$peptide, .data$treatment_replicates, .data$control_replicates, .data$fold_change, dplyr::ends_with("p_val" ) ) %>%
     tidyr::pivot_longer(dplyr::ends_with("p_val"), names_to = 'test')
 }
 

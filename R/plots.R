@@ -1,75 +1,80 @@
-#' plot the count of the number of times peptides were measured.
-#'
-#' Calculates and plots the number of times each peptide was measured in each
-#' combination of treatment and seconds and presents a summary plot
-#'
-#' @param df dataframe. Typically from `import_data()`
-#' @return ggplot2 plot
-#' @export
-#' @importFrom rlang .data
-times_measured_plot <- function(df){
-  times_measured(df) %>%
-    dplyr::group_by(.data$treatment, .data$seconds, .data$times_measured) %>%
-    dplyr::summarize(count = dplyr::n()) %>%
+plot_peptides_measured <- function(i){
+  dplyr::group_by(i, treatment, seconds, bio_rep) %>%
+    dplyr::summarise(peptide_count = sum(is_useable(.data$quant))) %>%
     ggplot2::ggplot() +
-    ggplot2::aes(.data$times_measured, .data$treatment) +
-    ggplot2::geom_tile(ggplot2::aes( fill = .data$count)) +
-    ggplot2::geom_text(ggplot2::aes(label= .data$count)) +
-    ggplot2::facet_wrap( ~ seconds) +
-    ggplot2::scale_fill_viridis_c() +
-    ggplot2::theme_minimal()
+    ggplot2::aes(bio_rep, peptide_count) +
+    ggplot2::geom_col(fill = "steelblue") +
+    ggplot2::facet_grid(treatment ~ seconds, scales = "free") +
+    ggplot2::theme_minimal() +
+    ggplot2::labs( x= "Biological Replicate", y ="Number of Peptides with Measurements",
+                   title = "Peptides observed at each time point in each treatment for each biological replicate"
+
+    )
 }
+
 
 #' plot the representation of peptides in each group.
 #'
-#' Shows what proportion of the whole set of peptides is missing in each group
+#' Shows what proportion of the whole set of peptides has a NA value in each group
 #' of treatment, seconds, bio rep and tech rep.
 #'
-#' @param df dataframe with unmerged tech reps; typically from `import_data()`
+#' @param i dataframe with unmerged tech reps; typically from `import_data()`
 #' @return ggplot2 plot
 #' @export
 #' @importFrom rlang .data
-missing_peptides_plot <- function(df){
-  assess_missing(df) %>%
+plot_missing_peptides <- function(i){
+  assess_missing(i) %>%
     ggplot2::ggplot() +
     ggplot2::aes(.data$bio_rep, .data$tech_rep) +
     ggplot2::geom_tile(  ggplot2::aes(fill = .data$percent_missing)) +
     ggplot2::facet_grid(treatment ~ seconds) +
-    ggplot2::scale_fill_viridis_c() +
-    ggplot2::theme_minimal()
-
+    ggplot2::scale_fill_viridis_c(guide=ggplot2::guide_legend(title = "% NA")) +
+    ggplot2::theme_minimal() +
+    ggplot2::labs( x="Biolgical Replicate", y="Technical Replicate",
+                   title = "Percent of peptides with a missing quantification value (NA) in each sample"
+                   )
 }
 
 #' draw density plots for data
 #'
-#' Plot density of quantities in data for each treatment, seconds and biological
-#' replicate
+#' Plot distribution of quantity for each treatment, seconds and biological
+#' replicate. For biological replicate mean of technical replicates is taken
 #' @param df dataframe; typically from `import_data()`
 #' @param log perform log transform of data
 #' @param base base to use in log transform
 #' @return ggplot2 plot
 #' @export
 #' @importFrom rlang .data
-plot_quant_distributions <- function(df, log = FALSE, base = 2){
+plot_quant_distributions <- function(i, log = FALSE, base = 2){
 
-  df <- combine_tech_reps(df)
-  bio_rep_count <- length(unique(df$bio_rep))
-  p <- NULL
-  if(log){
-    p <- dplyr::mutate(df, log_mean_tr_quant = log(.data$mean_tr_quant, base = base)) %>%
-      ggplot2::ggplot() +
-      ggplot2::aes(x = .data$log_mean_tr_quant) +
-      ggplot2::geom_density(  ggplot2::aes(fill = .data$bio_rep), alpha = I(1/bio_rep_count))
-  } else {
-    p <- ggplot2::ggplot(df) +
-      ggplot2::aes(x = .data$mean_tr_quant) +
-      ggplot2::geom_density(ggplot2::aes(fill = .data$bio_rep),alpha = I(1/bio_rep_count))
-  }
-  p +
+  i <- combine_tech_reps(i)
+  bio_rep_count <- length(unique(i$bio_rep))
+  # p <- NULL
+  # if(log){
+  #   p <- dplyr::mutate(df, log_mean_tr_quant = log(.data$mean_tr_quant, base = base)) %>%
+  #     ggplot2::ggplot() +
+  #     ggplot2::aes(x = .data$log_mean_tr_quant) +
+  #     ggplot2::geom_density(  ggplot2::aes(fill = .data$bio_rep), alpha = I(1/bio_rep_count))
+  # } else {
+  #   p <- ggplot2::ggplot(df) +
+  #     ggplot2::aes(x = .data$mean_tr_quant) +
+  #     ggplot2::geom_density(ggplot2::aes(fill = .data$bio_rep),alpha = I(1/bio_rep_count))
+  # }
+  # p +
+  #
+  #   ggplot2::facet_grid(treatment ~ seconds) +
+  #   ggplot2::scale_fill_viridis_d() +
+  #   ggplot2::theme_minimal() +
+  #   ggplot2::labs(x=)
 
+  dplyr::mutate(i, mean_tr_quant = dplyr::if_else(log, log(.data$mean_tr_quant, base = base), .data$mean_tr_quant)) %>%
+    ggplot2::ggplot() +
+    ggplot2::aes(x = .data$mean_tr_quant) +
+    ggplot2::geom_density(  ggplot2::aes(fill = .data$bio_rep), alpha = I(1/bio_rep_count)) +
     ggplot2::facet_grid(treatment ~ seconds) +
-    ggplot2::scale_fill_viridis_d() +
-    ggplot2::theme_minimal()
+    ggplot2::scale_fill_viridis_d(guide = ggplot2::guide_legend(title="Biological\nReplicate")) +
+    ggplot2::theme_minimal() +
+    ggplot2::labs(x= "Quantity", y="density", title = "Distribution of quantity for biological replicate, time point and treatment.")
 
 }
 
@@ -77,107 +82,112 @@ plot_quant_distributions <- function(df, log = FALSE, base = 2){
 #'
 #' Plot qqplot of distribution of quantifications in data for each treatment,
 #' seconds and biological replicate
-#' @param df dataframe; typically from `import_data()`
+#' @param i dataframe; typically from `import_data()`
 #' @param log perform log transform of data
 #' @param base base to use in log transform
 #' @return ggplot2 plot
 #' @export
 #' @importFrom rlang .data
-norm_qqplot <- function(df, log = FALSE, base = 2){
+plot_norm_qq <- function(i, log = FALSE, base = 2){
   #return(NULL)
-  df <- combine_tech_reps(df)
-  if(log){
-    p <- dplyr::mutate(df, log_mean_tr_quant = log(.data$mean_tr_quant, base = base)) %>%
-      ggplot2::ggplot() +   ggplot2::aes(sample = .data$log_mean_tr_quant)
-  } else {
-    p <-   ggplot2::ggplot(df) +
-      ggplot2::aes(sample = .data$mean_tr_quant)
-  }
-  p +
+  #df <- combine_tech_reps(df)
+  # if(log){
+  #   p <- dplyr::mutate(df, log_mean_tr_quant = log(.data$mean_tr_quant, base = base)) %>%
+  #     ggplot2::ggplot() +   ggplot2::aes(sample = .data$log_mean_tr_quant)
+  # } else {
+  #   p <-   ggplot2::ggplot(df) +
+  #     ggplot2::aes(sample = .data$mean_tr_quant)
+  # }
+  combine_tech_reps(i) %>%
+  dplyr::mutate(mean_tr_quant = dplyr::if_else(log, log(.data$mean_tr_quant, base = base), .data$mean_tr_quant)) %>%
+    ggplot2::ggplot() +
+    ggplot2::aes(sample = .data$mean_tr_quant) +
     ggplot2::geom_qq(  ggplot2::aes(colour = .data$bio_rep)) +
     ggplot2::geom_qq_line(  ggplot2::aes(colour = .data$bio_rep)) +
     ggplot2::facet_grid(treatment ~ seconds)  +
-    ggplot2::scale_color_viridis_d() +
-    ggplot2::theme_minimal()
-}
-
-#' plot the p-values against fold change for the tests used in `compare()`
-#'
-#' plots fold change against p-value in all tests used, also splits data on the number
-#' of biological replicates were available before value replacement for each peptide
-#'
-#' @param df result dataframe typically from `compare()`
-#' @return ggplot2 plot
-#' @export
-#' @importFrom rlang .data
-plot_result <- function(df){
-
-  long_results(df) %>%
-    dplyr::mutate(replicates = paste(.data$treatment_replicates, "-", .data$control_replicates)) %>%
-    ggplot2::ggplot() +
-    ggplot2::aes(log(.data$fold_change, base = 2), .data$value) +
-    ggplot2::geom_point(shape = 21, ggplot2::aes(colour = .data$replicates)) +
+    ggplot2::scale_color_viridis_d(guide = ggplot2::guide_legend(title = "Biological\nReplicate")) +
     ggplot2::theme_minimal() +
-    #ggplot2::scale_x_continuous(trans = "log2") +
-    #ggplot2::coord_trans(x = "log2") +
-    ggplot2::scale_color_viridis_d() +
-    ggplot2::facet_grid(replicates ~ test)
-
+    ggplot2::labs(y="Sampled Values", x="Theoretical Normal Values", title="Normal QQ plot of quantity in biological replicates")
 }
+
 
 #' plot histograms of p-values for each test used
 #'
-#' @param r list of result dataframes typically from `compare()`
+#' @param r dataframe or list of result dataframes typically from `compare()` or `compare_many()`
 #' @return ggplot2 plot
 #'
 #' @export
 #' @importFrom rlang .data
-p_value_hist <- function(r){
-  r %>% long_results() %>%
-    ggplot2::ggplot() +
-    ggplot2::aes(.data$value) +
-    ggplot2::geom_histogram(bins = 20) +
-    ggplot2::facet_grid( ~ test, scales = 'free') +
-    ggplot2::theme_minimal()
+plot_p_value_dist <- function(r){
+
+  dplyr::bind_rows(r, .id = "comparison") %>%
+
+    dplyr::select(.data$comparison, .data$gene_id, .data$peptide, .data$treatment_replicates, .data$control_replicates, .data$fold_change, dplyr::ends_with("p_val" ) ) %>%
+    tidyr::pivot_longer(dplyr::ends_with("p_val"), names_to = 'test') %>%
+      ggplot2::ggplot() +
+      ggplot2::aes(.data$value) +
+      ggplot2::geom_histogram(bins = 20, fill="steelblue") +
+      ggplot2::facet_grid( comparison ~ test, scales = 'free') +
+      ggplot2::theme_minimal() +
+      ggplot2::labs(x="p-value", y="Frequency")
+
 }
 
 #' plot histogram of fold change distribution for a comparison
 #'
-#' @param df result dataframe, typically from `compare()`
+#' @param r result dataframe or list, typically from `compare()` or `compare_many()`
 #' @param log log the fold change values
 #' @param base base of the log, if used
 #' @return ggplot2 plot
 #' @export
 #' @importFrom rlang .data
-plot_fc <- function(df, log = FALSE, base = 2){
-  p <- ggplot2::ggplot(df)
-  if (log) {
-    p <- p + ggplot2::aes(log(.data$fold_change, base = base))
-  } else {
-    p <- p + ggplot2::aes( .data$fold_change )
-  }
-  p +
-    ggplot2::geom_histogram(bins = 25) +
-    ggplot2::theme_minimal()
+plot_fc <- function(r, log = TRUE, base = 2){
+  #p <- ggplot2::ggplot(l)
+  #if (log) {
+  #  p <- p + ggplot2::aes(log(.data$fold_change, base = base))
+  #} else {
+  #  p <- p + ggplot2::aes( .data$fold_change )
+  #}
+
+  xtitle <- "Fold Change"
+  if (log){ xtitle <- "Log Fold Change"}
+  dplyr::bind_rows(r, .id = "comparison") %>%
+    dplyr::select(.data$comparison, .data$fold_change ) %>%
+    dplyr::mutate(do_log = log, fold_change = dplyr::if_else(do_log, log(.data$fold_change, base = base), .data$fold_change)) %>%
+     ggplot2::ggplot() +
+     ggplot2::aes(fold_change) +
+     ggplot2::geom_histogram(bins = 25, fill="steelblue") +
+     ggplot2::theme_minimal() +
+     ggplot2::facet_wrap( ~ comparison) +
+     ggplot2::labs(x=xtitle, y="Frequency")
 }
 
 #' plot qqplot of fold changes from a comparison
-#' @param df result dataframe, typically from `compare()`
+#' @param r result dataframe or list, typically from `compare()` or `compare_many()`
 #' @param log log the fold change values
 #' @param base base of the log, if used
 #' @export
 #' @importFrom rlang .data
-fc_qqplot <- function(df, log = FALSE, base = 2 ){
+plot_fc_qq <- function(r, log = TRUE, base = 2 ){
 
-  p <- ggplot2::ggplot(df)
-  if (log){
-    p <- p + ggplot2::aes(sample = log(.data$fold_change, base = base))
-  } else {
-    p <- p + ggplot2::aes(sample = .data$fold_change)
-  }
-  p +  ggplot2::geom_qq() +
+  # p <- ggplot2::ggplot(df)
+  # if (log){
+  #   p <- p + ggplot2::aes(sample = log(.data$fold_change, base = base))
+  # } else {
+  #   p <- p + ggplot2::aes(sample = .data$fold_change)
+  # }
+  ytitle <- "Sample Values"
+  if (log){ytitle <- "Log Sample Values"}
+  dplyr::bind_rows(r, .id = "comparison") %>%
+    dplyr::select(.data$comparison, .data$fold_change ) %>%
+    dplyr::mutate(do_log = log, fold_change = dplyr::if_else(do_log, log(.data$fold_change, base = base), .data$fold_change)) %>%
+    ggplot2::ggplot() +
+    ggplot2::aes(sample = fold_change) +
+    ggplot2::geom_qq(colour = "steelblue", alpha=0.5) +
     ggplot2::geom_qq_line(  ) +
-    ggplot2::theme_minimal()
+    ggplot2::theme_minimal() +
+    ggplot2::facet_wrap(~ comparison) +
+    ggplot2::labs(y=ytitle, x="Theoretical Normal Values", title="Normal QQ plot of Fold Changes")
 
 }
 
@@ -188,35 +198,56 @@ fc_qqplot <- function(df, log = FALSE, base = 2 ){
 #' sets of significant peptides called by the methods used in the provided result
 #' dataframe
 #'
-#' @param r result dataframe typically from `compare()`
+#' @param r result dataframe or list typically from `compare()` or `compare_many()`
 #' @param sig significance cut-off to select peptides
 #' @return UpSet plot
 #'
 #' @export
-compare_calls <- function(r, sig = 0.05){
+plot_compared_calls <- function(r, sig = 0.05){
   upper_sig <- 1 - round(sig / 2, 4)
   lower_sig <- round(sig / 2, 4)
-  sets <- list()
 
 
-  if ("norm_quantile_pval" %in% names(r)){
-    sets$norm_iter = which(r$norm_quantile_p_val>= upper_sig | r$norm_quantile_p_val <= lower_sig)
-  }
-  if ("bootstrap_t_p_val" %in% names(r)){
-    sets$bootstrap_t = which(r$bootstrap_t_p_val <= sig)
-  }
-  if ("wilcoxon_p_val" %in% names(r)){
-    sets$wilcoxon = which(r$wilcoxon_p_val <= sig)
-  }
-  if ("kruskal_p_val" %in% names(r)) {
-    sets$kruskal = which(r$kruskal_p_val <= sig)
-  }
-  if ("rank_prod_p1_p_val" %in% names(r)){
-    sets$rank_prod = union(which(r$rank_prod_p1_p_val <= sig), which(r$rank_prod_p2_p_val <= sig))
+  mk <- function(df) {
+    sets <- list()
+
+    if ("norm_quantile_pval" %in% names(df)) {
+      sets$norm_iter = which(df$norm_quantile_p_val >= upper_sig |
+                               df$norm_quantile_p_val <= lower_sig)
+    }
+    if ("bootstrap_t_p_val" %in% names(df)) {
+      sets$bootstrap_t = which(df$bootstrap_t_p_val <= sig)
+    }
+    if ("wilcoxon_p_val" %in% names(df)) {
+      sets$wilcoxon = which(df$wilcoxon_p_val <= sig)
+    }
+    if ("kruskal_p_val" %in% names(df)) {
+      sets$kruskal = which(df$kruskal_p_val <= sig)
+    }
+    if ("rank_prod_p1_p_val" %in% names(df)) {
+      sets$rank_prod = union(which(df$rank_prod_p1_p_val <= sig),
+                             which(df$rank_prod_p2_p_val <= sig))
+    }
+
+    #return(sets)
+    if (length(sets) > 1) {
+      UpSetR::upset(UpSetR::fromList(sets), order.by = "freq")
+    } else {
+      warning("Can't do a comparison with only one test performed")
+    }
   }
 
-  #return(sets)
-  UpSetR::upset(UpSetR::fromList(sets), order.by = "freq")
+  if (is.data.frame(r)){
+    mk(r)
+  }
+
+  else{
+    l <- lapply(r, mk)
+    l <- lapply(l, ggplotify::as.grob)
+    cowplot::plot_grid(plotlist=l, labels = names(l))
+
+  }
+
 }
 
 #' @importFrom rlang .data
@@ -254,7 +285,7 @@ drop_columns <- function(df, sig, metric, log, base, rows_to_keep = NULL){
 #' reduces dataframes and makes long list, makes a basic heatmap.
 #' Use `fold_change_matrix()` to extract data in a heatmappable format
 #'
-#' @param l list of results, usually from `compare_many()`
+#' @param r list of results, usually from `compare_many()`
 #' @param log whether to log the data
 #' @param base base used in logging (default = 2)
 #' @param sig_only return only rows with 1 or more values significant at `sig_level` of `metric`
@@ -271,21 +302,23 @@ drop_columns <- function(df, sig, metric, log, base, rows_to_keep = NULL){
 #' @param padding vector of padding values to pass to ComplexHeatmap::draw for padding of heatmap sections
 #' @param lgd_x x offset of legend placement in `in` units
 #' @param lgd_y y offset of legend placement in `in` units
+#' @param col_fontsize size of treatment annotation labels
+#' @param col_rowsize size of peptide annotation labels
 #' @return NULL
 #' @export
 #' @importFrom rlang .data
-plot_heatmap <- function(l, sig_level = 0.05, metric = "bootstrap_t_fdr", log = TRUE,
+plot_heatmap <- function(r, sig_level = 0.05, metric = "bootstrap_t_fdr", log = TRUE,
                          base = 2, col_order = NULL, sig_only = TRUE, pal="RdBu",
-                         lgd_x = 1.7, lgd_y = 1, padding=c(0,0,0,3)) {
+                         lgd_x = 1.7, lgd_y = 1, padding=c(0,0,0,3), col_fontsize=24, row_fontsize=15) {
 
   if (is.null(col_order)) {
-    col_order <- names(l)
+    col_order <- names(r)
   }
 
   leg_title <- "Fold Change"
   if (log) leg_title <- paste("Log", base, "Fold Change")
 
-  fcm <- fold_change_matrix(l, log=log, base=base, sig_only = sig_only, sig_level=sig_level, metric=metric)
+  fcm <- fold_change_matrix(r, log=log, base=base, sig_only = sig_only, sig_level=sig_level, metric=metric)
   ul <- max(abs(fcm))
   ll <- ul * -1
 
@@ -295,8 +328,8 @@ plot_heatmap <- function(l, sig_level = 0.05, metric = "bootstrap_t_fdr", log = 
                             rev(RColorBrewer::brewer.pal(11, pal)),
                           ),
                           show_heatmap_legend = FALSE,
-                          column_names_gp = grid::gpar(fontsize=24, fontface="bold"),
-                          row_names_gp = grid::gpar(fontsize=15, fontface="bold")
+                          column_names_gp = grid::gpar(fontsize=col_fontsize, fontface="bold"),
+                          row_names_gp = grid::gpar(fontsize=row_fontsize, fontface="bold")
   )
   lgd <- ComplexHeatmap::Legend(direction = "horizontal",
                                 col_fun = circlize::colorRamp2(
@@ -426,7 +459,7 @@ plot_pca <- function(df) {
 #' @param iter.max max iterations to perform for `kmeans()` function
 #' @return ggplot2 plot
 #' @export
-plot_kmeans <- function(df, nstart = 25, iter.max = 1000){
+plot_sample_kmeans <- function(df, nstart = 25, iter.max = 1000){
   n <- length(unique(df$treatment)) * length(unique(df$seconds))
   if (n < 1) {
     n <- 1
@@ -446,7 +479,7 @@ plot_kmeans <- function(df, nstart = 25, iter.max = 1000){
 #' volcano plot the data
 #'
 #' draws a plot of peptide count against log fc at either protein or peptide level for samples
-#' @param l list of results data frames, typically from `compare_many()`
+#' @param l list of results data frames, typically from `compare_many()` or single data frame from `compare()`
 #' @param metric single metric to use for volcano plot
 #' @param log log the data
 #' @param base base for logging
@@ -458,7 +491,7 @@ plot_kmeans <- function(df, nstart = 25, iter.max = 1000){
 #' @export
 #'
 #' @importFrom rlang .data
-volcano_plot <- function(l, log = FALSE, base = 2, sig_level = 0.05, metric = "bootstrap_t_p_val", option="E", direction=-1  ) {
+plot_volcano <- function(l, log = FALSE, base = 2, sig_level = 0.05, metric = "bootstrap_t_p_val", option="E", direction=-1  ) {
   xlabtxt <- paste0("Log ",base," Fold Change")
   ylabtxt <- paste0("-Log ",base, " P")
   dplyr::bind_rows(l, .id = "comparison")  %>%
@@ -507,12 +540,82 @@ list2mat <- function(r,column="fold_change") {
   return(x)
 }
 
-#' plots a Figure of Merit curve to help estimate the number of clusters in the results
-#' @param r the results object from `compare_many()`
+#' plots a Figure of Merit curve to help estimate the number of clusters in the results for a given metric and a
+#' given significance level. Clustering is done based on Fold
+#' @param r the results object from `compare()` or `compare_many()`
+#' @param log log the fold changes
+#' @param base base for logging
+#' @param sig_level significance cutoff for colour
+#' @param metric metric to use for significance
 #' @export
-estimate_result_clusters <- function(r) {
-  results_mat <- list2mat(r)
+plot_cluster_estimate <- function(r, log=TRUE, base=2, sig_only = FALSE, sig_level = 0.05, metric = "bootstrap_t_fdr") {
+  results_mat <- fold_change_matrix(r, log=log, base=base, sig_only=sig_only,sig_level=sig_level, metric = metric)
   factoextra::fviz_nbclust(results_mat, stats::kmeans, method="wss")
 }
 
+
+#' plots the kmeans clusters
+#' @param kl the kmeans clusters from `kmeans_by_selected_cols()`
+#' @param col_order vector of column names in the order you want them to be drawn
+#' @param logged indicates whether the fold changes are logged or not
+#' @param base if logged the base that was used
+#' @param pal pallete to use from RColorBrewer
+#' @param nrow number of rows to plot clusters in
+#' @param legx x position of legend in range (-0.5 .. 0.5)
+#' @param legy y position of legend in range(-0.5 .. 0.5)
+#' @param labh horizontal justification of subplot labels
+#' @param labv vertical justification of subplot labels
+#' @export
+plot_kmeans_cluster_hmap <- function(kl, col_order=NULL, logged=TRUE, base=NULL, pal="RdBu", nrow=2, col_fontsize=6, row_fontsize=6, legx=0, legy=-0.45, labh=-1.1, labv=1.1) {
+
+
+  ul <- max(unlist(lapply(kl,FUN=max)))
+  ll <- ul*-1
+
+  make_hmap <- function(mat, col_order, ll, ul, pal) {
+    if (is.null(col_order)) {
+      col_order <- colnames(mat)
+    }
+
+    hm <- ComplexHeatmap::Heatmap(mat,column_order = col_order,
+                                      col = circlize::colorRamp2(
+                                        seq(ll,ul, length.out = 11),
+                                        rev(RColorBrewer::brewer.pal(11, pal)),
+                                      ),
+                                      show_heatmap_legend = FALSE,
+                                  column_names_gp = grid::gpar(fontsize=col_fontsize ),
+                                  row_names_gp = grid::gpar(fontsize=row_fontsize))
+
+    grid::grid.grabExpr(
+      ComplexHeatmap::draw(hm)
+      )
+
+    }
+
+  hms <- lapply(kl, function(mat){ make_hmap(mat, col_order, ll, ul, pal)} )
+
+
+  titletex <- "Fold Change"
+  if (logged){
+    titletex <- paste0("Log", base, " Fold Change")
+  }
+
+  lgd <- grid::grid.grabExpr(
+
+    ComplexHeatmap::draw(ComplexHeatmap::Legend(direction = "horizontal",
+                                col_fun = circlize::colorRamp2(
+                                  seq(ll, ul, length.out = 11),
+                                  rev(RColorBrewer::brewer.pal(11, pal))
+                                ),
+                                title = titletex)
+    )
+  )
+  cowplot::plot_grid(plotlist=hms, nrow=nrow,labels = names(hms), hjust=labh, vjust=labv) +
+    cowplot::draw_grob(lgd, x=legx, y = legy)
+
+}
+
+plot_kmeans_cluster_profile <- function(kl){
+
+}
 

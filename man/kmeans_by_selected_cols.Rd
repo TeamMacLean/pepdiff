@@ -2,7 +2,7 @@
 % Please edit documentation in R/stats.R
 \name{kmeans_by_selected_cols}
 \alias{kmeans_by_selected_cols}
-\title{Perform kmeans of a dataset using just data in selected columns, then return matrices of all columns}
+\title{Perform kmeans of a dataset using just data in selected comparisons columns, then return matrices of all clusters}
 \usage{
 kmeans_by_selected_cols(
   l,
@@ -12,7 +12,7 @@ kmeans_by_selected_cols(
   sig_only = TRUE,
   sig_level = 0.05,
   metric = "bootstrap_t_p_val",
-  k = NA,
+  k = NULL,
   nstart = 25,
   itermax = 1000
 )
@@ -20,9 +20,9 @@ kmeans_by_selected_cols(
 \arguments{
 \item{l}{list of results, usually from `compare_many()`}
 
-\item{cols}{names of columns to perform the k-means with}
+\item{cols}{names of comparison columns to perform the k-means with. Default is all comparisons done.}
 
-\item{log}{whether to log the data}
+\item{log}{whether to log the data default = TRUE}
 
 \item{base}{base used in logging (default = 2)}
 
@@ -46,5 +46,5 @@ kmeans_by_selected_cols(
 list of matrices
 }
 \description{
-Perform kmeans of a dataset using just data in selected columns, then return matrices of all columns
+Perform kmeans of a dataset using just data in selected comparisons columns, then return matrices of all clusters
 }

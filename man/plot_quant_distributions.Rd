@@ -4,19 +4,19 @@
 \alias{plot_quant_distributions}
 \title{draw density plots for data}
 \usage{
-plot_quant_distributions(df, log = FALSE, base = 2)
+plot_quant_distributions(i, log = FALSE, base = 2)
 }
 \arguments{
-\item{df}{dataframe; typically from `import_data()`}
-
 \item{log}{perform log transform of data}
 
 \item{base}{base to use in log transform}
+
+\item{df}{dataframe; typically from `import_data()`}
 }
 \value{
 ggplot2 plot
 }
 \description{
-Plot density of quantities in data for each treatment, seconds and biological
-replicate
+Plot distribution of quantity for each treatment, seconds and biological
+replicate. For biological replicate mean of technical replicates is taken
 }
