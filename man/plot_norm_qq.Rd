@@ -2,21 +2,39 @@
 % Please edit documentation in R/plots.R
 \name{plot_norm_qq}
 \alias{plot_norm_qq}
-\title{draw qqplots for data}
+\title{Create a Normal QQ plot of peptide quantity in biological replicates.}
 \usage{
 plot_norm_qq(i, log = FALSE, base = 2)
 }
 \arguments{
-\item{i}{dataframe; typically from `import_data()`}
+\item{i}{A data frame containing peptide quantity data.}
 
-\item{log}{perform log transform of data}
+\item{log}{Logical, indicating whether to apply a logarithmic transformation to the quantity values. Default is FALSE.}
 
-\item{base}{base to use in log transform}
+\item{base}{The logarithm base to use if 'log' is TRUE. Default is 2.}
 }
 \value{
-ggplot2 plot
+A ggplot object representing the Normal QQ plot.
 }
 \description{
-Plot qqplot of distribution of quantifications in data for each treatment,
-seconds and biological replicate
+This function takes a data frame and generates a Normal QQ plot to visualize the distribution of peptide quantity in biological replicates. It can optionally apply a logarithmic transformation to the quantity values.
 }
+\examples{
+
+plot_norm_qq(data)
+
+}
+\seealso{
+\code{\link{combine_tech_reps}}, \code{\link{ggplot2::ggplot}}, \code{\link{ggplot2::aes}},
+\code{\link{ggplot2::geom_qq}}, \code{\link{ggplot2::geom_qq_line}}, \code{\link{ggplot2::facet_grid}},
+\code{\link{ggplot2::scale_color_viridis_d}}, \code{\link{ggplot2::theme_minimal}}, \code{\link{ggplot2::labs}}
+
+Other data visualization: 
+\code{\link{plot_missing_peptides}()},
+\code{\link{plot_pca}()},
+\code{\link{plot_peptides_measured}()},
+\code{\link{plot_quant_distributions}()},
+\code{\link{plot_sample_kmeans}()}
+}
+\concept{data visualization}
+\keyword{plot}

@@ -2,17 +2,36 @@
 % Please edit documentation in R/plots.R
 \name{plot_pca}
 \alias{plot_pca}
-\title{plots a pca on the treatment, seconds, bio-rep}
+\title{Create a PCA (Principal Component Analysis) plot and screeplot for multivariate data.}
 \usage{
 plot_pca(df)
 }
 \arguments{
-\item{df}{dataframe, typically from `import_data()`}
+\item{df}{A data frame containing multivariate data.}
 }
 \value{
-ggplot2 plot
+A combined ggplot object representing the PCA plot and screeplot.
 }
 \description{
-Performs and draws a PCA plot with four panels, PCA with sample names
-coloured by treatment, seconds and biorep and a scree plot of the PCA dimensions
+This function performs Principal Component Analysis (PCA) on input data and generates a PCA plot and a screeplot. The PCA plot visualizes the data points in a two-dimensional space defined by the first two principal components, and it is  colored by biological replicate, treatment, or time point in each subplot. The screeplot shows the proportion of variance explained by each principal component.
 }
+\examples{
+
+plot_pca(data)
+
+}
+\seealso{
+\code{\link{matrix_data}}, \code{\link{min_peptide_values}}, \code{\link{stats::prcomp}},
+\code{\link{factoextra::fviz_screeplot}}, \code{\link{ggplot2::ggplot}}, \code{\link{ggplot2::aes}},
+\code{\link{ggplot2::geom_text}}, \code{\link{ggplot2::theme_minimal}}, \code{\link{ggplot2::scale_color_viridis_d}},
+\code{\link{cowplot::plot_grid}}
+
+Other data visualization: 
+\code{\link{plot_missing_peptides}()},
+\code{\link{plot_norm_qq}()},
+\code{\link{plot_peptides_measured}()},
+\code{\link{plot_quant_distributions}()},
+\code{\link{plot_sample_kmeans}()}
+}
+\concept{data visualization}
+\keyword{plot}

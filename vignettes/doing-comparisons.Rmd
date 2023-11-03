@@ -1,0 +1,120 @@
+---
+title: "Performing Comparisons of Samples"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+vignette: >
+  %\VignetteIndexEntry{Performing Comparisons of Samples}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+The main purpose of `pepdiff` is to find candidate differentially abundant peptides. This vignette describes the pipeline for that.
+
+First we must load the package and some sample data. The code here finds a data file from within the package itself then  passes that to the `import_data()` function to load the data itself, saving it in an object called `raw`.
+
+## Loading raw data
+
+```{r setup, warning=FALSE}
+library(pepdiff)
+
+sample_data_path <- fs::path_package("extdata", "anon.csv", package="pepdiff")
+raw <- import_data(sample_data_path,                  
+                   gene_id = "gene_name",
+                   treatment = "treatment_name")
+```
+
+## Setting up the comparison
+
+There are two functions for performing comparisons `compare()` and `compare_many()`
+
+### Using `compare()`
+
+`compare()` allows us to do a single comparison, one combination of treatment and time point.
+
+```{r}
+single_result <- compare(raw, 
+                         treatment = "665e6428", t_seconds = 0, 
+                         control = "665e6428", c_seconds = 150,
+                         tests = c("bootstrap_t"), 
+                         iters = 10000
+                         )
+```
+
+This function compares peptide quantities between experimental conditions and applies selected statistical tests to identify differentially abundant peptides. The function calculates natural fold changes, performs specified tests, and provides information about replicates and statistical power. The returned object is a single dataframe
+
+```{r}
+str(single_result)
+```
+
+
+### Using `compare_many()`
+
+`compare_many()` does essentially the same as `compare()` but allows us to set up many comparisons at once. This is done by providing a table of comparisons. You can load such a table in from a file using `readr::read_csv()` or similar or set up the table manually like this.
+
+```{r}
+comparisons <- data.frame(
+  control = c('665e6428','665e6428'),
+  c_seconds = c(0,150),
+  treatment = c('665e6428','665e6428'),
+  t_seconds = c(150, 0)
+)
+
+comparisons
+```
+
+If you want to use a file it should have the structure displayed in the output above.
+
+Once that exists you can pass it to `compare_many()`
+
+```{r}
+many_results <- compare_many(raw, comparisons, tests = c("bootstrap_t", "rank_product"))
+```
+
+The `many_results` object is just a list of the same sort of results as from `compare()`, indexed by a name formed from the sample information.
+
+```{r}
+str(many_results)
+```
+
+
+## The tests available
+
+Several statistical tests can be run in the `compare_` functions. Namely:
+
+  * Kruskal-Wallis - `kruskal-wallis`
+  * Wilcoxon Rank Sum - `wilcoxon`
+  * Rank Products - `rank_product`
+  * Bootstrap $t$ tests - `bootstrap-t`
+  * Iterative Normal Resampling - `norm_quantile`
+
+### Kruskal-Wallis
+
+A non-parametric statistical test used to determine whether there are likely differences between two treatments. The data from all groups are combined, and the values are ranked from lowest to highest. Tied values receive an average rank. This ranking process is used to create a single ordered dataset. A Bonferroni corrected p-value is returned.
+
+
+### Wilcoxon Rank Sum
+
+A non-parametric statistical test used to assess whether there is a significant difference between two independent groups with respect to a continuous or ordinal variable. Data from both groups are combined, and the values are ranked from lowest to highest. Tied values receive an average rank. This ranking process is used to create a single ordered dataset. It then calculates a test statistic called the U statistic, which represents the sum of the ranks of one of the groups (either treatment or control). The choice of which group's ranks to sum depends on which group has the smaller sample size.
+
+### Rank Products
+
+Rank Products is employed when dealing with data that may not meet the assumptions of parametric tests, such as normality and equal variances. It is suitable for identifying differentially expressed features when sample sizes are small or when dealing with large datasets. Rank Products begins by ranking the observed values within each group independently. For each feature (e.g., peptide), the data from all samples in a group are ranked, and tied values receive an average rank. nce the data is ranked, Rank Products calculates a summary statistic based on the product of ranks. For each feature, the ranks from different groups are multiplied together to obtain a product rank.
+These product ranks are then used to assess the likelihood of each feature being differentially expressed. To determine the significance of the product ranks, Rank Products employs permutation testing.
+The group labels are randomly shuffled to create numerous permuted datasets. The product ranks are calculated for each permuted dataset. The proportion of permuted datasets where the product rank of a feature is equal to or greater than the observed rank provides the p-value for that feature.
+
+### Bootstrap t-tests 
+
+Extends the traditional Student's t-test by incorporating the resampling technique known as bootstrapping. It is used to compare the means of two independent groups and determine if there is a statistically significant difference between them. Repeatedly resample (with replacement) from the observed data to create multiple bootstrap sample of the same size as the original. For each bootstrap sample, a t-statistic is calculated, which measures the difference in means between the treatment and control and $t$ is calculated giving a distribution of $t$. The observed $t$ is compared with the $t$-distribution to give a p-value. 
+
+### Iterative Normal Resampling
+
+For each peptide, the function generates synthetic datasets by resampling the control group values while replacing the lowest observed value. It then compares the treatment group's mean to the distribution of means from the synthetic datasets to estimate p-values.

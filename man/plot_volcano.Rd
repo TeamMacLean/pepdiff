@@ -6,7 +6,6 @@
 \usage{
 plot_volcano(
   l,
-  log = FALSE,
   base = 2,
   sig_level = 0.05,
   metric = "bootstrap_t_p_val",
@@ -16,8 +15,6 @@ plot_volcano(
 }
 \arguments{
 \item{l}{list of results data frames, typically from `compare_many()` or single data frame from `compare()`}
-
-\item{log}{log the data}
 
 \item{base}{base for logging}
 

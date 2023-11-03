@@ -2,21 +2,38 @@
 % Please edit documentation in R/plots.R
 \name{plot_sample_kmeans}
 \alias{plot_sample_kmeans}
-\title{K-means cluster the data on the samples}
+\title{Apply k-Means clustering to sample data and visualize the clustering results.}
 \usage{
 plot_sample_kmeans(df, nstart = 25, iter.max = 1000)
 }
 \arguments{
-\item{df}{dataframe, typically from `import_data()`}
+\item{df}{A data frame containing multivariate data.}
 
-\item{nstart}{nstart points for `kmeans()` function}
+\item{nstart}{The number of random initializations for the k-Means algorithm. Default is 25.}
 
-\item{iter.max}{max iterations to perform for `kmeans()` function}
+\item{iter.max}{The maximum number of iterations for the k-Means algorithm. Default is 1000.}
 }
 \value{
-ggplot2 plot
+A ggplot object representing the k-Means clustering results.
 }
 \description{
-Performs and draws a K-means cluster on the samples. Estimates number of clusters
-as the product of the number of treatments and seconds. So tries to group the bio reps together
+This function applies k-Means clustering to the first three principal components obtained from PCA analysis of the data. k is estimated from the sample It then visualizes the clustering results by creating a scatterplot of the PCA components, color-coded according to the k-Means clusters the samples fall into.
 }
+\examples{
+
+plot_sample_kmeans(data, nstart = 25, iter.max = 1000)
+
+}
+\seealso{
+\code{\link{matrix_data}}, \code{\link{min_peptide_values}}, \code{\link{stats::prcomp}},
+\code{\link{factoextra::fviz_cluster}}, \code{\link{ggplot2::theme_minimal}}, \code{\link{viridis::viridis}}
+
+Other data visualization: 
+\code{\link{plot_missing_peptides}()},
+\code{\link{plot_norm_qq}()},
+\code{\link{plot_pca}()},
+\code{\link{plot_peptides_measured}()},
+\code{\link{plot_quant_distributions}()}
+}
+\concept{data visualization}
+\keyword{plot}

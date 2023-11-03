@@ -2,17 +2,40 @@
 % Please edit documentation in R/plots.R
 \name{plot_missing_peptides}
 \alias{plot_missing_peptides}
-\title{plot the representation of peptides in each group.}
+\title{Plot the percent of missing peptide quantification values by biological and technical replicates.}
 \usage{
 plot_missing_peptides(i)
 }
 \arguments{
-\item{i}{dataframe with unmerged tech reps; typically from `import_data()`}
+\item{i}{A data frame containing peptide quantification data.}
 }
 \value{
-ggplot2 plot
+A ggplot object representing the heatmap.
 }
 \description{
-Shows what proportion of the whole set of peptides has a NA value in each group
-of treatment, seconds, bio rep and tech rep.
+This function takes a data frame and generates a heatmap showing the percent of missing (NA) peptide quantification values by biological and technical replicates. It uses the `assess_missing` function to calculate the missing values and ggplot2 for creating the heatmap.
 }
+\examples{
+data <- data.frame(treatment = rep(c("A", "B"), each = 12),
+                   seconds = rep(rep(0, 6), 2),
+                   bio_rep = rep(1:6, 2),
+                   tech_rep = rep(1:2, each = 6),
+                   percent_missing = runif(12, 0, 100))
+
+plot_missing_peptides(data)
+
+}
+\seealso{
+\code{\link{assess_missing}}, \code{\link{ggplot2::ggplot}}, \code{\link{ggplot2::aes}},
+\code{\link{ggplot2::geom_tile}}, \code{\link{ggplot2::facet_grid}}, \code{\link{ggplot2::scale_fill_viridis_c}},
+\code{\link{ggplot2::theme_minimal}}, \code{\link{ggplot2::labs}}
+
+Other data visualization: 
+\code{\link{plot_norm_qq}()},
+\code{\link{plot_pca}()},
+\code{\link{plot_peptides_measured}()},
+\code{\link{plot_quant_distributions}()},
+\code{\link{plot_sample_kmeans}()}
+}
+\concept{data visualization}
+\keyword{plot}

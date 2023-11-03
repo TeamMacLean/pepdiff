@@ -2,18 +2,38 @@
 % Please edit documentation in R/stats.R
 \name{get_wilcoxon_percentile}
 \alias{get_wilcoxon_percentile}
-\title{get p values for contrast using Wilcoxon test}
+\title{Calculate Wilcoxon rank-sum test p-values and adjusted false discovery rates for peptide comparisons.}
 \usage{
 get_wilcoxon_percentile(treatment, control)
 }
 \arguments{
-\item{treatment}{matrix of treatment data columns}
+\item{treatment}{A dataframe representing the treatment group with quantitative values for each peptide.}
 
-\item{control}{matrix of control data columns}
+\item{control}{A dataframe representing the control group with quantitative values for each peptide.}
 }
 \value{
-dataframe with two columns `wilcoxon_p_val` and `wilcoxon_fdr`
+A dataframe containing Wilcoxon rank-sum test p-values and corresponding Bonferroni-adjusted FDR values for each peptide comparison.
 }
 \description{
-get p values for contrast using Wilcoxon test
+This function computes Wilcoxon rank-sum test (Mann-Whitney U test) p-values for each peptide comparison between treatment and control groups. It also calculates adjusted false discovery rates (FDR) using the Bonferroni method. The Wilcoxon test assesses whether there are significant differences in the distributions of quantitative values between two independent groups.
 }
+\examples{
+# Example using two dataframes for treatment and control:
+treatment_data <- data.frame(peptide1 = c(10, 20, 30), peptide2 = c(15, 25, 35))
+control_data <- data.frame(peptide1 = c(12, 22, 32), peptide2 = c(18, 28, 38))
+result <- get_wilcoxon_percentile(treatment_data, control_data)
+
+}
+\seealso{
+\code{\link{stats::wilcox.test}}, \code{\link{stats::p.adjust}}
+
+Other statistical analysis: 
+\code{\link{compare_many}()},
+\code{\link{compare}()},
+\code{\link{get_bootstrap_percentile}()},
+\code{\link{get_kruskal_percentile}()},
+\code{\link{get_percentile_lowest_observed_value_iterative}()},
+\code{\link{get_rp_percentile}()}
+}
+\concept{statistical analysis}
+\keyword{data}

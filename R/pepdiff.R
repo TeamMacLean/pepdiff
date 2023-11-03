@@ -3,21 +3,48 @@
 ## Make replacement strategy optional.
 ## write out kmeans
 
-#' read data from a file
+#' Import and preprocess peptide quantification data from a file or data frame.
 #'
-#' reads data, renames columns appropriately, discards unused columns, factors and
-#' reorders, discards duplicate rows
+#' This function reads a data file (e.g., CSV) or accepts a data frame as input and preprocesses the data by renaming columns, creating a unique identifier, and ensuring proper data types. It is designed to handle peptide quantification data and standardize the column names for treatment, biological replicate, technical replicate, peptide, gene ID, and more.
 #'
-#' @param file Path to the file to load - must be a csv file
-#' @param treatment Column containing the treatment of the observation
-#' @param bio_rep Column containing the biological replicate of the observation
-#' @param tech_rep Column containing the technical replicate of the observation
-#' @param quant Column containing the quantitation data
-#' @param seconds Column containing timepoint of observation
-#' @param gene_id Column containing the id of the gene this hit
-#' @param peptide Column containing the sequence of this peptide
-#' @return tibble with columns id, gene_id, peptide, treatment, seconds, bio_rep, tech_rep, quant
-#' @export
+#' @param file A path to a data file (e.g., CSV) or a data frame containing peptide quantification data.
+#' @param treatment The column name representing treatment information in the data. Default is "genotype".
+#' @param bio_rep The column name representing biological replicate information. Default is "bio_rep".
+#' @param tech_rep The column name representing technical replicate information. Default is "tech_rep".
+#' @param quant The column name representing quantification values. Default is "total_area".
+#' @param seconds The column name representing time points (in seconds). Default is "seconds".
+#' @param gene_id The column name representing gene IDs. Default is "gene_id".
+#' @param peptide The column name representing peptide sequences. Default is "peptide_sequence".
+#' @param quant The column name representing the peptide quantification. Default is "total_area"
+#'
+#' @return A preprocessed data frame with standardized column names and data types.
+#'
+#' @import dplyr
+#' @import readr
+#'
+#' @examples
+#' # Example using a CSV file:
+#' data_file <- "peptide_quantification_data.csv"
+#' imported_data <- import_data(data_file)
+#'
+#' # Example using a data frame:
+#' data_frame <- data.frame(genotype = c("A", "B", "A"),
+#'                          bio_rep = c(1, 2, 1),
+#'                          tech_rep = c(1, 1, 2),
+#'                          total_area = c(100, 150, 90),
+#'                          seconds = c(0, 30, 60),
+#'                          gene_id = c("Gene1", "Gene2", "Gene1"),
+#'                          quant = runif(3),
+#'                          peptide_sequence = c("AAA", "BBB", "CCC"))
+# imported_data <- import_data(data_frame)
+#'
+#' @seealso
+#' \code{\link{dplyr::rename}}, \code{\link{dplyr::mutate}}, \code{\link{dplyr::transmute}}, \code{\link{dplyr::distinct}},
+#' \code{\link{readr::read_csv}}
+#'
+#' @keywords data
+#' @family data manipulation
+#' @rdname import_data
 import_data <- function(file,
                         treatment = "genotype",
                         bio_rep = "bio_rep",
@@ -93,22 +120,38 @@ count_peptides_measured <- function(df){
 }
 
 
-#' compare the peptide quantities in two experiments
+#' Compare peptide quantities between experimental conditions using selected statistical tests.
 #'
-#' For each peptide this function carries out the selected tests to determine peptides
-#' that are differentially abundant in the two experiments specified. Before tests are
-#' performed the technical replicates are merged and lowest observed value replacement
-#' for each missing biological replicate is done. All comparisins are performed as `treatment / control`
+#' This function compares peptide quantities between experimental conditions and applies selected statistical tests to identify differentially abundant peptides. The function calculates natural fold changes, performs various tests, and provides information about replicates and statistical power.
 #'
-#' @param df dataframe. Typically from `import_data()`
-#' @param iters number of iterations to perform for iterative tests
-#' @param treatment name of the experimental treatment to use as the `treatment` condition
-#' @param control name of the experimental treatment to use as the `control` condition
-#' @param t_seconds time point of the `treatment` condition to use
-#' @param c_seconds time point of the `control` condition to use
-#' @param tests character vector of tests to use, one or more of: `norm_quantile`, `bootstrap_t`, `wilcoxon`, `kruskal-wallis`, `rank_product`
-#' @return dataframe with original and replaced quantification values, natural fold change, biological replicates and p-value / fdr for each
+#' @param df A dataframe containing peptide quantification data, typically obtained from `import_data()`.
+#' @param iters The number of iterations to perform for iterative tests. Default is 1000.
+#' @param treatment The name of the experimental treatment condition to compare.
+#' @param t_seconds The time point of the treatment condition to compare.
+#' @param control The name of the experimental control condition to compare.
+#' @param c_seconds The time point of the control condition to compare.
+#' @param tests A character vector of tests to use, one or more of: 'norm_quantile', 'bootstrap_t', 'wilcoxon', 'kruskal-wallis', 'rank_product'.
+#'
+#' @return A data frame with information about original and replaced quantification values, natural fold changes, replicates, p-values, false discovery rate (FDR), and statistical power for each peptide.
+#'
 #' @export
+#' @import dplyr
+#'
+#' @examples
+#' # Example using imported data and performing a bootstrap t-test:
+#' data_file <- "peptide_quantification_data.csv"
+#' imported_data <- import_data(data_file)
+#' comparison_result <- compare(imported_data, treatment = "A", control = "B", tests = "bootstrap_t")
+#'
+#' @seealso
+#' \code{\link{import_data}}, \code{\link{select_columns_for_contrast}}, \code{\link{min_peptide_values}},
+#' \code{\link{mean_fold_change}}, \code{\link{get_percentile_lowest_observed_value_iterative}},
+#' \code{\link{get_bootstrap_percentile}}, \code{\link{get_wilcoxon_percentile}}, \code{\link{get_kruskal_percentile}},
+#' \code{\link{get_rp_percentile}}, \code{\link{get_power}}
+#'
+#' @keywords data
+#' @family statistical analysis
+#' @rdname compare
 compare <- function(df,
                     iters = 1000,
                     treatment = NA,
@@ -168,22 +211,45 @@ compare <- function(df,
   if ("rank_product" %in% tests){
     result$rp <- get_rp_percentile(treatment, control)
   }
+
+
+  powers <- get_power(treatment, control)
+  result$power <- powers$power
+  result$d <- powers$d
+  result$min_reps <- powers$min_reps
+
   return(tibble::as_tibble(dplyr::bind_cols(result)))
 }
 
 
-
-
-#' compare many combinations of treatment and control
+#' Compare peptide quantities for multiple experimental conditions using selected statistical tests.
 #'
-#' for each combination of treatment and control condition, runs the `compare()` function
-#' and collates the results
+#' This function compares peptide quantities between multiple experimental conditions specified in a comparison dataframe. It applies selected statistical tests to identify differentially abundant peptides for each pairwise condition comparison.
 #'
-#' @param df dataframe. Typically from `import_data()`
-#' @param comparison path to file or dataframe of comparisons with columns treatment, t_seconds, control, c_seconds
-#' @param iters number of iterations to perform for iterative tests
-#' @param tests character vector of tests to use, one or more of: `norm_quantile`, `bootstrap_t`, `wilcoxon`, `kruskal-wallis`, `rank_product`
+#' @param df A dataframe containing peptide quantification data, typically obtained from `import_data()`.
+#' @param comparison A comparison dataframe specifying the experimental conditions to compare. Each row defines a pairwise condition comparison, including treatment, control, and time points. If not already a data frame, you can provide a path to a CSV file, and it will be read into a data frame.
+#' @param iters The number of iterations to perform for iterative tests. Default is 1000.
+#' @param tests #' @param tests character vector of tests to use, one or more of: `norm_quantile`, `bootstrap_t`, `wilcoxon`, `kruskal-wallis`, `rank_product`
+#'
+#' @return A list of dataframes, where each dataframe represents the comparison results for a pairwise condition comparison. The names of the list elements are constructed based on the conditions being compared.
+#'
 #' @export
+#' @import dplyr
+#' @import readr
+#'
+#' @examples
+#' # Example using imported data and a comparison dataframe:
+#' data_file <- "peptide_quantification_data.csv"
+#' comparison_data <- "comparison_conditions.csv"
+#' imported_data <- import_data(data_file)
+#' comparison_result <- compare_many(imported_data, comparison_data, tests = c("bootstrap_t", "wilcoxon"))
+#'
+#' @seealso
+#' \code{\link{import_data}}, \code{\link{compare}}, \code{\link{readr::read_csv}}
+#'
+#' @keywords data
+#' @family statistical analysis
+#' @rdname compare_many
 compare_many <- function(df, comparison, iters = 1000, tests = c("bootstrap_t")) {
   if (!is.data.frame(comparison)) {
     comparison <- readr::read_csv(comparison )
@@ -216,7 +282,34 @@ compare_many <- function(df, comparison, iters = 1000, tests = c("bootstrap_t"))
 }
 
 
+#' summarize the health of the experiment as a whole
+#'
+#' returns the proportion of the comparisons done that have statistical power
+#' over threshold b
+#'
+#' @param the results object, from `compare()` or `compare_many()`
+#' @param b the statistical power at which to evaluate
+#' @return integer
+#' @export
+health <- function(r, b=0.8) {
 
+ r <- dplyr::bind_rows(r, .id = "comparison") %>%
+    dplyr::select(.data$comparison, .data$power, .data$d, .data$min_reps,.data$fold_change,dplyr::starts_with("unreplaced"))
+
+ cc <- dplyr::select(r, dplyr::starts_with("unreplaced")) %>%
+   complete.cases() %>%
+   sum()
+
+ po <- sum(r$power >=b,na.rm=TRUE) / nrow(r)
+ co <- cc / nrow(r)
+
+ c(
+   power_health = po,
+   completeness_health = co,
+   result_health = (po + co ) / 2
+ )
+
+}
 
 
 

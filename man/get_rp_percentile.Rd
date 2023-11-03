@@ -2,18 +2,38 @@
 % Please edit documentation in R/stats.R
 \name{get_rp_percentile}
 \alias{get_rp_percentile}
-\title{get p values for contrast using Rank Products test}
+\title{Calculate Rank Products test p-values and adjusted false discovery rates for peptide comparisons.}
 \usage{
 get_rp_percentile(treatment, control)
 }
 \arguments{
-\item{treatment}{matrix of treatment data columns}
+\item{treatment}{A dataframe representing the treatment group with quantitative values for each peptide.}
 
-\item{control}{matrix of control data columns}
+\item{control}{A dataframe representing the control group with quantitative values for each peptide.}
 }
 \value{
-dataframe with four columns, two for the test each way from RankProducts `rank_prod_p1_p_val`, `rank_prod_p2_p_val` and `rank_prod_p1_fdr`, `rank_prod_p2_fdr`.
+A dataframe containing Rank Products test p-values and corresponding adjusted FDR values for each peptide comparison each way.
 }
 \description{
-get p values for contrast using Rank Products test
+This function computes p-values and adjusted false discovery rates (FDR) using the Rank Products (RankProd) statistical test for each peptide comparison between treatment and control groups. The Rank Products test is specifically designed for identifying differentially abundant features (e.g., peptides) in high-throughput data.
 }
+\examples{
+# Example using two dataframes for treatment and control:
+treatment_data <- data.frame(peptide1 = c(10, 20, 30), peptide2 = c(15, 25, 35))
+control_data <- data.frame(peptide1 = c(12, 22, 32), peptide2 = c(18, 28, 38))
+result <- get_rp_percentile(treatment_data, control_data)
+
+}
+\seealso{
+\code{\link{RankProd::RankProducts}}
+
+Other statistical analysis: 
+\code{\link{compare_many}()},
+\code{\link{compare}()},
+\code{\link{get_bootstrap_percentile}()},
+\code{\link{get_kruskal_percentile}()},
+\code{\link{get_percentile_lowest_observed_value_iterative}()},
+\code{\link{get_wilcoxon_percentile}()}
+}
+\concept{statistical analysis}
+\keyword{data}

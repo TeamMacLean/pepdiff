@@ -2,21 +2,34 @@
 % Please edit documentation in R/plots.R
 \name{plot_quant_distributions}
 \alias{plot_quant_distributions}
-\title{draw density plots for data}
+\title{Plot the distribution of peptide quantity/abundance for biological replicates, time points, and treatments.}
 \usage{
 plot_quant_distributions(i, log = FALSE, base = 2)
 }
 \arguments{
-\item{log}{perform log transform of data}
+\item{i}{A data frame containing peptide quantity data.}
 
-\item{base}{base to use in log transform}
+\item{log}{Logical, indicating whether to apply a logarithmic transformation to the quantity values. Default is FALSE.}
 
-\item{df}{dataframe; typically from `import_data()`}
+\item{base}{The logarithm base to use if 'log' is TRUE. Default is 2.}
 }
 \value{
-ggplot2 plot
+A ggplot object representing the density plots.
 }
 \description{
-Plot distribution of quantity for each treatment, seconds and biological
-replicate. For biological replicate mean of technical replicates is taken
+This function takes a data frame and generates density plots to visualize the distribution of peptide quantity for biological replicates, time points, and treatments. It can optionally apply a logarithmic transformation to the quantity values.
 }
+\seealso{
+\code{\link{combine_tech_reps}}, \code{\link{ggplot2::ggplot}}, \code{\link{ggplot2::aes}},
+\code{\link{ggplot2::geom_density}}, \code{\link{ggplot2::facet_grid}}, \code{\link{ggplot2::scale_fill_viridis_d}},
+\code{\link{ggplot2::theme_minimal}}, \code{\link{ggplot2::labs}}
+
+Other data visualization: 
+\code{\link{plot_missing_peptides}()},
+\code{\link{plot_norm_qq}()},
+\code{\link{plot_pca}()},
+\code{\link{plot_peptides_measured}()},
+\code{\link{plot_sample_kmeans}()}
+}
+\concept{data visualization}
+\keyword{plot}

@@ -2,7 +2,7 @@
 % Please edit documentation in R/pepdiff.R
 \name{compare}
 \alias{compare}
-\title{compare the peptide quantities in two experiments}
+\title{Compare peptide quantities between experimental conditions using selected statistical tests.}
 \usage{
 compare(
   df,
@@ -15,26 +15,46 @@ compare(
 )
 }
 \arguments{
-\item{df}{dataframe. Typically from `import_data()`}
+\item{df}{A dataframe containing peptide quantification data, typically obtained from `import_data()`.}
 
-\item{iters}{number of iterations to perform for iterative tests}
+\item{iters}{The number of iterations to perform for iterative tests. Default is 1000.}
 
-\item{treatment}{name of the experimental treatment to use as the `treatment` condition}
+\item{treatment}{The name of the experimental treatment condition to compare.}
 
-\item{t_seconds}{time point of the `treatment` condition to use}
+\item{t_seconds}{The time point of the treatment condition to compare.}
 
-\item{control}{name of the experimental treatment to use as the `control` condition}
+\item{control}{The name of the experimental control condition to compare.}
 
-\item{c_seconds}{time point of the `control` condition to use}
+\item{c_seconds}{The time point of the control condition to compare.}
 
-\item{tests}{character vector of tests to use, one or more of: `norm_quantile`, `bootstrap_t`, `wilcoxon`, `kruskal-wallis`, `rank_product`}
+\item{tests}{A character vector of tests to use, one or more of: 'norm_quantile', 'bootstrap_t', 'wilcoxon', 'kruskal-wallis', 'rank_product'.}
 }
 \value{
-dataframe with original and replaced quantification values, natural fold change, biological replicates and p-value / fdr for each
+A data frame with information about original and replaced quantification values, natural fold changes, replicates, p-values, false discovery rate (FDR), and statistical power for each peptide.
 }
 \description{
-For each peptide this function carries out the selected tests to determine peptides
-that are differentially abundant in the two experiments specified. Before tests are
-performed the technical replicates are merged and lowest observed value replacement
-for each missing biological replicate is done. All comparisins are performed as `treatment / control`
+This function compares peptide quantities between experimental conditions and applies selected statistical tests to identify differentially abundant peptides. The function calculates natural fold changes, performs various tests, and provides information about replicates and statistical power.
 }
+\examples{
+# Example using imported data and performing a bootstrap t-test:
+data_file <- "peptide_quantification_data.csv"
+imported_data <- import_data(data_file)
+comparison_result <- compare(imported_data, treatment = "A", control = "B", tests = "bootstrap_t")
+
+}
+\seealso{
+\code{\link{import_data}}, \code{\link{select_columns_for_contrast}}, \code{\link{min_peptide_values}},
+\code{\link{mean_fold_change}}, \code{\link{get_percentile_lowest_observed_value_iterative}},
+\code{\link{get_bootstrap_percentile}}, \code{\link{get_wilcoxon_percentile}}, \code{\link{get_kruskal_percentile}},
+\code{\link{get_rp_percentile}}, \code{\link{get_power}}
+
+Other statistical analysis: 
+\code{\link{compare_many}()},
+\code{\link{get_bootstrap_percentile}()},
+\code{\link{get_kruskal_percentile}()},
+\code{\link{get_percentile_lowest_observed_value_iterative}()},
+\code{\link{get_rp_percentile}()},
+\code{\link{get_wilcoxon_percentile}()}
+}
+\concept{statistical analysis}
+\keyword{data}

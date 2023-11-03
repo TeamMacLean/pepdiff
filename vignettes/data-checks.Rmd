@@ -1,0 +1,126 @@
+---
+title: "Pre Analysis Data Checks"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 2
+vignette: >
+  %\VignetteIndexEntry{data-checks}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  fig.width = 6,
+  fig.height = 6,
+  comment = "#>")
+
+options(rmarkdown.html_vignette.check_title = FALSE)
+```
+
+The library `pepdiff` contains a number of plots to let you understand the completeness and the distribution of the abundance values. In this document we will look at those.
+
+
+First we must load the package and some sample data. The code here finds a data file from within the package itself then  passes that to the `import_data()` function to load the data itself, saving it in an object called `raw`.
+
+## Loading raw data
+
+```{r setup, warning=FALSE}
+library(pepdiff)
+
+sample_data_path <- fs::path_package("extdata", "anon.csv", package="pepdiff")
+raw <- import_data(sample_data_path,                  
+                   gene_id = "gene_name",
+                   treatment = "treatment_name")
+```
+
+We can look at `raw` with `str()`
+
+```{r}
+str(raw)
+```
+
+We can see that this is a `tidy` style dataframe, the column names are written down the left and we have one row for every measurement. 
+
+
+## Examining peptide coverage
+
+With the raw data loaded we can start to use `pepdiff` functions to look at the data. We can look at peptide counts across samples as follows
+
+```{r}
+plot_peptides_measured(raw)
+```
+
+We can also tell what the function does by pulling up the documentation using the `help()` function in R. 
+
+```{r, eval=FALSE}
+help(plot_peptides_measured)
+```
+
+```{r, echo=FALSE}
+helpfile <- utils:::.getHelpFile(help(plot_peptides_measured))
+outfile <- tempfile(fileext = ".html")
+tools:::Rd2HTML(helpfile, out =outfile)
+rawHTML <- paste(readLines(outfile), collapse="\n")
+knitr::asis_output(htmltools::htmlPreserve(rawHTML))
+```
+
+Remember we can use `help()` for any function
+
+
+## Examining missing peptides 
+
+We can assess the completeness of measurement and therefore the extent to which we will have to perform replacement later by using `plot_missing_peptides()`
+
+```{r}
+plot_missing_peptides(raw)
+```
+
+The heatmap shows the percent of missing (NA) peptide quantification values by biological and technical replicates. Note these are values that have no record in the original data. Any values in the original data that were recorded as zero have got a value and are therefore _not_ missing. If you intended zero to mean missing or not measured, you may need to clean your data prior.
+
+## Examine the distribution of quantification values
+
+We would like to know how the values of quantification are distributed. We can do that with `plot_quant_distributions()`
+
+```{r}
+plot_quant_distributions(raw, log = FALSE, base = 2)
+```
+
+This function takes the raw data and generates density plots to visualize the distribution of peptide quantity for biological replicates, time points, and treatments. Tech Reps are merged. It can optionally apply a logarithmic transformation to the quantity values.
+
+### Normal QQ plot
+
+We can check directly the similarity to a normal distribution with the same mean and SD as our data with `plot_norm_qq()`
+
+```{r}
+plot_norm_qq(raw, log=FALSE, base = 2)
+```
+
+This function takes a data frame and generates a Normal QQ plot to visualize the distribution of peptide quantity in biological replicates. It can optionally apply a logarithmic transformation to the quantity values.
+
+The idea of the Normal QQ plot is that the experimental values are plotted against random values from the Normal distribution, the closer the correlation, the more similar your data are to a Normal distribution. The line is the line that would fit the Normal distribution. Deviation of the points from the line indicate a misfit to the Normal distribution.
+
+
+## Examine the similarity of measurements between samples
+
+It is important to check the similarity within samples, the samples exposed to the same conditions should cluster closer together. We can do a PCA clustering with the function `plot_pca()`.
+
+```{r}
+plot_pca(raw)
+```
+
+This function performs Principal Component Analysis (PCA) on input data and generates a PCA plot and a screeplot. Each subplot shows the samples coloured by bio rep, treatment or seconds. Points should cluster according to the natural clustering expected of the samples. Outliers should be visible here.
+
+### k-means clustering on samples
+
+We can also do k-means clustering. We would expect one cluster per distinct sample type. We can use the `plot_sample_kmeans()` function.
+
+```{r}
+plot_sample_kmeans(raw)
+```
+
+This function applies k-Means clustering to the first three principal components obtained from PCA analysis of the data and then plots it. It estimates the expected value of $k$ from the sample structure in the data. 
+
+

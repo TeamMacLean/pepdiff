@@ -1,9 +1,76 @@
-#' get p values for contrast using normal percentile
+
+
+#' do a power analysis for each peptide
+#'
+#' takes the treatment and control values for a peptide and
+#' assesses the probability of finding a difference if one exists at the
+#' calculated Cohen's d effect size, the standard deviation and sample size for
+#' these data. The power required for a two-tailed t-test, Cohen's d and an
+#' an estimate of the number of replicates required to reach a given proabability
+#' of detecting a difference at that effect size are returned
 #'
 #' @param treatment matrix of treatment data columns
 #' @param control matrix of control data columns
-#' @param iters number of iterations to perform
-#' @return dataframe with one column `norm_quantile_pval`
+#' @param sig_level p-value expected to be used in statistical tests
+#' @param b minimal power of test expected
+#' @param max_n maximum number of reps to try when searching for replicates needed to reach power of b
+#' @export
+get_power <- function(treatment, control, sig_level=0.05, b=0.8, max_n=50) {
+
+  n <- min( c(ncol(treatment), ncol(control)) )
+  ncols <- dim(treatment)[1]
+  powers <- rep(NA, ncols)
+  ds <- rep(NA, ncols)
+  target_reps <- rep(NA,ncols)
+  for (i in 1:ncols){
+    ds[i] <- lsr::cohensD(treatment[i,], control[i,])
+    powers[i] <- pwr::pwr.t.test(n = n, d = ds[i], sig.level = sig_level)$power
+     t <- n
+     s <- powers[i]
+     if (is.na(s)){
+       s <- 0.00001
+     }
+     while (s < b){
+       s <- pwr::pwr.t.test(n=t, d=ds[i], sig.level = sig_level)$power
+       if (is.na(s)){
+         s <- 0.00001
+       }
+       t <- t+1
+       if (t == max_n){
+         break
+       }
+     }
+     target_reps[i] <-  t
+  }
+
+  return(list(min_reps = target_reps,
+              d = ds,
+              power = powers
+              ))
+}
+
+
+#' Calculate p-values based on iterative resampling using the lowest observed value replacement.
+#'
+#' This function computes p-values for each peptide based on iterative resampling with replacement. For each peptide, the function generates synthetic datasets by resampling the control group values while replacing the lowest observed value. It then compares the treatment group's mean to the distribution of means from the synthetic datasets to estimate p-values.
+#'
+#' @param treatment A dataframe representing the treatment group with quantitative values for each peptide.
+#' @param control A dataframe representing the control group with quantitative values for each peptide.
+#' @param iters The number of iterations to perform for each peptide.
+#'
+#' @return A dataframe containing p-values based on the lowest observed value replacement approach.
+#'
+#' @import stats
+#'
+#' @examples
+#' # Example using two dataframes for treatment and control with 1000 iterations:
+#' treatment_data <- data.frame(peptide1 = c(10, 20, 30), peptide2 = c(15, 25, 35))
+#' control_data <- data.frame(peptide1 = c(12, 22, 32), peptide2 = c(18, 28, 38))
+#' result <- get_percentile_lowest_observed_value_iterative(treatment_data, control_data, iters = 1000)
+#'
+#' @keywords data
+#' @family statistical analysis
+#' @rdname get_percentile_lowest_observed_value_iterative
 get_percentile_lowest_observed_value_iterative <- function(treatment, control, iters = 1000){
 
   peptide_means <- apply(control, MARGIN = 1, mean, na.rm = TRUE)
@@ -27,13 +94,30 @@ get_percentile_lowest_observed_value_iterative <- function(treatment, control, i
   return(data.frame(norm_quantile_pval = r ))
 }
 
-#' get p values for contrast using boostrap t test
+#' Calculate Bootstrap t-test p-values and adjusted false discovery rates for peptide comparisons.
 #'
-#' @param treatment matrix of treatment data columns
-#' @param control matrix of control data columns
-#' @param iters number of iterations to perform
-#' @return dataframe with two columns `bootstrap_t_p_val` and `bootstrap_t_fdr`
-#' @export
+#' This function computes p-values and adjusted false discovery rates (FDR) using the Bootstrap t-test for each peptide comparison between treatment and control groups. The Bootstrap t-test is used to estimate the sampling distribution of the t-statistic by resampling the data, making it a robust method for identifying differences between groups.
+#'
+#' @param treatment A dataframe representing the treatment group with quantitative values for each peptide.
+#' @param control A dataframe representing the control group with quantitative values for each peptide.
+#' @param iters The number of bootstrap iterations to perform for each peptide comparison.
+#'
+#' @return A dataframe containing Bootstrap t-test p-values and corresponding Bonferroni-adjusted FDR values for each peptide comparison.
+#'
+#' @import MKinfer
+#'
+#' @examples
+#' # Example using two dataframes for treatment and control with 1000 bootstrap iterations:
+#' treatment_data <- data.frame(peptide1 = c(10, 20, 30), peptide2 = c(15, 25, 35))
+#' control_data <- data.frame(peptide1 = c(12, 22, 32), peptide2 = c(18, 28, 38))
+#' result <- get_bootstrap_percentile(treatment_data, control_data, iters = 1000)
+#'
+#' @seealso
+#' \code{\link{MKinfer::boot.t.test}}, \code{\link{stats::p.adjust}}
+#'
+#' @keywords data
+#' @family statistical analysis
+#' @rdname get_bootstrap_percentile
 get_bootstrap_percentile <- function(treatment, control, iters){
 
 
@@ -52,12 +136,29 @@ get_bootstrap_percentile <- function(treatment, control, iters){
   return(data.frame(bootstrap_t_p_val = result, bootstrap_t_fdr = stats::p.adjust(result, method = 'bonferroni')))
 }
 
-#' get p values for contrast using Wilcoxon test
+#' Calculate Wilcoxon rank-sum test p-values and adjusted false discovery rates for peptide comparisons.
 #'
-#' @param treatment matrix of treatment data columns
-#' @param control matrix of control data columns
-#' @return dataframe with two columns `wilcoxon_p_val` and `wilcoxon_fdr`
-#' @export
+#' This function computes Wilcoxon rank-sum test (Mann-Whitney U test) p-values for each peptide comparison between treatment and control groups. It also calculates adjusted false discovery rates (FDR) using the Bonferroni method. The Wilcoxon test assesses whether there are significant differences in the distributions of quantitative values between two independent groups.
+#'
+#' @param treatment A dataframe representing the treatment group with quantitative values for each peptide.
+#' @param control A dataframe representing the control group with quantitative values for each peptide.
+#'
+#' @return A dataframe containing Wilcoxon rank-sum test p-values and corresponding Bonferroni-adjusted FDR values for each peptide comparison.
+#'
+#' @import stats
+#'
+#' @examples
+#' # Example using two dataframes for treatment and control:
+#' treatment_data <- data.frame(peptide1 = c(10, 20, 30), peptide2 = c(15, 25, 35))
+#' control_data <- data.frame(peptide1 = c(12, 22, 32), peptide2 = c(18, 28, 38))
+#' result <- get_wilcoxon_percentile(treatment_data, control_data)
+#'
+#' @seealso
+#' \code{\link{stats::wilcox.test}}, \code{\link{stats::p.adjust}}
+#'
+#' @keywords data
+#' @family statistical analysis
+#' @rdname get_wilcoxon_percentile
 get_wilcoxon_percentile <- function(treatment, control){
 
   peptide_count <- dim(control)[1]
@@ -76,12 +177,29 @@ get_wilcoxon_percentile <- function(treatment, control){
   return(data.frame(wilcoxon_p_val = result, wilcoxon_fdr = stats::p.adjust(result, method = 'bonferroni')))
 }
 
-#' get p values for contrast using Kruskal-Wallis test
+#' Calculate Kruskal-Wallis test p-values and adjusted false discovery rates for 2 peptide comparisons.
 #'
-#' @param treatment matrix of treatment data columns
-#' @param control matrix of control data columns
-#' @return dataframe with two columns `kruskal_p_val` and `kruskal_fdr`
-#' @export
+#' This function computes Kruskal-Wallis test p-values for each peptide comparison between treatment and control groups. It also calculates adjusted false discovery rates (FDR) using the Bonferroni method. The Kruskal-Wallis test is used to assess differences in the distributions of quantitative values across multiple groups.
+#'
+#' @param treatment A dataframe representing the treatment group with quantitative values for each peptide.
+#' @param control A dataframe representing the control group with quantitative values for each peptide.
+#'
+#' @return A dataframe containing Kruskal-Wallis test p-values and corresponding Bonferroni-adjusted FDR values for each peptide comparison.
+#'
+#' @import stats
+#'
+#' @examples
+#' # Example using two dataframes for treatment and control:
+#' treatment_data <- data.frame(peptide1 = c(10, 20, 30), peptide2 = c(15, 25, 35))
+#' control_data <- data.frame(peptide1 = c(12, 22, 32), peptide2 = c(18, 28, 38))
+#' result <- get_kruskal_percentile(treatment_data, control_data)
+#'
+#' @seealso
+#' \code{\link{stats::kruskal.test}}, \code{\link{stats::p.adjust}}
+#'
+#' @keywords data
+#' @family statistical analysis
+#' @rdname get_kruskal_percentile
 get_kruskal_percentile <- function(treatment, control){
 
   peptide_count <- dim(control)[1]
@@ -101,11 +219,29 @@ get_kruskal_percentile <- function(treatment, control){
   return(data.frame(kruskal_p_val = result, kruskal_fdr = stats::p.adjust(result, method = 'bonferroni')))
 }
 
-#' get p values for contrast using Rank Products test
+#' Calculate Rank Products test p-values and adjusted false discovery rates for peptide comparisons.
 #'
-#' @param treatment matrix of treatment data columns
-#' @param control matrix of control data columns
-#' @return dataframe with four columns, two for the test each way from RankProducts `rank_prod_p1_p_val`, `rank_prod_p2_p_val` and `rank_prod_p1_fdr`, `rank_prod_p2_fdr`.
+#' This function computes p-values and adjusted false discovery rates (FDR) using the Rank Products (RankProd) statistical test for each peptide comparison between treatment and control groups. The Rank Products test is specifically designed for identifying differentially abundant features (e.g., peptides) in high-throughput data.
+#'
+#' @param treatment A dataframe representing the treatment group with quantitative values for each peptide.
+#' @param control A dataframe representing the control group with quantitative values for each peptide.
+#'
+#' @return A dataframe containing Rank Products test p-values and corresponding adjusted FDR values for each peptide comparison each way.
+#'
+#' @import RankProd
+#'
+#' @examples
+#' # Example using two dataframes for treatment and control:
+#' treatment_data <- data.frame(peptide1 = c(10, 20, 30), peptide2 = c(15, 25, 35))
+#' control_data <- data.frame(peptide1 = c(12, 22, 32), peptide2 = c(18, 28, 38))
+#' result <- get_rp_percentile(treatment_data, control_data)
+#'
+#' @seealso
+#' \code{\link{RankProd::RankProducts}}
+#'
+#' @keywords data
+#' @family statistical analysis
+#' @rdname get_rp_percentile
 #' @export
 get_rp_percentile <- function(treatment, control){
   nt <- dim(treatment)[2]

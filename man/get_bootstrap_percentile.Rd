@@ -2,20 +2,40 @@
 % Please edit documentation in R/stats.R
 \name{get_bootstrap_percentile}
 \alias{get_bootstrap_percentile}
-\title{get p values for contrast using boostrap t test}
+\title{Calculate Bootstrap t-test p-values and adjusted false discovery rates for peptide comparisons.}
 \usage{
 get_bootstrap_percentile(treatment, control, iters)
 }
 \arguments{
-\item{treatment}{matrix of treatment data columns}
+\item{treatment}{A dataframe representing the treatment group with quantitative values for each peptide.}
 
-\item{control}{matrix of control data columns}
+\item{control}{A dataframe representing the control group with quantitative values for each peptide.}
 
-\item{iters}{number of iterations to perform}
+\item{iters}{The number of bootstrap iterations to perform for each peptide comparison.}
 }
 \value{
-dataframe with two columns `bootstrap_t_p_val` and `bootstrap_t_fdr`
+A dataframe containing Bootstrap t-test p-values and corresponding Bonferroni-adjusted FDR values for each peptide comparison.
 }
 \description{
-get p values for contrast using boostrap t test
+This function computes p-values and adjusted false discovery rates (FDR) using the Bootstrap t-test for each peptide comparison between treatment and control groups. The Bootstrap t-test is used to estimate the sampling distribution of the t-statistic by resampling the data, making it a robust method for identifying differences between groups.
 }
+\examples{
+# Example using two dataframes for treatment and control with 1000 bootstrap iterations:
+treatment_data <- data.frame(peptide1 = c(10, 20, 30), peptide2 = c(15, 25, 35))
+control_data <- data.frame(peptide1 = c(12, 22, 32), peptide2 = c(18, 28, 38))
+result <- get_bootstrap_percentile(treatment_data, control_data, iters = 1000)
+
+}
+\seealso{
+\code{\link{MKinfer::boot.t.test}}, \code{\link{stats::p.adjust}}
+
+Other statistical analysis: 
+\code{\link{compare_many}()},
+\code{\link{compare}()},
+\code{\link{get_kruskal_percentile}()},
+\code{\link{get_percentile_lowest_observed_value_iterative}()},
+\code{\link{get_rp_percentile}()},
+\code{\link{get_wilcoxon_percentile}()}
+}
+\concept{statistical analysis}
+\keyword{data}

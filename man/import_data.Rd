@@ -2,7 +2,7 @@
 % Please edit documentation in R/pepdiff.R
 \name{import_data}
 \alias{import_data}
-\title{read data from a file}
+\title{Import and preprocess peptide quantification data from a file or data frame.}
 \usage{
 import_data(
   file,
@@ -16,26 +16,47 @@ import_data(
 )
 }
 \arguments{
-\item{file}{Path to the file to load - must be a csv file}
+\item{file}{A path to a data file (e.g., CSV) or a data frame containing peptide quantification data.}
 
-\item{treatment}{Column containing the treatment of the observation}
+\item{treatment}{The column name representing treatment information in the data. Default is "genotype".}
 
-\item{bio_rep}{Column containing the biological replicate of the observation}
+\item{bio_rep}{The column name representing biological replicate information. Default is "bio_rep".}
 
-\item{tech_rep}{Column containing the technical replicate of the observation}
+\item{tech_rep}{The column name representing technical replicate information. Default is "tech_rep".}
 
-\item{quant}{Column containing the quantitation data}
+\item{quant}{The column name representing the peptide quantification. Default is "total_area"}
 
-\item{seconds}{Column containing timepoint of observation}
+\item{seconds}{The column name representing time points (in seconds). Default is "seconds".}
 
-\item{gene_id}{Column containing the id of the gene this hit}
+\item{gene_id}{The column name representing gene IDs. Default is "gene_id".}
 
-\item{peptide}{Column containing the sequence of this peptide}
+\item{peptide}{The column name representing peptide sequences. Default is "peptide_sequence".}
 }
 \value{
-tibble with columns id, gene_id, peptide, treatment, seconds, bio_rep, tech_rep, quant
+A preprocessed data frame with standardized column names and data types.
 }
 \description{
-reads data, renames columns appropriately, discards unused columns, factors and
-reorders, discards duplicate rows
+This function reads a data file (e.g., CSV) or accepts a data frame as input and preprocesses the data by renaming columns, creating a unique identifier, and ensuring proper data types. It is designed to handle peptide quantification data and standardize the column names for treatment, biological replicate, technical replicate, peptide, gene ID, and more.
 }
+\examples{
+# Example using a CSV file:
+data_file <- "peptide_quantification_data.csv"
+imported_data <- import_data(data_file)
+
+# Example using a data frame:
+data_frame <- data.frame(genotype = c("A", "B", "A"),
+                         bio_rep = c(1, 2, 1),
+                         tech_rep = c(1, 1, 2),
+                         total_area = c(100, 150, 90),
+                         seconds = c(0, 30, 60),
+                         gene_id = c("Gene1", "Gene2", "Gene1"),
+                         quant = runif(3),
+                         peptide_sequence = c("AAA", "BBB", "CCC"))
+
+}
+\seealso{
+\code{\link{dplyr::rename}}, \code{\link{dplyr::mutate}}, \code{\link{dplyr::transmute}}, \code{\link{dplyr::distinct}},
+\code{\link{readr::read_csv}}
+}
+\concept{data manipulation}
+\keyword{data}

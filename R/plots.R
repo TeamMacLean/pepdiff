@@ -1,3 +1,25 @@
+#' This function takes a data frame and generates a bar plot showing the number of peptides measured in different biological replicates, treatments, and time points. It uses the dplyr and ggplot2 packages to perform data manipulation and create the plot.
+#'
+#' @param i A data frame containing the peptide measurement data.
+#'
+#' @return A ggplot object representing the bar plot.
+#'
+#' @export
+#' @import dplyr
+#' @import ggplot2
+#'
+#' @examples
+#'
+#' plot_peptides_measured(data)
+#'
+#' @seealso
+#' \code{\link{dplyr::group_by}}, \code{\link{dplyr::summarise}}, \code{\link{ggplot2::ggplot}},
+#' \code{\link{ggplot2::aes}}, \code{\link{ggplot2::geom_col}}, \code{\link{ggplot2::facet_grid}},
+#' \code{\link{ggplot2::theme_minimal}}, \code{\link{ggplot2::labs}}
+#'
+#' @keywords plot
+#' @family data visualization
+#' @rdname plot_peptides_measured
 plot_peptides_measured <- function(i){
   dplyr::group_by(i, treatment, seconds, bio_rep) %>%
     dplyr::summarise(peptide_count = sum(is_useable(.data$quant))) %>%
@@ -13,14 +35,34 @@ plot_peptides_measured <- function(i){
 }
 
 
-#' plot the representation of peptides in each group.
+#' Plot the percent of missing peptide quantification values by biological and technical replicates.
 #'
-#' Shows what proportion of the whole set of peptides has a NA value in each group
-#' of treatment, seconds, bio rep and tech rep.
+#' This function takes a data frame and generates a heatmap showing the percent of missing (NA) peptide quantification values by biological and technical replicates. It uses the `assess_missing` function to calculate the missing values and ggplot2 for creating the heatmap.
 #'
-#' @param i dataframe with unmerged tech reps; typically from `import_data()`
-#' @return ggplot2 plot
-#' @export
+#' @param i A data frame containing peptide quantification data.
+#'
+#' @return A ggplot object representing the heatmap.
+#'
+#' @import ggplot2
+#' @import viridis
+#'
+#' @examples
+#' data <- data.frame(treatment = rep(c("A", "B"), each = 12),
+#'                    seconds = rep(rep(0, 6), 2),
+#'                    bio_rep = rep(1:6, 2),
+#'                    tech_rep = rep(1:2, each = 6),
+#'                    percent_missing = runif(12, 0, 100))
+#'
+#' plot_missing_peptides(data)
+#'
+#' @seealso
+#' \code{\link{assess_missing}}, \code{\link{ggplot2::ggplot}}, \code{\link{ggplot2::aes}},
+#' \code{\link{ggplot2::geom_tile}}, \code{\link{ggplot2::facet_grid}}, \code{\link{ggplot2::scale_fill_viridis_c}},
+#' \code{\link{ggplot2::theme_minimal}}, \code{\link{ggplot2::labs}}
+#'
+#' @keywords plot
+#' @family data visualization
+#' @rdname plot_missing_peptides
 #' @importFrom rlang .data
 plot_missing_peptides <- function(i){
   assess_missing(i) %>%
@@ -35,39 +77,39 @@ plot_missing_peptides <- function(i){
                    )
 }
 
-#' draw density plots for data
+#' Plot the distribution of peptide quantity/abundance for biological replicates, time points, and treatments.
 #'
-#' Plot distribution of quantity for each treatment, seconds and biological
-#' replicate. For biological replicate mean of technical replicates is taken
-#' @param df dataframe; typically from `import_data()`
-#' @param log perform log transform of data
-#' @param base base to use in log transform
-#' @return ggplot2 plot
-#' @export
+#' This function takes a data frame and generates density plots to visualize the distribution of peptide quantity for biological replicates, time points, and treatments. It can optionally apply a logarithmic transformation to the quantity values.
+#'
+#' @param i A data frame containing peptide quantity data.
+#' @param log Logical, indicating whether to apply a logarithmic transformation to the quantity values. Default is FALSE.
+#' @param base The logarithm base to use if 'log' is TRUE. Default is 2.
+#'
+#' @return A ggplot object representing the density plots.
+#'
+#' @import dplyr
+#' @import ggplot2
+#' @import viridis
+#'
+#' plot_quant_distributions(data)
+#'
+#' @seealso
+#' \code{\link{combine_tech_reps}}, \code{\link{ggplot2::ggplot}}, \code{\link{ggplot2::aes}},
+#' \code{\link{ggplot2::geom_density}}, \code{\link{ggplot2::facet_grid}}, \code{\link{ggplot2::scale_fill_viridis_d}},
+#' \code{\link{ggplot2::theme_minimal}}, \code{\link{ggplot2::labs}}
+#'
+#' @keywords plot
+#' @family data visualization
+#' @rdname plot_quant_distributions
 #' @importFrom rlang .data
 plot_quant_distributions <- function(i, log = FALSE, base = 2){
 
   i <- combine_tech_reps(i)
   bio_rep_count <- length(unique(i$bio_rep))
-  # p <- NULL
-  # if(log){
-  #   p <- dplyr::mutate(df, log_mean_tr_quant = log(.data$mean_tr_quant, base = base)) %>%
-  #     ggplot2::ggplot() +
-  #     ggplot2::aes(x = .data$log_mean_tr_quant) +
-  #     ggplot2::geom_density(  ggplot2::aes(fill = .data$bio_rep), alpha = I(1/bio_rep_count))
-  # } else {
-  #   p <- ggplot2::ggplot(df) +
-  #     ggplot2::aes(x = .data$mean_tr_quant) +
-  #     ggplot2::geom_density(ggplot2::aes(fill = .data$bio_rep),alpha = I(1/bio_rep_count))
-  # }
-  # p +
-  #
-  #   ggplot2::facet_grid(treatment ~ seconds) +
-  #   ggplot2::scale_fill_viridis_d() +
-  #   ggplot2::theme_minimal() +
-  #   ggplot2::labs(x=)
 
-  dplyr::mutate(i, mean_tr_quant = dplyr::if_else(log, log(.data$mean_tr_quant, base = base), .data$mean_tr_quant)) %>%
+  dplyr::mutate(i,
+                log = log,
+                mean_tr_quant = dplyr::if_else(log, log(.data$mean_tr_quant, base = base), .data$mean_tr_quant)) %>%
     ggplot2::ggplot() +
     ggplot2::aes(x = .data$mean_tr_quant) +
     ggplot2::geom_density(  ggplot2::aes(fill = .data$bio_rep), alpha = I(1/bio_rep_count)) +
@@ -78,28 +120,39 @@ plot_quant_distributions <- function(i, log = FALSE, base = 2){
 
 }
 
-#' draw qqplots for data
+#' Create a Normal QQ plot of peptide quantity in biological replicates.
 #'
-#' Plot qqplot of distribution of quantifications in data for each treatment,
-#' seconds and biological replicate
-#' @param i dataframe; typically from `import_data()`
-#' @param log perform log transform of data
-#' @param base base to use in log transform
-#' @return ggplot2 plot
-#' @export
+#' This function takes a data frame and generates a Normal QQ plot to visualize the distribution of peptide quantity in biological replicates. It can optionally apply a logarithmic transformation to the quantity values.
+#'
+#' @param i A data frame containing peptide quantity data.
+#' @param log Logical, indicating whether to apply a logarithmic transformation to the quantity values. Default is FALSE.
+#' @param base The logarithm base to use if 'log' is TRUE. Default is 2.
+#'
+#' @return A ggplot object representing the Normal QQ plot.
+#'
+#' @import dplyr
+#' @import ggplot2
+#' @import viridis
+#'
+#' @examples
+#'
+#' plot_norm_qq(data)
+#'
+#' @seealso
+#' \code{\link{combine_tech_reps}}, \code{\link{ggplot2::ggplot}}, \code{\link{ggplot2::aes}},
+#' \code{\link{ggplot2::geom_qq}}, \code{\link{ggplot2::geom_qq_line}}, \code{\link{ggplot2::facet_grid}},
+#' \code{\link{ggplot2::scale_color_viridis_d}}, \code{\link{ggplot2::theme_minimal}}, \code{\link{ggplot2::labs}}
+#'
+#' @keywords plot
+#' @family data visualization
+#' @rdname plot_norm_qq
 #' @importFrom rlang .data
 plot_norm_qq <- function(i, log = FALSE, base = 2){
-  #return(NULL)
-  #df <- combine_tech_reps(df)
-  # if(log){
-  #   p <- dplyr::mutate(df, log_mean_tr_quant = log(.data$mean_tr_quant, base = base)) %>%
-  #     ggplot2::ggplot() +   ggplot2::aes(sample = .data$log_mean_tr_quant)
-  # } else {
-  #   p <-   ggplot2::ggplot(df) +
-  #     ggplot2::aes(sample = .data$mean_tr_quant)
-  # }
+
   combine_tech_reps(i) %>%
-  dplyr::mutate(mean_tr_quant = dplyr::if_else(log, log(.data$mean_tr_quant, base = base), .data$mean_tr_quant)) %>%
+  dplyr::mutate(
+    log = log,
+    mean_tr_quant = dplyr::if_else(log, log(.data$mean_tr_quant, base = base), .data$mean_tr_quant)) %>%
     ggplot2::ggplot() +
     ggplot2::aes(sample = .data$mean_tr_quant) +
     ggplot2::geom_qq(  ggplot2::aes(colour = .data$bio_rep)) +
@@ -405,14 +458,35 @@ get_sig_rows <- function(l, metric="bootstrap_t_pval", sig_level=0.05){
   return(sig_rows)
 }
 
-#' plots a pca on the treatment, seconds, bio-rep
+#' Create a PCA (Principal Component Analysis) plot and screeplot for multivariate data.
 #'
-#' Performs and draws a PCA plot with four panels, PCA with sample names
-#' coloured by treatment, seconds and biorep and a scree plot of the PCA dimensions
+#' This function performs Principal Component Analysis (PCA) on input data and generates a PCA plot and a screeplot. The PCA plot visualizes the data points in a two-dimensional space defined by the first two principal components, and it is  colored by biological replicate, treatment, or time point in each subplot. The screeplot shows the proportion of variance explained by each principal component.
 #'
-#' @param df dataframe, typically from `import_data()`
-#' @return ggplot2 plot
-#' @export
+#' @param df A data frame containing multivariate data.
+#'
+#' @return A combined ggplot object representing the PCA plot and screeplot.
+#'
+#' @import ggplot2
+#' @import tidyr
+#' @import dplyr
+#' @import stats
+#' @import factoextra
+#' @import cowplot
+#' @import viridis
+#'
+#' @examples
+#'
+#' plot_pca(data)
+#'
+#' @seealso
+#' \code{\link{matrix_data}}, \code{\link{min_peptide_values}}, \code{\link{stats::prcomp}},
+#' \code{\link{factoextra::fviz_screeplot}}, \code{\link{ggplot2::ggplot}}, \code{\link{ggplot2::aes}},
+#' \code{\link{ggplot2::geom_text}}, \code{\link{ggplot2::theme_minimal}}, \code{\link{ggplot2::scale_color_viridis_d}},
+#' \code{\link{cowplot::plot_grid}}
+#'
+#' @keywords plot
+#' @family data visualization
+#' @rdname plot_pca
 #' @importFrom rlang .data
 plot_pca <- function(df) {
 
@@ -449,16 +523,32 @@ plot_pca <- function(df) {
   cowplot::plot_grid(a,b,c,d, nrow = 2, ncol=2)
 }
 
-#' K-means cluster the data on the samples
+#' Apply k-Means clustering to sample data and visualize the clustering results.
 #'
-#'Performs and draws a K-means cluster on the samples. Estimates number of clusters
-#'as the product of the number of treatments and seconds. So tries to group the bio reps together
+#' This function applies k-Means clustering to the first three principal components obtained from PCA analysis of the data. k is estimated from the sample It then visualizes the clustering results by creating a scatterplot of the PCA components, color-coded according to the k-Means clusters the samples fall into.
 #'
-#' @param df dataframe, typically from `import_data()`
-#' @param nstart nstart points for `kmeans()` function
-#' @param iter.max max iterations to perform for `kmeans()` function
-#' @return ggplot2 plot
-#' @export
+#' @param df A data frame containing multivariate data.
+#' @param nstart The number of random initializations for the k-Means algorithm. Default is 25.
+#' @param iter.max The maximum number of iterations for the k-Means algorithm. Default is 1000.
+#'
+#' @return A ggplot object representing the k-Means clustering results.
+#'
+#' @import stats
+#' @import factoextra
+#' @import viridis
+#' @import ggplot2
+#'
+#' @examples
+#'
+#' plot_sample_kmeans(data, nstart = 25, iter.max = 1000)
+#'
+#' @seealso
+#' \code{\link{matrix_data}}, \code{\link{min_peptide_values}}, \code{\link{stats::prcomp}},
+#' \code{\link{factoextra::fviz_cluster}}, \code{\link{ggplot2::theme_minimal}}, \code{\link{viridis::viridis}}
+#'
+#' @keywords plot
+#' @family data visualization
+#' @rdname plot_sample_kmeans
 plot_sample_kmeans <- function(df, nstart = 25, iter.max = 1000){
   n <- length(unique(df$treatment)) * length(unique(df$seconds))
   if (n < 1) {
@@ -481,7 +571,6 @@ plot_sample_kmeans <- function(df, nstart = 25, iter.max = 1000){
 #' draws a plot of peptide count against log fc at either protein or peptide level for samples
 #' @param l list of results data frames, typically from `compare_many()` or single data frame from `compare()`
 #' @param metric single metric to use for volcano plot
-#' @param log log the data
 #' @param base base for logging
 #' @param sig_level significance cutoff for colour
 #' @param metric metric to use for significance
@@ -491,7 +580,7 @@ plot_sample_kmeans <- function(df, nstart = 25, iter.max = 1000){
 #' @export
 #'
 #' @importFrom rlang .data
-plot_volcano <- function(l, log = FALSE, base = 2, sig_level = 0.05, metric = "bootstrap_t_p_val", option="E", direction=-1  ) {
+plot_volcano <- function(l, base = 2, sig_level = 0.05, metric = "bootstrap_t_p_val", option="E", direction=-1  ) {
   xlabtxt <- paste0("Log ",base," Fold Change")
   ylabtxt <- paste0("-Log ",base, " P")
   dplyr::bind_rows(l, .id = "comparison")  %>%
@@ -615,7 +704,77 @@ plot_kmeans_cluster_hmap <- function(kl, col_order=NULL, logged=TRUE, base=NULL,
 
 }
 
-plot_kmeans_cluster_profile <- function(kl){
+plot_power_analysis <- function(r) {
+
+  dplyr::bind_rows(r, .id = "comparison") %>%
+    dplyr::select(.data$comparison, .data$power, .data$d, .data$min_reps) %>%
+    tidyr::pivot_longer(cols = c("power", "d", "min_reps"), names_to = "statistic") %>%
+    #dplyr::filter(statistic == "d") %>%
+    ggplot2::ggplot() +
+    ggplot2::aes(value) +
+    ggplot2::geom_histogram(fill = "steelblue") +
+    ggplot2::facet_wrap(ggplot2::vars(statistic, comparison), nrow=3, scales="free", shrink=TRUE, labeller = ggplot2::labeller(statistic = c(power="Power", d="Cohen's D", min_reps="Minimal Replicates")))    +
+    ggplot2::theme_minimal() +
+    ggplot2::xlab("") +
+    ggplot2::ylab("Count")
+
 
 }
 
+plot_fold_change_power_volcano <- function(r, base=2, b=0.8, option="E", direction=-1) {
+
+    dplyr::bind_rows(r, .id = "comparison") %>%
+      dplyr::select(.data$comparison, .data$power, .data$d, .data$min_reps,.data$fold_change) %>%
+      dplyr::mutate(fold_change = log(fold_change, base),
+                    powered = dplyr::if_else(power >=b, "Sufficient Power", "Under Power")
+                    ) %>%
+      ggplot2::ggplot() +
+      ggplot2::aes(fold_change, power) +
+      ggplot2::geom_point(ggplot2::aes(colour = powered)) +
+      ggplot2::facet_wrap(ggplot2::vars(comparison)) +
+      ggplot2::theme_minimal() +
+    ggplot2::scale_colour_viridis_d(option=option, direction=direction) +
+    ggplot2::xlab("Log Fold Change") +
+    ggplot2::ylab("P detection of Fold Change, given variability, at p-value previously chosen") +
+    ggplot2::labs(colour = "Power")
+
+}
+
+
+find_emoji <- function(n) {
+  dplyr::case_when(
+    n > 0.95 ~ "smile",
+    n > 0.75 ~ "upside_down_face",
+    n > 0.65 ~ "relieved",
+    n > 0.45 ~ "neutral_face",
+    n > 0.2 ~ "no_mouth",
+    n > 0 ~ "coffin"
+
+  )
+}
+
+plot_health <- function(r, b=0.8,hjust=-0.5,vjust=1.5){
+
+  h <- health(r,b)
+
+  ppo <- ggplot2::ggplot() +
+    emojifont::geom_emoji(find_emoji(h['power_health']), size=40, color = "steelblue") +
+    ggplot2::theme_void()
+
+  pco <- ggplot2::ggplot() +
+    emojifont::geom_emoji(find_emoji(h['completeness_health']),size=40, color = "steelblue") +
+    ggplot2::theme_void()
+
+  ph <- ggplot2::ggplot() +
+    emojifont::geom_emoji(find_emoji(h['result_health']),size=40, color = "steelblue") +
+    ggplot2::theme_void()
+
+
+  ggpubr::ggarrange(ppo, pco, ph, labels = c("Power", "Completeness", "Overall"), nrow=1, hjust=hjust, vjust=vjust)
+}
+
+summary_health <- function(r, b=0.8){
+
+  health(r, b) %>%
+  knitr::kable()
+}
