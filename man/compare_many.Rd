@@ -4,7 +4,14 @@
 \alias{compare_many}
 \title{Compare peptide quantities for multiple experimental conditions using selected statistical tests.}
 \usage{
-compare_many(df, comparison, iters = 1000, tests = c("bootstrap_t"))
+compare_many(
+  df,
+  comparison,
+  iters = 1000,
+  tests = c("bootstrap_t"),
+  log = FALSE,
+  base = 2
+)
 }
 \arguments{
 \item{df}{A dataframe containing peptide quantification data, typically obtained from `import_data()`.}
@@ -14,6 +21,10 @@ compare_many(df, comparison, iters = 1000, tests = c("bootstrap_t"))
 \item{iters}{The number of iterations to perform for iterative tests. Default is 1000.}
 
 \item{tests}{#' @param tests character vector of tests to use, one or more of: `norm_quantile`, `bootstrap_t`, `wilcoxon`, `kruskal-wallis`, `rank_product`}
+
+\item{log}{should the data be logged prior to analysis}
+
+\item{base}{base to use for logging (2)}
 }
 \value{
 A list of dataframes, where each dataframe represents the comparison results for a pairwise condition comparison. The names of the list elements are constructed based on the conditions being compared.

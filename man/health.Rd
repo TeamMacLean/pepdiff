@@ -12,9 +12,9 @@ health(r, b = 0.8)
 \item{the}{results object, from `compare()` or `compare_many()`}
 }
 \value{
-integer
+i
 }
 \description{
-returns the proportion of the comparisons done that have statistical power
+returns statistics on the probability of detecting effects on at least half the outcomes and completeness of sampling
 over threshold b
 }

@@ -11,30 +11,51 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.2.3
+Repository:
+  CRAN,
+  Bioconductor
 biocViews:
-Imports: 
+Imports:
+    limma,
+    BiocManager,
+    BiocVersion,
     circlize,
     ComplexHeatmap,
     cowplot,
     dplyr,
+    emojifont,
     factoextra,
+    fitdistrplus,
     forcats,
+    fs,
     ggplot2,
+    ggplotify,
+    ggpubr,
+    grid,
+    htmltools,
+    knitr,
+    lsr,
     magrittr,
     MKinfer,
+    pwr,
     RankProd,
     RColorBrewer,
     readr,
+    renv,
     rlang,
+    rmarkdown,
     stats,
+    stringi,
     stringr,
     tibble,
     tidyr,
+    tools,
     UpSetR,
+    utils,
+    vashr,
     viridis
-Suggests: 
-    knitr,
-    rmarkdown
 Depends:
-    R (>= 4.1.0)
+    R (>= 4.1.0),
+Suggests:
+  fitdistrplus
 VignetteBuilder: knitr

@@ -1,7 +1,8 @@
-##TODO complete a full analysis and plots vignette(s) as per the analysis for Paul and Frank
-## Do a dataset health check (nreps good enough?) percent missing?
-## Make replacement strategy optional.
-## write out kmeans
+##TODO
+## document functions
+## update plot_compared_calls to include new tests
+## Tests
+## Check installation
 
 #' Import and preprocess peptide quantification data from a file or data frame.
 #'
@@ -19,9 +20,7 @@
 #'
 #' @return A preprocessed data frame with standardized column names and data types.
 #'
-#' @import dplyr
-#' @import readr
-#'
+#' @export
 #' @examples
 #' # Example using a CSV file:
 #' data_file <- "peptide_quantification_data.csv"
@@ -130,12 +129,11 @@ count_peptides_measured <- function(df){
 #' @param t_seconds The time point of the treatment condition to compare.
 #' @param control The name of the experimental control condition to compare.
 #' @param c_seconds The time point of the control condition to compare.
-#' @param tests A character vector of tests to use, one or more of: 'norm_quantile', 'bootstrap_t', 'wilcoxon', 'kruskal-wallis', 'rank_product'.
+#' @param tests A character vector of tests to use, one or more of: 'norm_quantile', 'bootstrap_t', 'wilcoxon', 'kruskal-wallis', 'rank_product', 'gamma', 'eb'
 #'
 #' @return A data frame with information about original and replaced quantification values, natural fold changes, replicates, p-values, false discovery rate (FDR), and statistical power for each peptide.
 #'
 #' @export
-#' @import dplyr
 #'
 #' @examples
 #' # Example using imported data and performing a bootstrap t-test:
@@ -158,9 +156,12 @@ compare <- function(df,
                     t_seconds = NA,
                     control = NA,
                     c_seconds = NA,
-                    tests = c("bootstrap_t")){
-  d <- matrix_data(df)
-  selected_cols <- select_columns_for_contrast(
+                    tests = c("bootstrap_t"),
+                    log=FALSE,
+                    base=2){
+  d <- matrix_data(df, log=log, base=base)
+
+    selected_cols <- select_columns_for_contrast(
     d,
     treatment = treatment,
     t_seconds = t_seconds,
@@ -176,7 +177,7 @@ compare <- function(df,
   treatment_reps <- apply(selected_cols$treatment, MARGIN = 1, function(x){ sum(! is.na(x))})
   treatment <- apply(selected_cols$treatment, MARGIN = 2, replace_vals, lowest_vals)
   control <- apply(selected_cols$control, MARGIN = 2, replace_vals, lowest_vals)
-  fc <- mean_fold_change(treatment, control)
+  fc <- mean_fold_change(treatment, control, log)
 
   treatment_mean_count <- rowMeans(treatment, na.rm = TRUE)
   control_mean_count <- rowMeans(control, na.rm = TRUE)
@@ -212,6 +213,14 @@ compare <- function(df,
     result$rp <- get_rp_percentile(treatment, control)
   }
 
+  if ("gamma" %in% tests){
+    result$gamma <- get_gamma(treatment, control)
+  }
+
+  if ("eb" %in% tests){
+    result$eb <- get_eb(treatment, control)
+  }
+
 
   powers <- get_power(treatment, control)
   result$power <- powers$power
@@ -229,13 +238,13 @@ compare <- function(df,
 #' @param df A dataframe containing peptide quantification data, typically obtained from `import_data()`.
 #' @param comparison A comparison dataframe specifying the experimental conditions to compare. Each row defines a pairwise condition comparison, including treatment, control, and time points. If not already a data frame, you can provide a path to a CSV file, and it will be read into a data frame.
 #' @param iters The number of iterations to perform for iterative tests. Default is 1000.
-#' @param tests #' @param tests character vector of tests to use, one or more of: `norm_quantile`, `bootstrap_t`, `wilcoxon`, `kruskal-wallis`, `rank_product`
+#' @param tests #' @param tests character vector of tests to use, one or more of: `norm_quantile`, `bootstrap_t`, `wilcoxon`, `kruskal-wallis`, `rank_product`, `gamma`, `eb`
+#' @param log should the data be logged prior to analysis
+#' @param base base to use for logging (2)
 #'
 #' @return A list of dataframes, where each dataframe represents the comparison results for a pairwise condition comparison. The names of the list elements are constructed based on the conditions being compared.
 #'
 #' @export
-#' @import dplyr
-#' @import readr
 #'
 #' @examples
 #' # Example using imported data and a comparison dataframe:
@@ -250,7 +259,7 @@ compare <- function(df,
 #' @keywords data
 #' @family statistical analysis
 #' @rdname compare_many
-compare_many <- function(df, comparison, iters = 1000, tests = c("bootstrap_t")) {
+compare_many <- function(df, comparison, iters = 1000, tests = c("bootstrap_t"), log=FALSE, base=2) {
   if (!is.data.frame(comparison)) {
     comparison <- readr::read_csv(comparison )
   }
@@ -272,7 +281,8 @@ compare_many <- function(df, comparison, iters = 1000, tests = c("bootstrap_t"))
             treatment = treatment,
             t_seconds = t_seconds,
             control = control,
-            c_seconds = c_seconds)
+            c_seconds = c_seconds,
+            log=log, base=base)
 
   }
 
@@ -284,12 +294,12 @@ compare_many <- function(df, comparison, iters = 1000, tests = c("bootstrap_t"))
 
 #' summarize the health of the experiment as a whole
 #'
-#' returns the proportion of the comparisons done that have statistical power
+#' returns statistics on the probability of detecting effects on at least half the outcomes and completeness of sampling
 #' over threshold b
 #'
 #' @param the results object, from `compare()` or `compare_many()`
 #' @param b the statistical power at which to evaluate
-#' @return integer
+#' @return i
 #' @export
 health <- function(r, b=0.8) {
 
@@ -300,19 +310,41 @@ health <- function(r, b=0.8) {
    complete.cases() %>%
    sum()
 
- po <- sum(r$power >=b,na.rm=TRUE) / nrow(r)
+ po <- 1/2 - min(r$power, na.rm=TRUE)
  co <- cc / nrow(r)
 
  c(
    power_health = po,
-   completeness_health = co,
-   result_health = (po + co ) / 2
+   completeness_health = co
  )
 
 }
 
+#' Count Peptides Needing a give Number of Replicates
+#'
+#' This function takes results object and counts the number of peptides
+#' that need fewer than a specified minimum number of replicates for the given power.
+#'
+#' @param r results usually from `compare_many()`  containing information about peptide comparisons.
+#' @param m The minimum number of replicates required for a peptide at the given power.
+#' @param b The power threshold for categorizing comparisons ("Sufficient Power" or "Under Power").
+#'
+#' @return A data frame with counts of peptides for each comparison and power category.
+#'
+#' @export
+#' @examples
+#' # Example Usage:
+#' count_peptides_needing_m_reps(results, m = 10, b = 0.8)
+#'
+count_peptides_needing_m_reps <- function(r, m=10, b=0.8) {
 
-
+  dplyr::bind_rows(r, .id = "comparison") %>%
+    dplyr::filter(min_reps < m) %>%
+    dplyr::mutate(power = dplyr::if_else(power >=b, "Sufficient Power", "Under Power")) %>%
+    dplyr::group_by(comparison, power) %>%
+    dplyr::tally() %>%
+    knitr::kable()
+}
 
 
 

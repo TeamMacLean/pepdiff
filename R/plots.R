@@ -5,8 +5,6 @@
 #' @return A ggplot object representing the bar plot.
 #'
 #' @export
-#' @import dplyr
-#' @import ggplot2
 #'
 #' @examples
 #'
@@ -43,8 +41,6 @@ plot_peptides_measured <- function(i){
 #'
 #' @return A ggplot object representing the heatmap.
 #'
-#' @import ggplot2
-#' @import viridis
 #'
 #' @examples
 #' data <- data.frame(treatment = rep(c("A", "B"), each = 12),
@@ -64,6 +60,7 @@ plot_peptides_measured <- function(i){
 #' @family data visualization
 #' @rdname plot_missing_peptides
 #' @importFrom rlang .data
+#' @export
 plot_missing_peptides <- function(i){
   assess_missing(i) %>%
     ggplot2::ggplot() +
@@ -87,9 +84,7 @@ plot_missing_peptides <- function(i){
 #'
 #' @return A ggplot object representing the density plots.
 #'
-#' @import dplyr
-#' @import ggplot2
-#' @import viridis
+#' @examples
 #'
 #' plot_quant_distributions(data)
 #'
@@ -102,6 +97,7 @@ plot_missing_peptides <- function(i){
 #' @family data visualization
 #' @rdname plot_quant_distributions
 #' @importFrom rlang .data
+#' @export
 plot_quant_distributions <- function(i, log = FALSE, base = 2){
 
   i <- combine_tech_reps(i)
@@ -130,10 +126,6 @@ plot_quant_distributions <- function(i, log = FALSE, base = 2){
 #'
 #' @return A ggplot object representing the Normal QQ plot.
 #'
-#' @import dplyr
-#' @import ggplot2
-#' @import viridis
-#'
 #' @examples
 #'
 #' plot_norm_qq(data)
@@ -147,6 +139,7 @@ plot_quant_distributions <- function(i, log = FALSE, base = 2){
 #' @family data visualization
 #' @rdname plot_norm_qq
 #' @importFrom rlang .data
+#' @export
 plot_norm_qq <- function(i, log = FALSE, base = 2){
 
   combine_tech_reps(i) %>%
@@ -164,13 +157,21 @@ plot_norm_qq <- function(i, log = FALSE, base = 2){
 }
 
 
-#' plot histograms of p-values for each test used
+#' Plot Histograms of p-values for Each Test Used
 #'
-#' @param r dataframe or list of result dataframes typically from `compare()` or `compare_many()`
-#' @return ggplot2 plot
+#' This function takes a dataframe or a list of result dataframes, typically obtained from
+#' functions like `compare()` or `compare_many()`, and plots histograms of p-values for each test.
+#'
+#' @param r A dataframe or list of result dataframes.
+#' @return A ggplot2 plot showing histograms of p-values for each test.
 #'
 #' @export
 #' @importFrom rlang .data
+#'
+#' @examples
+#' # Example Usage:
+#' plot_p_value_dist(my_results)
+#'
 plot_p_value_dist <- function(r){
 
   dplyr::bind_rows(r, .id = "comparison") %>%
@@ -186,15 +187,99 @@ plot_p_value_dist <- function(r){
 
 }
 
-#' plot histogram of fold change distribution for a comparison
+#' Plot Quantile-Quantile (QQ) Plot of p-values
 #'
-#' @param r result dataframe or list, typically from `compare()` or `compare_many()`
-#' @param log log the fold change values
-#' @param base base of the log, if used
-#' @return ggplot2 plot
+#' This function takes a dataframe or a list of result dataframes, typically obtained from
+#' functions like `compare()` or `compare_many()`, and generates QQ plots of p-values for each test.
+#'
+#' @param r A dataframe or list of result dataframes.
+#' @return A ggplot2 QQ plot showing the distribution of p-values for each test.
+#'
+#' @export
+#'
+#' @examples
+#' # Example Usage:
+#' plot_p_value_qq(my_results)
+#'
+plot_p_value_qq <- function(r){
+
+  dplyr::bind_rows(r, .id = "comparison") %>%
+
+    dplyr::select(.data$comparison, .data$gene_id, .data$peptide, .data$treatment_replicates, .data$control_replicates, .data$fold_change, dplyr::ends_with("p_val" ) ) %>%
+    tidyr::pivot_longer(dplyr::ends_with("p_val"), names_to = 'test') %>%
+    ggplot2::ggplot() +
+    ggplot2::aes(sample = .data$value) +
+    ggplot2::geom_qq(colour = "steelblue", alpha=0.5, distribution = qunif) +
+    ggplot2::geom_qq_line( distribution = qunif ) +
+    ggplot2::facet_grid( comparison ~ test, scales = 'free') +
+    ggplot2::theme_minimal() +
+    ggplot2::labs(y="Sample Values", x="Theoretical Distribution Values", title="Uniform QQ plot of p-values")
+
+}
+
 #' @export
 #' @importFrom rlang .data
-plot_fc <- function(r, log = TRUE, base = 2){
+plot_fdr_dist <- function(r){
+
+  dplyr::bind_rows(r, .id = "comparison") %>%
+
+    dplyr::select(.data$comparison, .data$gene_id, .data$peptide, .data$treatment_replicates, .data$control_replicates, .data$fold_change, dplyr::ends_with("fdr" ) ) %>%
+    tidyr::pivot_longer(dplyr::ends_with("fdr"), names_to = 'test') %>%
+    ggplot2::ggplot() +
+    ggplot2::aes(.data$value) +
+    ggplot2::geom_histogram(bins = 20, fill="steelblue") +
+    ggplot2::facet_grid( comparison ~ test, scales = 'free') +
+    ggplot2::theme_minimal() +
+    ggplot2::labs(x="FDR", y="Frequency")
+
+}
+
+#' Plot Histograms of False Discovery Rates (FDR)
+#'
+#' This function takes a dataframe or a list of result dataframes, typically obtained from
+#' functions like `compare()` or `compare_many()`, and plots histograms of False Discovery Rates (FDR) for each test.
+#'
+#' @param r A dataframe or list of result dataframes.
+#' @return A ggplot2 plot showing histograms of False Discovery Rates (FDR) for each test.
+#'
+#' @export
+#'
+#' @examples
+#' # Example Usage:
+#' plot_fdr_dist(my_results)
+#'
+plot_fdr_qq <- function(r){
+
+  dplyr::bind_rows(r, .id = "comparison") %>%
+
+    dplyr::select(.data$comparison, .data$gene_id, .data$peptide, .data$treatment_replicates, .data$control_replicates, .data$fold_change, dplyr::ends_with("fdr" ) ) %>%
+    tidyr::pivot_longer(dplyr::ends_with("fdr"), names_to = 'test') %>%
+    ggplot2::ggplot() +
+    ggplot2::aes(sample = .data$value) +
+    ggplot2::geom_qq(colour = "steelblue", alpha=0.5, distribution = qunif) +
+    ggplot2::geom_qq_line( distribution = stats::qunif ) +
+    ggplot2::facet_grid( comparison ~ test, scales = 'free') +
+    ggplot2::theme_minimal() +
+    ggplot2::labs(y="Sample Values", x="Theoretical Distribution Values", title="Uniform QQ plot of FDR")
+
+}
+
+#' Plot Histogram of Fold Change Distribution for a Comparison
+#'
+#' This function takes a result dataframe or a list, typically obtained from functions like
+#' `compare()` or `compare_many()`, and plots a histogram of the fold change distribution for each comparison.
+#'
+#' @param r A result dataframe or list of result dataframes.
+#' @return A ggplot2 plot showing the histogram of fold change distribution for each comparison.
+#'
+#' @export
+#' @importFrom rlang .data
+#'
+#' @examples
+#' # Example Usage:
+#' plot_fc(my_results)
+#'
+plot_fc <- function(r){
   #p <- ggplot2::ggplot(l)
   #if (log) {
   #  p <- p + ggplot2::aes(log(.data$fold_change, base = base))
@@ -203,10 +288,8 @@ plot_fc <- function(r, log = TRUE, base = 2){
   #}
 
   xtitle <- "Fold Change"
-  if (log){ xtitle <- "Log Fold Change"}
   dplyr::bind_rows(r, .id = "comparison") %>%
     dplyr::select(.data$comparison, .data$fold_change ) %>%
-    dplyr::mutate(do_log = log, fold_change = dplyr::if_else(do_log, log(.data$fold_change, base = base), .data$fold_change)) %>%
      ggplot2::ggplot() +
      ggplot2::aes(fold_change) +
      ggplot2::geom_histogram(bins = 25, fill="steelblue") +
@@ -215,47 +298,51 @@ plot_fc <- function(r, log = TRUE, base = 2){
      ggplot2::labs(x=xtitle, y="Frequency")
 }
 
-#' plot qqplot of fold changes from a comparison
-#' @param r result dataframe or list, typically from `compare()` or `compare_many()`
-#' @param log log the fold change values
-#' @param base base of the log, if used
+#' Plot QQ Plot of Fold Changes from a Comparison
+#'
+#' This function takes a result dataframe or a list, typically obtained from functions like
+#' `compare()` or `compare_many()`, and generates a QQ plot of fold changes for each comparison.
+#'
+#' @param r A result dataframe or list of result dataframes.
 #' @export
 #' @importFrom rlang .data
-plot_fc_qq <- function(r, log = TRUE, base = 2 ){
+#'
+#' @examples
+#' # Example Usage:
+#' plot_fc_qq(my_results)
+#'
+plot_fc_qq <- function(r){
 
-  # p <- ggplot2::ggplot(df)
-  # if (log){
-  #   p <- p + ggplot2::aes(sample = log(.data$fold_change, base = base))
-  # } else {
-  #   p <- p + ggplot2::aes(sample = .data$fold_change)
-  # }
   ytitle <- "Sample Values"
-  if (log){ytitle <- "Log Sample Values"}
   dplyr::bind_rows(r, .id = "comparison") %>%
     dplyr::select(.data$comparison, .data$fold_change ) %>%
-    dplyr::mutate(do_log = log, fold_change = dplyr::if_else(do_log, log(.data$fold_change, base = base), .data$fold_change)) %>%
     ggplot2::ggplot() +
     ggplot2::aes(sample = fold_change) +
     ggplot2::geom_qq(colour = "steelblue", alpha=0.5) +
     ggplot2::geom_qq_line(  ) +
     ggplot2::theme_minimal() +
     ggplot2::facet_wrap(~ comparison) +
-    ggplot2::labs(y=ytitle, x="Theoretical Normal Values", title="Normal QQ plot of Fold Changes")
+    ggplot2::labs(y=ytitle, x="Theoretical Distribution Values", title="Normal QQ plot of Fold Changes" )
 
 }
 
 
-#' compare sets of significant peptides called by the used data
+#' Compare Sets of Significant Peptides Called by the Used Data
 #'
-#' produces an UpSet plot showing intersections and set-size of the different
+#' Produces an UpSet plot showing intersections and set-size of the different
 #' sets of significant peptides called by the methods used in the provided result
-#' dataframe
+#' dataframe.
 #'
-#' @param r result dataframe or list typically from `compare()` or `compare_many()`
-#' @param sig significance cut-off to select peptides
-#' @return UpSet plot
+#' @param r A result dataframe or list typically obtained from `compare()` or `compare_many()`.
+#' @param sig Significance cutoff to select peptides.
+#' @return UpSet plot.
 #'
 #' @export
+#'
+#' @examples
+#' # Example Usage:
+#' plot_compared_calls(my_results, sig = 0.05)
+#'
 plot_compared_calls <- function(r, sig = 0.05){
   upper_sig <- 1 - round(sig / 2, 4)
   lower_sig <- round(sig / 2, 4)
@@ -282,7 +369,8 @@ plot_compared_calls <- function(r, sig = 0.05){
                              which(df$rank_prod_p2_p_val <= sig))
     }
 
-    #return(sets)
+    ###if ("eb_" %in% names(df))###
+
     if (length(sets) > 1) {
       UpSetR::upset(UpSetR::fromList(sets), order.by = "freq")
     } else {
@@ -302,7 +390,24 @@ plot_compared_calls <- function(r, sig = 0.05){
   }
 
 }
-
+#' Drop Columns from a Dataframe Based on Significance and Metric
+#'
+#' This function takes a dataframe, removes unnecessary columns based on a significance cutoff and metric,
+#' and returns a modified dataframe.
+#'
+#' @param df The input dataframe.
+#' @param sig Significance cutoff to filter rows.
+#' @param metric The metric used for filtering columns.
+#' @param log Logical, indicating whether to log-transform the fold_change column.
+#' @param base The base for logarithmic transformation.
+#' @param rows_to_keep Optionally, specific rows to keep in the dataframe.
+#'
+#' @return A modified dataframe with selected columns.
+#'
+#' @examples
+#' # Example Usage:
+#' result_df <- drop_columns(my_dataframe, sig = 0.05, metric = "bootstrap_t_p_val", log = TRUE, base = 2)
+#'
 #' @importFrom rlang .data
 drop_columns <- function(df, sig, metric, log, base, rows_to_keep = NULL){
 
@@ -408,11 +513,13 @@ plot_heatmap <- function(r, sig_level = 0.05, metric = "bootstrap_t_fdr", log = 
 #' @param base base used in logging (default = 2)
 #' @param sig_only return only rows with 1 or more values significant at `sig_level` of `metric`
 #' @param sig_level significance level cutoff
-#' @param metric the test metric used to determine significance one of:
+#' @param metric the test metric used to determine significance one of: `metrics()`
 #' `bootstrap_t_p_val`, `bootstrap_t_fdr`
 #' `wilcoxon_p_val`, `wilcoxon_fdr`
 #' `kruskal_p_val`,  `kruskal_fdr`
-#' `rank_prod_p1_p_val`, `rank_prod_p2_p_val`, `rank_prod_p1_fdr`, `rank_prod_p2_fdr`.
+#' `rank_prod_p1_p_val`, `rank_prod_p2_p_val`, `rank_prod_p1_fdr`, `rank_prod_p2_fdr`,
+#' `eb_p_val`, `eb_vs_p_val`, `gamma_p_val`, `eb_fdr`, `eb_vs_fdr`, `gamma_fdr`
+#'
 #' @return matrix
 fold_change_matrix <- function(l, log=TRUE, base=2, sig_only=FALSE, sig_level=0.05, metric="bootstrap_t_fdr") {
 
@@ -429,12 +536,19 @@ fold_change_matrix <- function(l, log=TRUE, base=2, sig_only=FALSE, sig_level=0.
   return( fcm[sigr,] )
 
 }
+
 #' reports metrics available for significance values
+#' @export
 metrics <- function() {
   return( c("bootstrap_t_p_val", "bootstrap_t_fdr",
             "wilcoxon_p_val", "wilcoxon_fdr",
             "kruskal_p_val",  "kruskal_fdr",
-            "rank_prod_p1_p_val", "rank_prod_p2_p_val", "rank_prod_p1_fdr", "rank_prod_p2_fdr")
+            "rank_prod_p1_p_val", "rank_prod_p2_p_val", "rank_prod_p1_fdr", "rank_prod_p2_fdr",
+            "eb_vs_p_val",
+            "eb_vs_fdr" ,
+            "eb_p_val",
+            "eb_fdr", "gamma_p_val", "gamma_fdr"
+            )
           )
 }
 #' works out if a peptide has at least one significant value across the experiment
@@ -466,13 +580,6 @@ get_sig_rows <- function(l, metric="bootstrap_t_pval", sig_level=0.05){
 #'
 #' @return A combined ggplot object representing the PCA plot and screeplot.
 #'
-#' @import ggplot2
-#' @import tidyr
-#' @import dplyr
-#' @import stats
-#' @import factoextra
-#' @import cowplot
-#' @import viridis
 #'
 #' @examples
 #'
@@ -488,6 +595,7 @@ get_sig_rows <- function(l, metric="bootstrap_t_pval", sig_level=0.05){
 #' @family data visualization
 #' @rdname plot_pca
 #' @importFrom rlang .data
+#' @export
 plot_pca <- function(df) {
 
    d <- matrix_data(df)
@@ -533,11 +641,6 @@ plot_pca <- function(df) {
 #'
 #' @return A ggplot object representing the k-Means clustering results.
 #'
-#' @import stats
-#' @import factoextra
-#' @import viridis
-#' @import ggplot2
-#'
 #' @examples
 #'
 #' plot_sample_kmeans(data, nstart = 25, iter.max = 1000)
@@ -549,6 +652,7 @@ plot_pca <- function(df) {
 #' @keywords plot
 #' @family data visualization
 #' @rdname plot_sample_kmeans
+#' @export
 plot_sample_kmeans <- function(df, nstart = 25, iter.max = 1000){
   n <- length(unique(df$treatment)) * length(unique(df$seconds))
   if (n < 1) {
@@ -557,9 +661,9 @@ plot_sample_kmeans <- function(df, nstart = 25, iter.max = 1000){
   d <- matrix_data(df)
   lowest_vals <- min_peptide_values(d)
   d$data <- apply(d$data, MARGIN = 2, replace_vals, lowest_vals)
-  pca <- stats::prcomp(d$data, scale = TRUE, center = TRUE)
+  pca <- prcomp(d$data, scale = TRUE, center = TRUE)
   main_components <- pca$rotation[,1:3]
-  km <- stats::kmeans(main_components, n, nstart=nstart, iter.max = iter.max)
+  km <- kmeans(main_components, n, nstart=nstart, iter.max = iter.max)
   factoextra::fviz_cluster(km, data = main_components, palette = viridis::viridis(n),
                ggtheme = ggplot2::theme_minimal(),
                main = paste0("k-Means Sample: ", n, " Cluster(s)"))
@@ -629,32 +733,51 @@ list2mat <- function(r,column="fold_change") {
   return(x)
 }
 
-#' plots a Figure of Merit curve to help estimate the number of clusters in the results for a given metric and a
-#' given significance level. Clustering is done based on Fold
-#' @param r the results object from `compare()` or `compare_many()`
-#' @param log log the fold changes
-#' @param base base for logging
-#' @param sig_level significance cutoff for colour
-#' @param metric metric to use for significance
+#' Plot Cluster Estimate for Figure of Merit
+#'
+#' This function plots a Figure of Merit curve to help estimate the number of clusters in the results for a given metric and significance level.
+#' Clustering is done based on Fold Change.
+#'
+#' @param r The results object from `compare()` or `compare_many()`.
+#' @param log Logical, indicating whether to log-transform the fold changes.
+#' @param base The base for logarithmic transformation.
+#' @param sig_only Logical, indicating whether to consider only significant values.
+#' @param sig_level Significance cutoff for color.
+#' @param metric The metric to use for significance.
 #' @export
+#'
+#' @examples
+#' # Example Usage:
+#' plot_cluster_estimate(my_results, log = TRUE, base = 2, sig_level = 0.05, metric = "bootstrap_t_fdr")
+#'
 plot_cluster_estimate <- function(r, log=TRUE, base=2, sig_only = FALSE, sig_level = 0.05, metric = "bootstrap_t_fdr") {
   results_mat <- fold_change_matrix(r, log=log, base=base, sig_only=sig_only,sig_level=sig_level, metric = metric)
-  factoextra::fviz_nbclust(results_mat, stats::kmeans, method="wss")
+  factoextra::fviz_nbclust(results_mat, kmeans, method="wss")
 }
 
 
-#' plots the kmeans clusters
-#' @param kl the kmeans clusters from `kmeans_by_selected_cols()`
-#' @param col_order vector of column names in the order you want them to be drawn
-#' @param logged indicates whether the fold changes are logged or not
-#' @param base if logged the base that was used
-#' @param pal pallete to use from RColorBrewer
-#' @param nrow number of rows to plot clusters in
-#' @param legx x position of legend in range (-0.5 .. 0.5)
-#' @param legy y position of legend in range(-0.5 .. 0.5)
-#' @param labh horizontal justification of subplot labels
-#' @param labv vertical justification of subplot labels
+#' Plot Kmeans Clusters Heatmap
+#'
+#' This function plots the kmeans clusters as a heatmap.
+#'
+#' @param kl The kmeans clusters from `kmeans_by_selected_cols()`.
+#' @param col_order Vector of column names in the order you want them to be drawn.
+#' @param logged Indicates whether the fold changes are logged or not.
+#' @param base If logged, the base that was used.
+#' @param pal Palette to use from RColorBrewer.
+#' @param nrow Number of rows to plot clusters in.
+#' @param col_fontsize Font size for column names.
+#' @param row_fontsize Font size for row names.
+#' @param legx X position of legend in range (-0.5 .. 0.5).
+#' @param legy Y position of legend in range(-0.5 .. 0.5).
+#' @param labh Horizontal justification of subplot labels.
+#' @param labv Vertical justification of subplot labels.
 #' @export
+#'
+#' @examples
+#' # Example Usage:
+#' plot_kmeans_cluster_hmap(my_kmeans_clusters, col_order = c("Condition1", "Condition2"), logged = TRUE, base = 2, pal = "RdBu", nrow = 2)
+#'
 plot_kmeans_cluster_hmap <- function(kl, col_order=NULL, logged=TRUE, base=NULL, pal="RdBu", nrow=2, col_fontsize=6, row_fontsize=6, legx=0, legy=-0.45, labh=-1.1, labv=1.1) {
 
 
@@ -704,6 +827,17 @@ plot_kmeans_cluster_hmap <- function(kl, col_order=NULL, logged=TRUE, base=NULL,
 
 }
 
+#' Power Analysis Plot
+#'
+#' This function plots a power analysis histogram for a given comparison.
+#'
+#' @param r Dataframe or list of result dataframes typically from `compare()` or `compare_many()`.
+#' @export
+#'
+#' @examples
+#' # Example Usage:
+#' plot_power_analysis(my_results)
+#'
 plot_power_analysis <- function(r) {
 
   dplyr::bind_rows(r, .id = "comparison") %>%
@@ -716,28 +850,98 @@ plot_power_analysis <- function(r) {
     ggplot2::facet_wrap(ggplot2::vars(statistic, comparison), nrow=3, scales="free", shrink=TRUE, labeller = ggplot2::labeller(statistic = c(power="Power", d="Cohen's D", min_reps="Minimal Replicates")))    +
     ggplot2::theme_minimal() +
     ggplot2::xlab("") +
-    ggplot2::ylab("Count")
+    ggplot2::ylab("")
 
 
 }
 
-plot_fold_change_power_volcano <- function(r, base=2, b=0.8, option="E", direction=-1) {
+#' Power Volcano Plot
+#'
+#' This function plots a volcano plot showing the relationship between fold change, power, and significance.
+#'
+#' @param r Dataframe or list of result dataframes typically from `compare()` or `compare_many()`.
+#' @param which Indicates whether to use "fold_change" or "cohens_d" for the x-axis.
+#' @param base The base for logarithmic transformation if using "fold_change".
+#' @param b Threshold for power to categorize as "Sufficient Power" or "Under Power".
+#' @param option Color scale option for the viridis palette.
+#' @param direction Direction of the viridis color scale.
+#' @export
+#'
+#' @examples
+#' # Example Usage:
+#' plot_power_volcano(my_results, which = "fold_change", base = 2, b = 0.8, option = "E", direction = -1)
+#'
+plot_power_volcano <- function(r, which="fold_change", base=2, b=0.8, option="E", direction=-1) {
 
-    dplyr::bind_rows(r, .id = "comparison") %>%
-      dplyr::select(.data$comparison, .data$power, .data$d, .data$min_reps,.data$fold_change) %>%
-      dplyr::mutate(fold_change = log(fold_change, base),
-                    powered = dplyr::if_else(power >=b, "Sufficient Power", "Under Power")
-                    ) %>%
-      ggplot2::ggplot() +
+    xlab <- "Log Fold Change"
+
+
+    if (which == "cohens_d"){
+      xlab <- "Cohen's D"
+        d <- dplyr::bind_rows(r, .id = "comparison") %>%
+        dplyr::select(.data$comparison, .data$power, .data$d, .data$min_reps,.data$d) %>%
+        dplyr::mutate(fold_change = d,
+                      powered = dplyr::if_else(power >=b, "Sufficient Power", "Under Power"))
+    } else {
+      d <- dplyr::bind_rows(r, .id = "comparison") %>%
+        dplyr::select(.data$comparison, .data$power, .data$d, .data$min_reps,.data$fold_change) %>%
+        dplyr::mutate(fold_change = log(fold_change, base),
+                      powered = dplyr::if_else(power >=b, "Sufficient Power", "Under Power"))
+    }
+
+    p <-     d %>%
+    ggplot2::ggplot() +
       ggplot2::aes(fold_change, power) +
       ggplot2::geom_point(ggplot2::aes(colour = powered)) +
       ggplot2::facet_wrap(ggplot2::vars(comparison)) +
       ggplot2::theme_minimal() +
     ggplot2::scale_colour_viridis_d(option=option, direction=direction) +
-    ggplot2::xlab("Log Fold Change") +
-    ggplot2::ylab("P detection of Fold Change, given variability, at p-value previously chosen") +
+    ggplot2::xlab(xlab) +
+    ggplot2::ylab("P detection of effect, given variability, at p-value previously chosen") +
     ggplot2::labs(colour = "Power")
 
+    if (which == "cohens_d"){
+      p <- p + ggplot2::coord_trans(x="log10")
+    }
+   p
+}
+
+#' Plot Effect of Replicates
+#'
+#' This function plots the effect of replicates based on either Cohen's D or Fold Change.
+#'
+#' @param r Dataframe or list of result dataframes typically from `compare()` or `compare_many()`.
+#' @param which Indicates whether to use "cohens_d" or "fold_change" for the x-axis.
+#' @param b Threshold for power to categorize as "Sufficient Power" or "Under Power".
+#' @export
+#'
+#' @examples
+#' # Example Usage:
+#' plot_effect_replicates(my_results, which = "cohens_d", b = 0.8)
+#'
+plot_effect_replicates <- function(r, which= "cohens_d", b=0.8) {
+  xlab <- "Fold Change"
+  if (which == "cohens_d"){
+    xlab <- "Cohen's D"
+  d <- dplyr::bind_rows(r, .id = "comparison") %>%
+    dplyr::select(.data$comparison, .data$power, .data$d, .data$min_reps,.data$d) %>%
+    dplyr::mutate(fold_change = d,
+                  powered = dplyr::if_else(power >=b, "Sufficient Power", "Under Power"))
+  } else {
+   d <-    dplyr::bind_rows(r, .id = "comparison") %>%
+     dplyr::select(.data$comparison, .data$power, .data$d, .data$min_reps,.data$fold_change) %>%
+     dplyr::mutate(fold_change = log(fold_change, 2),
+                   powered = dplyr::if_else(power >=b, "Sufficient Power", "Under Power"))
+  }
+
+  d %>%
+    ggplot2::ggplot() +
+    ggplot2::aes(fold_change, min_reps ) +
+    ggplot2::geom_point(ggplot2::aes(colour=powered)) +
+    ggplot2::theme_minimal() +
+    ggplot2::facet_wrap(ggplot2::vars(comparison)) +
+    ggplot2::xlab(xlab) +
+    ggplot2::scale_colour_viridis_d(option="E", direction=-1)
 }
 
 
@@ -753,10 +957,27 @@ find_emoji <- function(n) {
   )
 }
 
+
+
+#' Plot Health Indicators
+#'
+#' This function plots health indicators, including power, completeness, and overall health.
+#'
+#' @param r Dataframe or list of result dataframes typically from `compare()` or `compare_many()`.
+#' @param b Threshold for power to categorize as "Sufficient Power" or "Under Power".
+#' @param hjust Horizontal justification for arranging the plots.
+#' @param vjust Vertical justification for arranging the plots.
+#' @export
+#'
+#' @examples
+#' # Example Usage:
+#' plot_health(my_results, b = 0.8, hjust = -0.5, vjust = 1.5)
+#'
 plot_health <- function(r, b=0.8,hjust=-0.5,vjust=1.5){
 
   h <- health(r,b)
 
+  result_health <- mean(h)
   ppo <- ggplot2::ggplot() +
     emojifont::geom_emoji(find_emoji(h['power_health']), size=40, color = "steelblue") +
     ggplot2::theme_void()
@@ -766,15 +987,29 @@ plot_health <- function(r, b=0.8,hjust=-0.5,vjust=1.5){
     ggplot2::theme_void()
 
   ph <- ggplot2::ggplot() +
-    emojifont::geom_emoji(find_emoji(h['result_health']),size=40, color = "steelblue") +
+    emojifont::geom_emoji(find_emoji(result_health),size=40, color = "steelblue") +
     ggplot2::theme_void()
 
 
   ggpubr::ggarrange(ppo, pco, ph, labels = c("Power", "Completeness", "Overall"), nrow=1, hjust=hjust, vjust=vjust)
 }
 
+
+#' Summary of Health Indicators
+#'
+#' This function provides a summary of health indicators, including power, completeness, and overall health.
+#'
+#' @param r Dataframe or list of result dataframes typically from `compare()` or `compare_many()`.
+#' @param b Threshold for power to categorize as "Sufficient Power" or "Under Power".
+#' @export
+#'
+#' @examples
+#' # Example Usage:
+#' summary_health(my_results, b = 0.8)
+#'
+#' @export
 summary_health <- function(r, b=0.8){
 
-  health(r, b) %>%
+  health(r, b=b) %>%
   knitr::kable()
 }

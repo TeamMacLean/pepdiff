@@ -1,0 +1,244 @@
+---
+title: "Inspecting Results"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+vignette: >
+  %\VignetteIndexEntry{Inspecting Results}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+    fig.width = 6,
+  fig.height = 6,
+  comment = "#>"
+)
+```
+
+
+In this document we'll carry out steps of a preliminary, exploratory data anaylsis in order to assess and characterise our data. In a properly designed and executed experimental plan, we would perform these steps on a small sample data set to identify the proper replicate number, sample sizes and steps _before_ using that information to guide the collection of data and the selection of the right tools to analyse it with. Modern biology and 'omics very rarely works like that and in most cases researchers simply plan and collect 3 replicates and conclude from that blindly, assuming that they've found everything to be found, regardless of power because they sampled many features like genes, transcripts or peptides.  
+
+Doing these steps on the data _post hoc_ can help you to see whether you've suffered a car-crash data collection event or not, which can help you not delude yourself when interpreting the data. Be careful though, adjusting the parameters of an unchanged experiment afterwards using information from these inspections (e.g trying to justify a different higher $p$-value) counts as $p$-hacking. Instead stick to your pre-expected $p$-value and test - $p <= 0.05$ and likely the bootstrap $t$-test or the `limma` based Empirical Bayes test. 
+
+
+## Load and analyse data
+
+Let's set up a comparison and analyse it with bootstrap $t$-tests
+
+```{r setup}
+library(pepdiff)
+
+sample_data_path <- fs::path_package("extdata", "anon.csv", package="pepdiff")
+raw <- import_data(sample_data_path,                  
+                   gene_id = "gene_name",
+                   treatment = "treatment_name")
+
+comparisons <- data.frame(
+  control = c('665e6428','665e6428'),
+  c_seconds = c(0,150),
+  treatment = c('665e6428','665e6428'),
+  t_seconds = c(150, 0)
+)
+
+
+results <- compare_many(raw, comparisons, tests = c("bootstrap_t") )
+
+log_results <- compare_many(raw, comparisons, tests = c("bootstrap_t"), log = TRUE)
+```
+
+## Examining the distribution of fold changes
+
+We generally assume that fold changes will be normally distributed across the experiment. We can quickly check that with the function `plot_fc()`
+
+```{r}
+plot_fc(results)
+```
+
+```{r}
+plot_fc_qq(results)
+```
+
+
+These data are skewed, the fold changes seem to have many more extreme values than we would expect from normally distributed values. In itself it isn't a bad thing, but we should be aware of the skew and what it means for interpretation of our set of results. 
+
+## Examining the distribution of $p$-values
+
+### Assumptions
+
+Under a suitable significance test for your data the $p$-value distribution _should_ look uniform under the null hypothesis. What that means is that a distribtion that is mostly flat should appear when you make a histogram of uncorrected $p$-values. Here's an example one made with just 10000 values.
+
+```{r, echo=FALSE}
+data.frame(values = runif(10000)) %>%
+ggplot2::ggplot() +
+  ggplot2::aes(values) +
+  ggplot2::geom_histogram(binwidth = 0.02) + 
+  ggplot2::theme_minimal() +
+  ggplot2::labs(x="", y="")
+```
+
+
+Note that it isn't peaked in the middle or at the ends - nor does it go down at the ends - thats just an artefact of the plotting bin size. 
+
+The noise goes up quite significantly as we get to just 1000 values - which is important to keep in mind as we don't want to misinterpret noise for structure in our data.
+
+Lots of variations on this can appear and they affect our interpretation in different ways. Here's a primer on what to some common situations mean [http://varianceexplained.org/statistics/interpreting-pvalue-histogram/](http://varianceexplained.org/statistics/interpreting-pvalue-histogram/). 
+
+Ideally, we'd have something basically uniform with a peak at the 0 end.
+
+```{r, echo=FALSE}
+data.frame(values = runif(1000)) %>%
+ggplot2::ggplot() +
+  ggplot2::aes(values) +
+  ggplot2::geom_histogram(binwidth=0.02) +
+    ggplot2::theme_minimal() +
+  ggplot2::labs(x="", y="")
+```
+
+### Interpreting sample data
+
+With that in mind we can look at our test data. We can use `plot_p_value_dist()` to see the distribution of uncorrected $p$-values from the tests we ran.
+
+```{r}
+plot_p_value_dist(results)
+```
+
+Note how these are skewed in both types of test, towards 0.75 ish.
+
+We can compare values directly to the theoretical values in `plot_p_value_qq()`
+
+```{r}
+plot_p_value_qq(results)
+```
+
+These data are not a good fit at lower values of $p$, confirming the skew away from lower $p$-values and indicating that the test here are conservative and 
+allowing us to conclude that the test not a great tool for sensitively accurately finding significant differences in our data. Though as it is conservative we should have reduced false positive. A data set like this would likely show fewer signifcant differences than we expect.
+
+### Selecting a test
+
+The value of plotting multiple tests is that we can see which is _least_ bad. We should usually run many tests to start with
+
+```{r, fig.width=10}
+results_all <- compare_many(raw, comparisons, tests = c("bootstrap_t", "rank_product", "
+                                                        wilcoxon",  "kruskal-wallis",
+                                                        "gamma", "eb", "norm_quantile"))
+plot_p_value_dist(results_all)
+plot_p_value_qq(results_all)
+plot_fdr_dist(results_all)
+plot_fdr_qq(results_all)
+```
+
+When we examine the uncorrected $p$-values with these data the standard non-parametric tests (Kruskal-Wallis, Wilcoxon) perform badly ^[Note that the sparse number of distinct p values is due to the small sample sizes for each of these tests, we'd likely have been better just doing a parametric test.].  The iterative ones like bootstrap-t and rank products work much better, but are still conservative. The gamma and empirical Bayes analyses also are conservative. 
+
+
+When we examine the multiple hypothesis test results, we can see that all of the peptides fall below any respectable value of $\alpha$ (the pre-decided level at which we would conclude significance).
+
+```{r, fig.width=10}
+plot_fdr_dist(results_all)
+plot_fdr_qq(results_all)
+```
+
+
+With all the tests we can see fewer than expected small $p$-values. This may be a problem with statistical power and indicate that the test cannot determine significant differences as well as we would hope. That is to say, in statistical terms we have an elevated Type II (false negative) error rate. Perhaps the 'best' choice we have based on interpreting the data here is to use the bootstrap t-test.
+
+We don't want to blindly apply a multiple hypothesis test like Bonferoni or FDR since they assume a uniform distribution of $p$-values and will likely further increase Type II error, rather than correct for Type I (false positives). So to have any detection power at all, we might need to omit that step as it is inappropriate for our distribution of $p$-values. 
+
+## Analysis with log-transformed data
+
+The functions `compare()` and `compare_many()` allow us to apply a log transformation to our data to help them seem more normally distributed. Does this help with fold change distribution and $p$-value distribution. Note we can't use the `gamma` or `eb` option on non-positive values.
+
+
+```{r}
+log_results <- compare_many(raw, comparisons, 
+                            tests = c("bootstrap_t", "rank_product", "wilcoxon",
+                                      "kruskal-wallis", "norm_quantile"),
+                            log = TRUE, base = 2)
+
+plot_fc(log_results)
+plot_fc_qq(log_results)
+plot_p_value_dist(log_results)
+plot_p_value_qq(log_results)
+```
+
+In these examples, logging the data don't appear to make much of a change to the results from the tests. We might have hoped that working with logged data would fit our assumptions better but they don't seem to.
+
+
+## Assessing the statistical power of the tests 
+
+Statistical power roughly means the abilty of a test to detect a significance difference given it is there. It comes from an interplay between effect size, variability and sample size. We think of power as being the probability of being able to detect a given effect (fold change) given a certain amount of variability at a given alpha level. (p-value) `pepdiff` assesses power when you do the tests and provides some functions for plotting and evaluating results.
+
+### Power analysis
+
+The main function is `plot_power_analysis()` which returns histograms of three measures made for each peptide, Cohen's D - a standardised effect size, an estimate of the number of replicates for detecting at power = 0.8 (ie 80% chance of detecting the difference at $p < 0.05$ ) and the distribution of power.
+
+Let's examine them in the sample data
+
+```{r}
+plot_power_analysis(results)
+```
+
+#### Cohen's D
+
+This is a standardised effect size. Effect size is just the size of the effect we measured (fold change) and with Cohen's D we simply transform it so that it can be compared to a consistent scale, kind of like $R^2$ in correlations. An effect size of 0.2 is small, medium is 0.5 and large is 0.8. We can see that there are some quite large effect sizes amongst these data.
+
+#### Power
+
+Power is the probability of getting a significant difference call from the t-test given the effect size, sample size and standard deviation. Used as a guide for the power of the experiment overall, but not exactly the same test as we have available for ease of computation. The distribution is skewed toward very low powers, which is a reflection of the sample size, and high variability of values from the different replicates. This is one of the reason why the distribution of $p$-values came out with a peak of conservativeness, the experiment is quite underpowered.
+
+#### Minimal Replicates
+
+Here we see the distribution of the number of replicates we'd need to increase our sampling to in order to reach the 80% power.  The figure shows that most peptides would need > 50 replicates (the algorithm stops counting at 50). This is to be expected under the assumption that most peptides aren't changing so isnt a disaster. If we tried to get those replicates we'd be chasing differences that aren't really there. We also see in this plot that there is a bump of data at lower replicates - between 5 and 10, so with a few more replicate we might've got a fuller picture.
+
+
+### Comparing power and effect size
+
+The power results and replicate number needed should be considered alongside effect size. That could give us an idea of how much extra experimental power we'd get from increasing replicates
+
+We can do that with `plot_power_volcano()` which will allow us to plot the effect as fold change or Cohen's D and how power changes with it. 
+
+```{r,fig.width=8}
+plot_power_volcano(results, which = "fold_change")
+plot_power_volcano(results, which = "cohens_d" )
+```
+
+The plot clearly shows that only the very largest effect sizes are detectable for significance. That isn't just high fold changes, we do get some low fold changes as significant. Power comes at low effect sizes when variablity is low.
+
+
+
+### Comparing replicate number with effect size
+
+We would next check the relationship between effect size and minimal replicate number for our target power. We can do that with `plot_effect_replicates()`
+
+
+```{r}
+plot_effect_replicates(results, which="fold_change")
+```
+
+These plots show the low power in the data in various ways. 
+
+We can see that in the regions between Fold Change of (0,1) and minimal replicates of (3,6) there are a lot of points that might come to be powered enough with 4,5 or 6 replicates.
+
+```{r}
+plot_effect_replicates(results, which="cohens_d")
+```
+
+Similarly with the Cohen's D plot we can see that we might detect more peptides with a much smaller effect size if we did 4 - 6 replicates. 
+
+### Health
+
+We can get a summaries of health of the data set overall using `summary_health()` which gives us an estimate of power overall as the probability of detecting effects on at least half the peptides (calculated as $\frac{1}{2} - \min{power}$. It also gives us the proportion of peptides with complete cases - represented in all time points and samples. 
+
+```{r}
+summary_health(results)
+```
+
+We can also get not very serious graphical summary, though this won't work in rendered R markdown documents
+
+```{r, eval=FALSE}
+plot_health(results)
+```
+
+

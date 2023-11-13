@@ -82,13 +82,18 @@ The heatmap shows the percent of missing (NA) peptide quantification values by b
 
 ## Examine the distribution of quantification values
 
-We would like to know how the values of quantification are distributed. We can do that with `plot_quant_distributions()`
+We would usually like to know how the values of quantification are distributed, as it helps us determine a modelling strategy for statistical tests later.. We can do that with `plot_quant_distributions()`.
 
 ```{r}
-plot_quant_distributions(raw, log = FALSE, base = 2)
+plot_quant_distributions(raw, log = FALSE)
 ```
 
 This function takes the raw data and generates density plots to visualize the distribution of peptide quantity for biological replicates, time points, and treatments. Tech Reps are merged. It can optionally apply a logarithmic transformation to the quantity values.
+
+```{r}
+plot_quant_distributions(raw, log = TRUE, base = 2)
+```
+
 
 ### Normal QQ plot
 
@@ -100,8 +105,31 @@ plot_norm_qq(raw, log=FALSE, base = 2)
 
 This function takes a data frame and generates a Normal QQ plot to visualize the distribution of peptide quantity in biological replicates. It can optionally apply a logarithmic transformation to the quantity values.
 
-The idea of the Normal QQ plot is that the experimental values are plotted against random values from the Normal distribution, the closer the correlation, the more similar your data are to a Normal distribution. The line is the line that would fit the Normal distribution. Deviation of the points from the line indicate a misfit to the Normal distribution.
+The idea of the Normal QQ plot is that the experimental values are plotted against random values from the Normal distribution, the closer the correlation, the more similar your data are to a Normal distribution. The line is the line that would fit the Normal distribution. Deviation of the points from the line indicate a misfit to the Normal distribution. 
 
+Log transformations can make the data more normally distributed, this could be useful for tests later, too
+
+```{r}
+plot_norm_qq(raw, log=TRUE, base = 2)
+```
+
+That looks better. We can also go further and examine a range of distributions, for that we'll use the `fitdistrplus` package. We can convert our input raw data to a suitable format with `to_vec()`
+
+```{r, fig.height=8, fig.width=8}
+
+d <- to_vec(raw)
+
+library(fitdistrplus)
+descdist(d, boot = 1000)
+
+```
+
+
+These plots are fun to interpret! They measure skewness and kurtosis which are metrics of shape in distributions. These are plotted along with examples from known distributions. Bootstrap samples to estimate variability are also taken and plotted.
+
+The examples that most closely fit our observed data give us an idea of what our distribution is. The log-normal and gamma distributions have lines, not points as they fulfill a range of skew and kurtosis values. 
+
+We can see that our data fit the gamma distribution most closely, which is useful for downstream analysis.
 
 ## Examine the similarity of measurements between samples
 

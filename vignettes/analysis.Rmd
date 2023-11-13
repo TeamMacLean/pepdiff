@@ -1,0 +1,97 @@
+---
+title: "Perform Final Analysis"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+vignette: >
+  %\VignetteIndexEntry{Perform Final Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+
+When we have an experimental plan and sufficient replicates for our desired power in hand we can begin a final analysis. In this example we will perform a bootstrap $t$-test with $\alpha$ at $p_{unadjusted} <= 0.05$
+
+```{r setup}
+library(pepdiff)
+
+sample_data_path <- fs::path_package("extdata", "anon.csv", package="pepdiff")
+raw <- import_data(sample_data_path,                  
+                   gene_id = "gene_name",
+                   treatment = "treatment_name")
+
+comparisons <- data.frame(
+  control = c('665e6428','665e6428'),
+  c_seconds = c(0,150),
+  treatment = c('665e6428','665e6428'),
+  t_seconds = c(150, 0)
+)
+
+
+results <- compare_many(raw, comparisons, tests = c("bootstrap_t") )
+```
+
+
+## Examining the proportion of differential peptides
+
+We can visualise this easily with `volcano_plot()`
+
+```{r}
+plot_volcano(results, metric="bootstrap_t_p_val")
+```
+
+
+## Heatmap of Fold Changes
+
+We can plot heatmap of fold changes for significant peptides as follows, with `plot_heatmap()`
+
+```{r}
+plot_heatmap(results, metric="bootstrap_t_p_val", sig_level = 0.05)
+```
+
+
+or we can do all peptides by setting the `sig_only` argument to `FALSE`. We can also move the legend out of the way with `lgd_x` and `lgd_y` which measures in inches.
+
+```{r}
+plot_heatmap(results, sig_only = FALSE, lgd_x = 4)
+```
+
+## Clustering
+
+We can estimate the number of clusters with `plot_cluster_estimate()`
+
+```{r}
+plot_cluster_estimate(results,metric = "bootstrap_t_p_val")
+```
+
+
+we can use the information from that to do the k-means with `kmeans_by_selected_cols()`. By default this will use all comparisons in the `results` object which is usually what we want, but we can select specific ones with the `cols` argument if we wish.
+
+```{r}
+k_results <- kmeans_by_selected_cols(results, k=4)
+```
+
+
+
+and do a clustered heatmapof that with `plot_kmeans_cluster_hmap()`
+
+```{r}
+
+plot_kmeans_cluster_hmap(k_results, nrow=2)
+```
+
+Finally, we can get an exportable dataframe of all our results, with, optionally the k-means cluster added using `results_dataframe()`. You can send this to any standard writing function like `write_csv()`.
+
+
+```{r}
+results_dataframe(results, kmeans = k_results)
+```
+

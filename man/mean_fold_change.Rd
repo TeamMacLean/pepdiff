@@ -4,12 +4,14 @@
 \alias{mean_fold_change}
 \title{calculate mean fold change for peptide}
 \usage{
-mean_fold_change(treatment, control)
+mean_fold_change(treatment, control, log = TRUE)
 }
 \arguments{
 \item{treatment}{vector of `treatment` data}
 
 \item{control}{vector of `control` data}
+
+\item{log}{are these already logged}
 }
 \value{
 vector of mean fold changes `mean(treatment) / mean(control)`

@@ -95,6 +95,8 @@ Several statistical tests can be run in the `compare_` functions. Namely:
   * Rank Products - `rank_product`
   * Bootstrap $t$ tests - `bootstrap-t`
   * Iterative Normal Resampling - `norm_quantile`
+  * GLM with Gamma Distribution - `gamma`
+  * limma Empirical Bayes, and with Variance Shrinkage - `eb`
 
 ### Kruskal-Wallis
 
@@ -109,7 +111,9 @@ A non-parametric statistical test used to assess whether there is a significant 
 
 Rank Products is employed when dealing with data that may not meet the assumptions of parametric tests, such as normality and equal variances. It is suitable for identifying differentially expressed features when sample sizes are small or when dealing with large datasets. Rank Products begins by ranking the observed values within each group independently. For each feature (e.g., peptide), the data from all samples in a group are ranked, and tied values receive an average rank. nce the data is ranked, Rank Products calculates a summary statistic based on the product of ranks. For each feature, the ranks from different groups are multiplied together to obtain a product rank.
 These product ranks are then used to assess the likelihood of each feature being differentially expressed. To determine the significance of the product ranks, Rank Products employs permutation testing.
-The group labels are randomly shuffled to create numerous permuted datasets. The product ranks are calculated for each permuted dataset. The proportion of permuted datasets where the product rank of a feature is equal to or greater than the observed rank provides the p-value for that feature.
+The group labels are randomly shuffled to create numerous permuted datasets. The product ranks are calculated for each permuted dataset. The proportion of permuted datasets where the product rank of a feature is equal to or greater than the observed rank provides the p-value for that feature. 
+
+In the implementation here, Rank Products provides 2 p-values, one at each tail of the distribution.
 
 ### Bootstrap t-tests 
 
@@ -118,3 +122,13 @@ Extends the traditional Student's t-test by incorporating the resampling techniq
 ### Iterative Normal Resampling
 
 For each peptide, the function generates synthetic datasets by resampling the control group values while replacing the lowest observed value. It then compares the treatment group's mean to the distribution of means from the synthetic datasets to estimate p-values.
+
+### GLM with Gamma distribution
+
+The Gamma distribution is a strongly skewed distribution with a long right tail. We can use this instead of a Normal distribution and do $t$-test like tests in a version of the Normal Linear Model called a GLM, which allows us to set the distribution. The $p$-value and it's interpretation are identical to that from a usual $t$-test.
+
+### Empirical Bayes with Variance Shrinkage
+
+In microarray and RNAseq experiments with small $n$, much use has been made from the `limma` tool that implements an Empirical Bayes method to estimate distributional parameters so that we don't have to assume beforehand. We apply the method to the values here both with and without variance shrinkage. 
+
+

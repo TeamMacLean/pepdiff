@@ -16,13 +16,21 @@ combine_tech_reps <- function(df){
     dplyr::summarize(mean_tr_quant = mean(.data$quant, na.rm = TRUE) )
 }
 
+#'
+#'@export
+to_vec <- function(i) {
+  i$quant[!is.na(i$quant)]
+}
+
+
+
 #' convert dataframe to matrix
 #'
 #' @param df dataframe, typically from `import_data()`
 #' @return list with members `row_info` - gene ID and peptide sequence and `data`
 #' a matrix version of the data in df
 #' @importFrom rlang .data
-matrix_data <- function(df){
+matrix_data <- function(df,log=FALSE, base=2){
   df <- combine_tech_reps(df)
   row_info <- dplyr::group_by(df, .data$gene_id, .data$peptide, .data$treatment, .data$seconds, .data$bio_rep) %>%
     dplyr::summarize(col_count = dplyr::n() )
@@ -34,6 +42,9 @@ matrix_data <- function(df){
   row_info <- dm[,c("gene_id", "peptide")]
   col_info <- colnames(dm[,3:length(colnames(dm))])
   dm <-  matrix(as.numeric(dm[,3:ncol(dm)]), nrow=nrow(dm) )
+  if (log){
+    dm <- log(dm, base)
+  }
   colnames(dm) <- col_info
   return(list( row_info = row_info, data = dm ))
 }
@@ -77,11 +88,15 @@ select_columns_for_contrast <- function(l, treatment = NA,
 #'
 #' @param control vector of `control` data
 #' @param treatment vector of `treatment` data
+#' @param log are these already logged
 #' @return vector of mean fold changes `mean(treatment) / mean(control)`
-mean_fold_change <- function(treatment, control){
+mean_fold_change <- function(treatment, control, log = TRUE){
 
-  rowMeans(treatment, na.rm = TRUE) / rowMeans(control, na.rm = TRUE)
-
+  if (log){
+    rowMeans(treatment, na.rm = TRUE) - rowMeans(control, na.rm = TRUE)
+  } else {
+    rowMeans(treatment, na.rm = TRUE) / rowMeans(control, na.rm = TRUE)
+  }
 }
 
 
@@ -106,17 +121,27 @@ replace_vals <- function(x, lowest_vals){
   return(x)
 }
 
-#' convert wide format results table containing p-value estimates to long format
+#' convert wide format results table containing fold change and p-value estimates etc to long format
 #'
-#' tidies up the wide results table from `compare()` to a long format, dropping the fdr columns and quantities columns
-#'
-#' @param r results dataframe typically from `compare()`
-#' @return dataframe in long format missing some columns from r
+#' tidies up the wide results table from `compare()` to a long format, incorporating cluster information if needed
+#' @param l results list typically from `compare()` or `compare_many()`
+#' @return dataframe in long format
 #' @export
 #' @importFrom rlang .data
-long_results <- function(r){
-  r %>%
-    dplyr::select(.data$comparison, .data$gene_id, .data$peptide, .data$treatment_replicates, .data$control_replicates, .data$fold_change, dplyr::ends_with("p_val" ) ) %>%
-    tidyr::pivot_longer(dplyr::ends_with("p_val"), names_to = 'test')
+results_dataframe <- function(r, kmeans=NULL, se){
+ df <- dplyr::bind_rows(r, .id = "comparison")
+
+ if (! is.null(kmeans) ){
+   k <- dplyr::bind_rows(lapply(kmeans, as.data.frame), .id="cluster_id") %>%
+     tibble::rownames_to_column(var = "gene_peptide") %>%
+     dplyr::select(gene_peptide, cluster_id)
+   d <- dplyr::mutate(df, gene_peptide = paste(.data$gene_id, .data$peptide, sep = " " ))
+
+   dplyr::left_join(d,k, by="gene_peptide") %>%
+     dplyr::select(-gene_peptide)
+
+ } else {
+   df
+ }
 }
 

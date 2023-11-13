@@ -19,28 +19,27 @@ get_power <- function(treatment, control, sig_level=0.05, b=0.8, max_n=50) {
 
   n <- min( c(ncol(treatment), ncol(control)) )
   ncols <- dim(treatment)[1]
-  powers <- rep(NA, ncols)
   ds <- rep(NA, ncols)
+
+  powers <- rep(NA, ncols)
   target_reps <- rep(NA,ncols)
+
+
   for (i in 1:ncols){
     ds[i] <- lsr::cohensD(treatment[i,], control[i,])
     powers[i] <- pwr::pwr.t.test(n = n, d = ds[i], sig.level = sig_level)$power
-     t <- n
-     s <- powers[i]
-     if (is.na(s)){
-       s <- 0.00001
-     }
-     while (s < b){
-       s <- pwr::pwr.t.test(n=t, d=ds[i], sig.level = sig_level)$power
-       if (is.na(s)){
-         s <- 0.00001
-       }
-       t <- t+1
-       if (t == max_n){
-         break
-       }
-     }
-     target_reps[i] <-  t
+
+    target_reps[i] <-
+      tryCatch(
+        {pwr::pwr.t.test(d=ds[i], sig.level = sig_level, power=b, type="one.sample",alternative="two.sided")$n},
+        warning = function(w){ return(NA) },
+        error = function(e){
+          return( NA )
+        },
+        finally = {}
+      )
+      target_reps[target_reps > max_n] <- max_n
+
   }
 
   return(list(min_reps = target_reps,
@@ -48,6 +47,8 @@ get_power <- function(treatment, control, sig_level=0.05, b=0.8, max_n=50) {
               power = powers
               ))
 }
+
+
 
 
 #' Calculate p-values based on iterative resampling using the lowest observed value replacement.
@@ -74,24 +75,24 @@ get_power <- function(treatment, control, sig_level=0.05, b=0.8, max_n=50) {
 get_percentile_lowest_observed_value_iterative <- function(treatment, control, iters = 1000){
 
   peptide_means <- apply(control, MARGIN = 1, mean, na.rm = TRUE)
-  peptide_sds <- apply(control, MARGIN = 1, stats::sd, na.rm = TRUE)
+  peptide_sds <- apply(control, MARGIN = 1, sd, na.rm = TRUE)
 
   ## control samples
   nobs <- dim(control)[1]
   m <- matrix(NA, nrow = nobs, ncol = iters)
   for (i in 1:iters) {
-    m[,i] <-  stats::rnorm(nobs, peptide_means, peptide_sds)
+    m[,i] <-  rnorm(nobs, peptide_means, peptide_sds)
   }
 
   #vector of treatment means
   t_means <- apply(treatment, MARGIN = 1, mean, na.rm = TRUE)
 
-  find_p <- function(x, perc){stats::ecdf(x)(perc)}
+  find_p <- function(x, perc){ecdf(x)(perc)}
   r <- rep(NA, nobs)
   for (i in 1:nobs ){
     r[i] <- find_p(m[i,], t_means[i])
   }
-  return(data.frame(norm_quantile_pval = r ))
+  return(data.frame(norm_quantile_p_val = r ))
 }
 
 #' Calculate Bootstrap t-test p-values and adjusted false discovery rates for peptide comparisons.
@@ -133,7 +134,7 @@ get_bootstrap_percentile <- function(treatment, control, iters){
       finally = {})
 
   }
-  return(data.frame(bootstrap_t_p_val = result, bootstrap_t_fdr = stats::p.adjust(result, method = 'bonferroni')))
+  return(data.frame(bootstrap_t_p_val = result, bootstrap_t_fdr = p.adjust(result, method = 'bonferroni')))
 }
 
 #' Calculate Wilcoxon rank-sum test p-values and adjusted false discovery rates for peptide comparisons.
@@ -165,7 +166,7 @@ get_wilcoxon_percentile <- function(treatment, control){
   result <- rep(NA, peptide_count)
   for (i in 1:peptide_count){
     tryCatch(
-      {wcox <- stats::wilcox.test(treatment[i,], control[i,]) },
+      {wcox <- wilcox.test(treatment[i,], control[i,]) },
       warning = function(w){ list(p.value = NA) },
       error = function(e){
         return( list(p.value = NA) )
@@ -174,7 +175,7 @@ get_wilcoxon_percentile <- function(treatment, control){
 
     result[i] <- wcox$p.value
   }
-  return(data.frame(wilcoxon_p_val = result, wilcoxon_fdr = stats::p.adjust(result, method = 'bonferroni')))
+  return(data.frame(wilcoxon_p_val = result, wilcoxon_fdr = p.adjust(result, method = 'bonferroni')))
 }
 
 #' Calculate Kruskal-Wallis test p-values and adjusted false discovery rates for 2 peptide comparisons.
@@ -216,7 +217,7 @@ get_kruskal_percentile <- function(treatment, control){
 
     result[i] <- kw$p.value
   }
-  return(data.frame(kruskal_p_val = result, kruskal_fdr = stats::p.adjust(result, method = 'bonferroni')))
+  return(data.frame(kruskal_p_val = result, kruskal_fdr = p.adjust(result, method = 'bonferroni')))
 }
 
 #' Calculate Rank Products test p-values and adjusted false discovery rates for peptide comparisons.
@@ -256,6 +257,52 @@ get_rp_percentile <- function(treatment, control){
       rank_prod_p2_fdr = r$pfp[, 1],
       rank_prod_p1_fdr = r$pfp[, 2]
     )
+  )
+
+}
+
+#' @export
+get_gamma <- function(treatment, control) {
+
+  peptide_count <- dim(control)[1]
+  result <- rep(NA, peptide_count)
+  for (i in 1:peptide_count){
+    df <- data.frame(
+      x = c( rep("treatment", ncol(treatment) ),
+             rep("control", ncol(control) )
+             ),
+      y = c(treatment[i,], control[i,])
+    )
+
+      fit <- glm(y ~ x, data=df, family = Gamma, na.action=na.exclude)
+      result[i] <- coef(summary(fit))[2,4]
+
+  }
+
+  data.frame(gamma_p_val = result,
+             gamma_fdr = p.adjust(result, method = "fdr")
+             )
+}
+
+#' @export
+get_eb <- function(treatment, control) {
+  #check this is in correct order wrt peptides... should be.
+  m <- log(cbind(treatment, control))
+  tc <- c(rep("treatment", 3), rep("control", 3))
+  design <- model.matrix(~factor(tc))
+  colnames(design) <- c("trt","ctrl")
+  fit <- limma::lmFit(m, design)
+  fit <- limma::eBayes(fit)
+  betahat <- fit$coefficients[,2]
+  sehat <- fit$stdev.unscaled[,2]*fit$sigma
+  fit.vash <- vashr::vash(sehat=sehat, df=fit$df.residual[1], betahat=betahat)
+
+
+  data.frame(
+    eb_vs_p_val = fit.vash$pvalue,
+    eb_vs_fdr = fit.vash$qvalue,
+    eb_p_val = fit$p.value[,2],
+    eb_fdr = p.adjust(fit$p.value[,2], method="fdr")
   )
 
 }

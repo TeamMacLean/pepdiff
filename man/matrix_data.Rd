@@ -4,7 +4,7 @@
 \alias{matrix_data}
 \title{convert dataframe to matrix}
 \usage{
-matrix_data(df)
+matrix_data(df, log = FALSE, base = 2)
 }
 \arguments{
 \item{df}{dataframe, typically from `import_data()`}

@@ -4,14 +4,10 @@
 \alias{plot_fc_qq}
 \title{plot qqplot of fold changes from a comparison}
 \usage{
-plot_fc_qq(r, log = TRUE, base = 2)
+plot_fc_qq(r)
 }
 \arguments{
 \item{r}{result dataframe or list, typically from `compare()` or `compare_many()`}
-
-\item{log}{log the fold change values}
-
-\item{base}{base of the log, if used}
 }
 \description{
 plot qqplot of fold changes from a comparison

@@ -11,7 +11,9 @@ compare(
   t_seconds = NA,
   control = NA,
   c_seconds = NA,
-  tests = c("bootstrap_t")
+  tests = c("bootstrap_t"),
+  log = FALSE,
+  base = 2
 )
 }
 \arguments{
