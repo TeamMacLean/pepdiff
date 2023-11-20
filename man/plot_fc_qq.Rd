@@ -2,13 +2,19 @@
 % Please edit documentation in R/plots.R
 \name{plot_fc_qq}
 \alias{plot_fc_qq}
-\title{plot qqplot of fold changes from a comparison}
+\title{Plot QQ Plot of Fold Changes from a Comparison}
 \usage{
 plot_fc_qq(r)
 }
 \arguments{
-\item{r}{result dataframe or list, typically from `compare()` or `compare_many()`}
+\item{r}{A result dataframe or list of result dataframes.}
 }
 \description{
-plot qqplot of fold changes from a comparison
+This function takes a result dataframe or a list, typically obtained from functions like
+`compare()` or `compare_many()`, and generates a QQ plot of fold changes for each comparison.
+}
+\examples{
+\dontrun{
+plot_fc_qq(my_results)
+}
 }

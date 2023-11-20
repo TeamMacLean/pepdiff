@@ -39,6 +39,7 @@ A preprocessed data frame with standardized column names and data types.
 This function reads a data file (e.g., CSV) or accepts a data frame as input and preprocesses the data by renaming columns, creating a unique identifier, and ensuring proper data types. It is designed to handle peptide quantification data and standardize the column names for treatment, biological replicate, technical replicate, peptide, gene ID, and more.
 }
 \examples{
+\dontrun{
 # Example using a CSV file:
 data_file <- "peptide_quantification_data.csv"
 imported_data <- import_data(data_file)
@@ -52,11 +53,6 @@ data_frame <- data.frame(genotype = c("A", "B", "A"),
                          gene_id = c("Gene1", "Gene2", "Gene1"),
                          quant = runif(3),
                          peptide_sequence = c("AAA", "BBB", "CCC"))
+}
 
 }
-\seealso{
-\code{\link{dplyr::rename}}, \code{\link{dplyr::mutate}}, \code{\link{dplyr::transmute}}, \code{\link{dplyr::distinct}},
-\code{\link{readr::read_csv}}
-}
-\concept{data manipulation}
-\keyword{data}

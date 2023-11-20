@@ -2,16 +2,23 @@
 % Please edit documentation in R/plots.R
 \name{plot_p_value_dist}
 \alias{plot_p_value_dist}
-\title{plot histograms of p-values for each test used}
+\title{Plot Histograms of p-values for Each Test Used}
 \usage{
 plot_p_value_dist(r)
 }
 \arguments{
-\item{r}{dataframe or list of result dataframes typically from `compare()` or `compare_many()`}
+\item{r}{A dataframe or list of result dataframes.}
 }
 \value{
-ggplot2 plot
+A ggplot2 plot showing histograms of p-values for each test.
 }
 \description{
-plot histograms of p-values for each test used
+This function takes a dataframe or a list of result dataframes, typically obtained from
+functions like `compare()` or `compare_many()`, and plots histograms of p-values for each test.
+}
+\examples{
+\dontrun{
+plot_p_value_dist(my_results)
+}
+
 }

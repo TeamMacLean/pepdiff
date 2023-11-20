@@ -20,15 +20,17 @@ A dataframe containing Bootstrap t-test p-values and corresponding Bonferroni-ad
 This function computes p-values and adjusted false discovery rates (FDR) using the Bootstrap t-test for each peptide comparison between treatment and control groups. The Bootstrap t-test is used to estimate the sampling distribution of the t-statistic by resampling the data, making it a robust method for identifying differences between groups.
 }
 \examples{
+\dontrun{
 # Example using two dataframes for treatment and control with 1000 bootstrap iterations:
-treatment_data <- data.frame(peptide1 = c(10, 20, 30), peptide2 = c(15, 25, 35))
-control_data <- data.frame(peptide1 = c(12, 22, 32), peptide2 = c(18, 28, 38))
-result <- get_bootstrap_percentile(treatment_data, control_data, iters = 1000)
-
+treatment_data <- data.frame(peptide1 = c(10, 20, 30),
+peptide2 = c(15, 25, 35))
+control_data <- data.frame(peptide1 = c(12, 22, 32),
+peptide2 = c(18, 28, 38))
+result <- get_bootstrap_percentile(treatment_data, control_data,
+iters = 1000)
+}
 }
 \seealso{
-\code{\link{MKinfer::boot.t.test}}, \code{\link{stats::p.adjust}}
-
 Other statistical analysis: 
 \code{\link{compare_many}()},
 \code{\link{compare}()},

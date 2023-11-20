@@ -7,14 +7,15 @@
 health(r, b = 0.8)
 }
 \arguments{
-\item{b}{the statistical power at which to evaluate}
+\item{r}{the results object, from `compare()` or `compare_many()`}
 
-\item{the}{results object, from `compare()` or `compare_many()`}
+\item{b}{the statistical power at which to evaluate}
 }
 \value{
 i
 }
 \description{
-returns statistics on the probability of detecting effects on at least half the outcomes and completeness of sampling
+returns statistics on the probability of detecting effects on at least half
+the outcomes and completeness of sampling
 over threshold b
 }

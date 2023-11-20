@@ -18,15 +18,16 @@ A dataframe containing Kruskal-Wallis test p-values and corresponding Bonferroni
 This function computes Kruskal-Wallis test p-values for each peptide comparison between treatment and control groups. It also calculates adjusted false discovery rates (FDR) using the Bonferroni method. The Kruskal-Wallis test is used to assess differences in the distributions of quantitative values across multiple groups.
 }
 \examples{
+\dontrun{
 # Example using two dataframes for treatment and control:
-treatment_data <- data.frame(peptide1 = c(10, 20, 30), peptide2 = c(15, 25, 35))
-control_data <- data.frame(peptide1 = c(12, 22, 32), peptide2 = c(18, 28, 38))
+treatment_data <- data.frame(peptide1 = c(10, 20, 30),
+peptide2 = c(15, 25, 35))
+control_data <- data.frame(peptide1 = c(12, 22, 32),
+peptide2 = c(18, 28, 38))
 result <- get_kruskal_percentile(treatment_data, control_data)
-
+}
 }
 \seealso{
-\code{\link{stats::kruskal.test}}, \code{\link{stats::p.adjust}}
-
 Other statistical analysis: 
 \code{\link{compare_many}()},
 \code{\link{compare}()},

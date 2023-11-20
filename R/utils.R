@@ -16,8 +16,13 @@ combine_tech_reps <- function(df){
     dplyr::summarize(mean_tr_quant = mean(.data$quant, na.rm = TRUE) )
 }
 
+#' extract data from a loaded peptide data object
 #'
-#'@export
+#' extract peptide quantification data from a loaded data file, usually from
+#' `import_data()` for use in `fitdistrplus` functions
+#'
+#' @param i input dataframe
+#' @export
 to_vec <- function(i) {
   i$quant[!is.na(i$quant)]
 }
@@ -27,6 +32,8 @@ to_vec <- function(i) {
 #' convert dataframe to matrix
 #'
 #' @param df dataframe, typically from `import_data()`
+#' @param log whether or not to log the data
+#' @param base base for logging
 #' @return list with members `row_info` - gene ID and peptide sequence and `data`
 #' a matrix version of the data in df
 #' @importFrom rlang .data
@@ -124,11 +131,11 @@ replace_vals <- function(x, lowest_vals){
 #' convert wide format results table containing fold change and p-value estimates etc to long format
 #'
 #' tidies up the wide results table from `compare()` to a long format, incorporating cluster information if needed
-#' @param l results list typically from `compare()` or `compare_many()`
-#' @return dataframe in long format
+#' @param r results list typically from `compare()` or `compare_many()`
+#' @param kmeans a kmeans result to append
 #' @export
 #' @importFrom rlang .data
-results_dataframe <- function(r, kmeans=NULL, se){
+results_dataframe <- function(r, kmeans=NULL){
  df <- dplyr::bind_rows(r, .id = "comparison")
 
  if (! is.null(kmeans) ){

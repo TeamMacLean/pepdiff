@@ -29,7 +29,11 @@ compare(
 
 \item{c_seconds}{The time point of the control condition to compare.}
 
-\item{tests}{A character vector of tests to use, one or more of: 'norm_quantile', 'bootstrap_t', 'wilcoxon', 'kruskal-wallis', 'rank_product'.}
+\item{tests}{A character vector of tests to use, one or more of: 'norm_quantile', 'bootstrap_t', 'wilcoxon', 'kruskal-wallis', 'rank_product', 'gamma', 'eb'}
+
+\item{log}{whether or not to log the data}
+
+\item{base}{base for logs}
 }
 \value{
 A data frame with information about original and replaced quantification values, natural fold changes, replicates, p-values, false discovery rate (FDR), and statistical power for each peptide.
@@ -38,18 +42,15 @@ A data frame with information about original and replaced quantification values,
 This function compares peptide quantities between experimental conditions and applies selected statistical tests to identify differentially abundant peptides. The function calculates natural fold changes, performs various tests, and provides information about replicates and statistical power.
 }
 \examples{
+\dontrun{
 # Example using imported data and performing a bootstrap t-test:
 data_file <- "peptide_quantification_data.csv"
 imported_data <- import_data(data_file)
-comparison_result <- compare(imported_data, treatment = "A", control = "B", tests = "bootstrap_t")
-
+comparison_result <- compare(imported_data, treatment = "A",
+control = "B", tests = "bootstrap_t")
+}
 }
 \seealso{
-\code{\link{import_data}}, \code{\link{select_columns_for_contrast}}, \code{\link{min_peptide_values}},
-\code{\link{mean_fold_change}}, \code{\link{get_percentile_lowest_observed_value_iterative}},
-\code{\link{get_bootstrap_percentile}}, \code{\link{get_wilcoxon_percentile}}, \code{\link{get_kruskal_percentile}},
-\code{\link{get_rp_percentile}}, \code{\link{get_power}}
-
 Other statistical analysis: 
 \code{\link{compare_many}()},
 \code{\link{get_bootstrap_percentile}()},

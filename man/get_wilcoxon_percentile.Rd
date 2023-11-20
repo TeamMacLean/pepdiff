@@ -18,15 +18,16 @@ A dataframe containing Wilcoxon rank-sum test p-values and corresponding Bonferr
 This function computes Wilcoxon rank-sum test (Mann-Whitney U test) p-values for each peptide comparison between treatment and control groups. It also calculates adjusted false discovery rates (FDR) using the Bonferroni method. The Wilcoxon test assesses whether there are significant differences in the distributions of quantitative values between two independent groups.
 }
 \examples{
+\dontrun{
 # Example using two dataframes for treatment and control:
-treatment_data <- data.frame(peptide1 = c(10, 20, 30), peptide2 = c(15, 25, 35))
-control_data <- data.frame(peptide1 = c(12, 22, 32), peptide2 = c(18, 28, 38))
+treatment_data <- data.frame(peptide1 = c(10, 20, 30),
+peptide2 = c(15, 25, 35))
+control_data <- data.frame(peptide1 = c(12, 22, 32),
+peptide2 = c(18, 28, 38))
 result <- get_wilcoxon_percentile(treatment_data, control_data)
-
+}
 }
 \seealso{
-\code{\link{stats::wilcox.test}}, \code{\link{stats::p.adjust}}
-
 Other statistical analysis: 
 \code{\link{compare_many}()},
 \code{\link{compare}()},

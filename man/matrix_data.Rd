@@ -8,6 +8,10 @@ matrix_data(df, log = FALSE, base = 2)
 }
 \arguments{
 \item{df}{dataframe, typically from `import_data()`}
+
+\item{log}{whether or not to log the data}
+
+\item{base}{base for logging}
 }
 \value{
 list with members `row_info` - gene ID and peptide sequence and `data`

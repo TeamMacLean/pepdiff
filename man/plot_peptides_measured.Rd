@@ -15,16 +15,7 @@ A ggplot object representing the bar plot.
 \description{
 This function takes a data frame and generates a bar plot showing the number of peptides measured in different biological replicates, treatments, and time points. It uses the dplyr and ggplot2 packages to perform data manipulation and create the plot.
 }
-\examples{
-
-plot_peptides_measured(data)
-
-}
 \seealso{
-\code{\link{dplyr::group_by}}, \code{\link{dplyr::summarise}}, \code{\link{ggplot2::ggplot}},
-\code{\link{ggplot2::aes}}, \code{\link{ggplot2::geom_col}}, \code{\link{ggplot2::facet_grid}},
-\code{\link{ggplot2::theme_minimal}}, \code{\link{ggplot2::labs}}
-
 Other data visualization: 
 \code{\link{plot_missing_peptides}()},
 \code{\link{plot_norm_qq}()},

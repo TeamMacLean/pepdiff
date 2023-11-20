@@ -24,11 +24,12 @@ A dataframe containing p-values based on the lowest observed value replacement a
 This function computes p-values for each peptide based on iterative resampling with replacement. For each peptide, the function generates synthetic datasets by resampling the control group values while replacing the lowest observed value. It then compares the treatment group's mean to the distribution of means from the synthetic datasets to estimate p-values.
 }
 \examples{
+\dontrun{
 # Example using two dataframes for treatment and control with 1000 iterations:
 treatment_data <- data.frame(peptide1 = c(10, 20, 30), peptide2 = c(15, 25, 35))
 control_data <- data.frame(peptide1 = c(12, 22, 32), peptide2 = c(18, 28, 38))
 result <- get_percentile_lowest_observed_value_iterative(treatment_data, control_data, iters = 1000)
-
+}
 }
 \seealso{
 Other statistical analysis: 

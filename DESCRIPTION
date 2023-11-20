@@ -1,12 +1,13 @@
 Package: pepdiff
 Type: Package
-Title: Analysing TSL PRM Peptide Data
-Version: 0.1.2
+Title: Workflows for Characterising and Analysing Peptide Quantifications
+Version: 0.2.0
 Author: Dan MacLean
 Maintainer: Dan MacLean <dan.maclean@tsl.ac.uk>
-Description: Provides plots and stats functions for evaluating and pefroming
-    differential abundance analysis on experiments with Time, Genotype, Biorep and Techrep
-    variables in PRM data.
+Description: Provides functions for developing workflows to characterise, evaluate 
+    and perfom differential abundance analysis in tabular data from quantified Mass Spec
+    experiments. Typically used for experiments with Gene, Peptide, Time, Genotype, 
+    Biorep, Techrep and Quantification variables.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
@@ -17,22 +18,17 @@ Repository:
 biocViews:
 Imports:
     limma,
-    BiocManager,
-    BiocVersion,
     circlize,
     ComplexHeatmap,
     cowplot,
     dplyr,
     emojifont,
     factoextra,
-    fitdistrplus,
     forcats,
-    fs,
     ggplot2,
     ggplotify,
     ggpubr,
     grid,
-    htmltools,
     knitr,
     lsr,
     magrittr,
@@ -41,21 +37,18 @@ Imports:
     RankProd,
     RColorBrewer,
     readr,
-    renv,
     rlang,
-    rmarkdown,
-    stats,
-    stringi,
     stringr,
+    stringi,
     tibble,
     tidyr,
-    tools,
     UpSetR,
-    utils,
     vashr,
     viridis
 Depends:
     R (>= 4.1.0),
 Suggests:
-  fitdistrplus
+  fitdistrplus,
+  fs,
+  htmltools
 VignetteBuilder: knitr

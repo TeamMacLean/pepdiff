@@ -20,15 +20,11 @@ A ggplot object representing the density plots.
 This function takes a data frame and generates density plots to visualize the distribution of peptide quantity for biological replicates, time points, and treatments. It can optionally apply a logarithmic transformation to the quantity values.
 }
 \examples{
-
+\dontrun{
 plot_quant_distributions(data)
-
+}
 }
 \seealso{
-\code{\link{combine_tech_reps}}, \code{\link{ggplot2::ggplot}}, \code{\link{ggplot2::aes}},
-\code{\link{ggplot2::geom_density}}, \code{\link{ggplot2::facet_grid}}, \code{\link{ggplot2::scale_fill_viridis_d}},
-\code{\link{ggplot2::theme_minimal}}, \code{\link{ggplot2::labs}}
-
 Other data visualization: 
 \code{\link{plot_missing_peptides}()},
 \code{\link{plot_norm_qq}()},

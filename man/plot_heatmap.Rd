@@ -29,7 +29,8 @@ plot_heatmap(
 `bootstrap_t_p_val`, `bootstrap_t_fdr`
 `wilcoxon_p_val`, `wilcoxon_fdr`
 `kruskal_p_val`,  `kruskal_fdr`
-`rank_prod_p1_p_val`, `rank_prod_p2_p_val`, `rank_prod_p1_fdr`, `rank_prod_p2_fdr`.}
+`rank_prod_p1_p_val`, `rank_prod_p2_p_val`, `rank_prod_p1_fdr`, `rank_prod_p2_fdr`.
+`eb_p_val`, `eb_vs_p_val`, `gamma_p_val`, `eb_fdr`, `eb_vs_fdr`, `gamma_fdr`}
 
 \item{log}{whether to log the data}
 
@@ -49,7 +50,7 @@ plot_heatmap(
 
 \item{col_fontsize}{size of treatment annotation labels}
 
-\item{col_rowsize}{size of peptide annotation labels}
+\item{row_fontsize}{size of peptide annotation labels}
 }
 \description{
 reduces dataframes and makes long list, makes a basic heatmap.

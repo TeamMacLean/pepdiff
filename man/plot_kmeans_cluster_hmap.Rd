@@ -2,7 +2,7 @@
 % Please edit documentation in R/plots.R
 \name{plot_kmeans_cluster_hmap}
 \alias{plot_kmeans_cluster_hmap}
-\title{plots the kmeans clusters}
+\title{Plot Kmeans Clusters Heatmap}
 \usage{
 plot_kmeans_cluster_hmap(
   kl,
@@ -20,26 +20,38 @@ plot_kmeans_cluster_hmap(
 )
 }
 \arguments{
-\item{kl}{the kmeans clusters from `kmeans_by_selected_cols()`}
+\item{kl}{The kmeans clusters from `kmeans_by_selected_cols()`.}
 
-\item{col_order}{vector of column names in the order you want them to be drawn}
+\item{col_order}{Vector of column names in the order you want them to be drawn.}
 
-\item{logged}{indicates whether the fold changes are logged or not}
+\item{logged}{Indicates whether the fold changes are logged or not.}
 
-\item{base}{if logged the base that was used}
+\item{base}{If logged, the base that was used.}
 
-\item{pal}{pallete to use from RColorBrewer}
+\item{pal}{Palette to use from RColorBrewer.}
 
-\item{nrow}{number of rows to plot clusters in}
+\item{nrow}{Number of rows to plot clusters in.}
 
-\item{legx}{x position of legend in range (-0.5 .. 0.5)}
+\item{col_fontsize}{Font size for column names.}
 
-\item{legy}{y position of legend in range(-0.5 .. 0.5)}
+\item{row_fontsize}{Font size for row names.}
 
-\item{labh}{horizontal justification of subplot labels}
+\item{legx}{X position of legend in range (-0.5 .. 0.5).}
 
-\item{labv}{vertical justification of subplot labels}
+\item{legy}{Y position of legend in range(-0.5 .. 0.5).}
+
+\item{labh}{Horizontal justification of subplot labels.}
+
+\item{labv}{Vertical justification of subplot labels.}
 }
 \description{
-plots the kmeans clusters
+This function plots the kmeans clusters as a heatmap.
+}
+\examples{
+\dontrun{
+# Example Usage:
+plot_kmeans_cluster_hmap(my_kmeans_clusters,
+col_order = c("Condition1", "Condition2"), logged = TRUE,
+base = 2, pal = "RdBu", nrow = 2)
+}
 }

@@ -16,16 +16,11 @@ A combined ggplot object representing the PCA plot and screeplot.
 This function performs Principal Component Analysis (PCA) on input data and generates a PCA plot and a screeplot. The PCA plot visualizes the data points in a two-dimensional space defined by the first two principal components, and it is  colored by biological replicate, treatment, or time point in each subplot. The screeplot shows the proportion of variance explained by each principal component.
 }
 \examples{
-
+\dontrun{
 plot_pca(data)
-
+}
 }
 \seealso{
-\code{\link{matrix_data}}, \code{\link{min_peptide_values}}, \code{\link{stats::prcomp}},
-\code{\link{factoextra::fviz_screeplot}}, \code{\link{ggplot2::ggplot}}, \code{\link{ggplot2::aes}},
-\code{\link{ggplot2::geom_text}}, \code{\link{ggplot2::theme_minimal}}, \code{\link{ggplot2::scale_color_viridis_d}},
-\code{\link{cowplot::plot_grid}}
-
 Other data visualization: 
 \code{\link{plot_missing_peptides}()},
 \code{\link{plot_norm_qq}()},

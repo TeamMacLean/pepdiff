@@ -6,15 +6,6 @@
 #'
 #' @export
 #'
-#' @examples
-#'
-#' plot_peptides_measured(data)
-#'
-#' @seealso
-#' \code{\link{dplyr::group_by}}, \code{\link{dplyr::summarise}}, \code{\link{ggplot2::ggplot}},
-#' \code{\link{ggplot2::aes}}, \code{\link{ggplot2::geom_col}}, \code{\link{ggplot2::facet_grid}},
-#' \code{\link{ggplot2::theme_minimal}}, \code{\link{ggplot2::labs}}
-#'
 #' @keywords plot
 #' @family data visualization
 #' @rdname plot_peptides_measured
@@ -43,6 +34,7 @@ plot_peptides_measured <- function(i){
 #'
 #'
 #' @examples
+#' \dontrun{
 #' data <- data.frame(treatment = rep(c("A", "B"), each = 12),
 #'                    seconds = rep(rep(0, 6), 2),
 #'                    bio_rep = rep(1:6, 2),
@@ -50,11 +42,7 @@ plot_peptides_measured <- function(i){
 #'                    percent_missing = runif(12, 0, 100))
 #'
 #' plot_missing_peptides(data)
-#'
-#' @seealso
-#' \code{\link{assess_missing}}, \code{\link{ggplot2::ggplot}}, \code{\link{ggplot2::aes}},
-#' \code{\link{ggplot2::geom_tile}}, \code{\link{ggplot2::facet_grid}}, \code{\link{ggplot2::scale_fill_viridis_c}},
-#' \code{\link{ggplot2::theme_minimal}}, \code{\link{ggplot2::labs}}
+#' }
 #'
 #' @keywords plot
 #' @family data visualization
@@ -85,14 +73,9 @@ plot_missing_peptides <- function(i){
 #' @return A ggplot object representing the density plots.
 #'
 #' @examples
-#'
+#' \dontrun{
 #' plot_quant_distributions(data)
-#'
-#' @seealso
-#' \code{\link{combine_tech_reps}}, \code{\link{ggplot2::ggplot}}, \code{\link{ggplot2::aes}},
-#' \code{\link{ggplot2::geom_density}}, \code{\link{ggplot2::facet_grid}}, \code{\link{ggplot2::scale_fill_viridis_d}},
-#' \code{\link{ggplot2::theme_minimal}}, \code{\link{ggplot2::labs}}
-#'
+#' }
 #' @keywords plot
 #' @family data visualization
 #' @rdname plot_quant_distributions
@@ -127,13 +110,9 @@ plot_quant_distributions <- function(i, log = FALSE, base = 2){
 #' @return A ggplot object representing the Normal QQ plot.
 #'
 #' @examples
-#'
+#' \dontrun{
 #' plot_norm_qq(data)
-#'
-#' @seealso
-#' \code{\link{combine_tech_reps}}, \code{\link{ggplot2::ggplot}}, \code{\link{ggplot2::aes}},
-#' \code{\link{ggplot2::geom_qq}}, \code{\link{ggplot2::geom_qq_line}}, \code{\link{ggplot2::facet_grid}},
-#' \code{\link{ggplot2::scale_color_viridis_d}}, \code{\link{ggplot2::theme_minimal}}, \code{\link{ggplot2::labs}}
+#' }
 #'
 #' @keywords plot
 #' @family data visualization
@@ -169,8 +148,9 @@ plot_norm_qq <- function(i, log = FALSE, base = 2){
 #' @importFrom rlang .data
 #'
 #' @examples
-#' # Example Usage:
+#' \dontrun{
 #' plot_p_value_dist(my_results)
+#' }
 #'
 plot_p_value_dist <- function(r){
 
@@ -198,8 +178,9 @@ plot_p_value_dist <- function(r){
 #' @export
 #'
 #' @examples
-#' # Example Usage:
+#' \dontrun{
 #' plot_p_value_qq(my_results)
+#' }
 #'
 plot_p_value_qq <- function(r){
 
@@ -216,7 +197,17 @@ plot_p_value_qq <- function(r){
     ggplot2::labs(y="Sample Values", x="Theoretical Distribution Values", title="Uniform QQ plot of p-values")
 
 }
-
+#' Plot Distribution of FDR Values
+#'
+#' This function generates a histogram to visualize the distribution of False Discovery Rate (FDR) values
+#' for different comparisons and tests.
+#'
+#' @param r A data frame containing FDR values for different comparisons and tests.
+#'
+#' @return A ggplot object displaying the distribution of FDR values.
+#'
+#' @details The function uses ggplot2 to create a histogram, with facets for different comparisons and test
+#'
 #' @export
 #' @importFrom rlang .data
 plot_fdr_dist <- function(r){
@@ -245,9 +236,9 @@ plot_fdr_dist <- function(r){
 #' @export
 #'
 #' @examples
-#' # Example Usage:
+#' \dontrun{
 #' plot_fdr_dist(my_results)
-#'
+#' }
 plot_fdr_qq <- function(r){
 
   dplyr::bind_rows(r, .id = "comparison") %>%
@@ -276,8 +267,9 @@ plot_fdr_qq <- function(r){
 #' @importFrom rlang .data
 #'
 #' @examples
-#' # Example Usage:
+#' \dontrun{
 #' plot_fc(my_results)
+#' }
 #'
 plot_fc <- function(r){
   #p <- ggplot2::ggplot(l)
@@ -308,9 +300,9 @@ plot_fc <- function(r){
 #' @importFrom rlang .data
 #'
 #' @examples
-#' # Example Usage:
+#' \dontrun{
 #' plot_fc_qq(my_results)
-#'
+#' }
 plot_fc_qq <- function(r){
 
   ytitle <- "Sample Values"
@@ -340,9 +332,9 @@ plot_fc_qq <- function(r){
 #' @export
 #'
 #' @examples
-#' # Example Usage:
+#' \dontrun{
 #' plot_compared_calls(my_results, sig = 0.05)
-#'
+#' }
 plot_compared_calls <- function(r, sig = 0.05){
   upper_sig <- 1 - round(sig / 2, 4)
   lower_sig <- round(sig / 2, 4)
@@ -405,9 +397,11 @@ plot_compared_calls <- function(r, sig = 0.05){
 #' @return A modified dataframe with selected columns.
 #'
 #' @examples
+#' \dontrun{
 #' # Example Usage:
-#' result_df <- drop_columns(my_dataframe, sig = 0.05, metric = "bootstrap_t_p_val", log = TRUE, base = 2)
-#'
+#' result_df <- drop_columns(my_dataframe, sig = 0.05,
+#' metric = "bootstrap_t_p_val", log = TRUE, base = 2)
+#' }
 #' @importFrom rlang .data
 drop_columns <- function(df, sig, metric, log, base, rows_to_keep = NULL){
 
@@ -453,6 +447,7 @@ drop_columns <- function(df, sig, metric, log, base, rows_to_keep = NULL){
 #' `wilcoxon_p_val`, `wilcoxon_fdr`
 #' `kruskal_p_val`,  `kruskal_fdr`
 #' `rank_prod_p1_p_val`, `rank_prod_p2_p_val`, `rank_prod_p1_fdr`, `rank_prod_p2_fdr`.
+#' `eb_p_val`, `eb_vs_p_val`, `gamma_p_val`, `eb_fdr`, `eb_vs_fdr`, `gamma_fdr`
 #' @param col_order specify a column order for the plot, default is names(l)
 #' @param pal cbrewer palette to use "RdBu", needs minimum 11 colours
 #' @param lgd_x value to pass to ComplexHeatmap::draw for x position of legend in 'in'
@@ -461,7 +456,7 @@ drop_columns <- function(df, sig, metric, log, base, rows_to_keep = NULL){
 #' @param lgd_x x offset of legend placement in `in` units
 #' @param lgd_y y offset of legend placement in `in` units
 #' @param col_fontsize size of treatment annotation labels
-#' @param col_rowsize size of peptide annotation labels
+#' @param row_fontsize size of peptide annotation labels
 #' @return NULL
 #' @export
 #' @importFrom rlang .data
@@ -582,15 +577,9 @@ get_sig_rows <- function(l, metric="bootstrap_t_pval", sig_level=0.05){
 #'
 #'
 #' @examples
-#'
+#' \dontrun{
 #' plot_pca(data)
-#'
-#' @seealso
-#' \code{\link{matrix_data}}, \code{\link{min_peptide_values}}, \code{\link{stats::prcomp}},
-#' \code{\link{factoextra::fviz_screeplot}}, \code{\link{ggplot2::ggplot}}, \code{\link{ggplot2::aes}},
-#' \code{\link{ggplot2::geom_text}}, \code{\link{ggplot2::theme_minimal}}, \code{\link{ggplot2::scale_color_viridis_d}},
-#' \code{\link{cowplot::plot_grid}}
-#'
+#' }
 #' @keywords plot
 #' @family data visualization
 #' @rdname plot_pca
@@ -642,13 +631,9 @@ plot_pca <- function(df) {
 #' @return A ggplot object representing the k-Means clustering results.
 #'
 #' @examples
-#'
+#' \dontrun{
 #' plot_sample_kmeans(data, nstart = 25, iter.max = 1000)
-#'
-#' @seealso
-#' \code{\link{matrix_data}}, \code{\link{min_peptide_values}}, \code{\link{stats::prcomp}},
-#' \code{\link{factoextra::fviz_cluster}}, \code{\link{ggplot2::theme_minimal}}, \code{\link{viridis::viridis}}
-#'
+#' }
 #' @keywords plot
 #' @family data visualization
 #' @rdname plot_sample_kmeans
@@ -747,9 +732,11 @@ list2mat <- function(r,column="fold_change") {
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' # Example Usage:
-#' plot_cluster_estimate(my_results, log = TRUE, base = 2, sig_level = 0.05, metric = "bootstrap_t_fdr")
-#'
+#' plot_cluster_estimate(my_results, log = TRUE, base = 2, sig_level = 0.05,
+#' metric = "bootstrap_t_fdr")
+#' }
 plot_cluster_estimate <- function(r, log=TRUE, base=2, sig_only = FALSE, sig_level = 0.05, metric = "bootstrap_t_fdr") {
   results_mat <- fold_change_matrix(r, log=log, base=base, sig_only=sig_only,sig_level=sig_level, metric = metric)
   factoextra::fviz_nbclust(results_mat, kmeans, method="wss")
@@ -775,9 +762,12 @@ plot_cluster_estimate <- function(r, log=TRUE, base=2, sig_only = FALSE, sig_lev
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' # Example Usage:
-#' plot_kmeans_cluster_hmap(my_kmeans_clusters, col_order = c("Condition1", "Condition2"), logged = TRUE, base = 2, pal = "RdBu", nrow = 2)
-#'
+#' plot_kmeans_cluster_hmap(my_kmeans_clusters,
+#' col_order = c("Condition1", "Condition2"), logged = TRUE,
+#' base = 2, pal = "RdBu", nrow = 2)
+#' }
 plot_kmeans_cluster_hmap <- function(kl, col_order=NULL, logged=TRUE, base=NULL, pal="RdBu", nrow=2, col_fontsize=6, row_fontsize=6, legx=0, legy=-0.45, labh=-1.1, labv=1.1) {
 
 
@@ -835,9 +825,10 @@ plot_kmeans_cluster_hmap <- function(kl, col_order=NULL, logged=TRUE, base=NULL,
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' # Example Usage:
 #' plot_power_analysis(my_results)
-#'
+#' }
 plot_power_analysis <- function(r) {
 
   dplyr::bind_rows(r, .id = "comparison") %>%
@@ -868,9 +859,11 @@ plot_power_analysis <- function(r) {
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' # Example Usage:
-#' plot_power_volcano(my_results, which = "fold_change", base = 2, b = 0.8, option = "E", direction = -1)
-#'
+#' plot_power_volcano(my_results, which = "fold_change", base = 2,
+#' b = 0.8, option = "E", direction = -1)
+#' }
 plot_power_volcano <- function(r, which="fold_change", base=2, b=0.8, option="E", direction=-1) {
 
     xlab <- "Log Fold Change"
@@ -916,9 +909,10 @@ plot_power_volcano <- function(r, which="fold_change", base=2, b=0.8, option="E"
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' # Example Usage:
 #' plot_effect_replicates(my_results, which = "cohens_d", b = 0.8)
-#'
+#' }
 plot_effect_replicates <- function(r, which= "cohens_d", b=0.8) {
   xlab <- "Fold Change"
   if (which == "cohens_d"){
@@ -971,8 +965,9 @@ find_emoji <- function(n) {
 #'
 #' @examples
 #' # Example Usage:
+#' \dontrun{
 #' plot_health(my_results, b = 0.8, hjust = -0.5, vjust = 1.5)
-#'
+#' }
 plot_health <- function(r, b=0.8,hjust=-0.5,vjust=1.5){
 
   h <- health(r,b)
@@ -1004,9 +999,10 @@ plot_health <- function(r, b=0.8,hjust=-0.5,vjust=1.5){
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' # Example Usage:
 #' summary_health(my_results, b = 0.8)
-#'
+#' }
 #' @export
 summary_health <- function(r, b=0.8){
 

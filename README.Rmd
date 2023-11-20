@@ -16,7 +16,8 @@ knitr::opts_chunk$set(
 # pepdiff
 
 <!-- badges: start -->
-[![R-CMD-check](https://github.com/TeamMacLean/pepdiff/workflows/R-CMD-check/badge.svg)](https://github.com/TeamMacLean/pepdiff/actions)
+[![Lifecycle: stable](https://img.shields.io/badge/lifecycle-stable-brightgreen.svg)](https://lifecycle.r-lib.org/articles/stages.html#stable)
+[![R-CMD-check](https://github.com/TeamMacLean/pepdiff/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/TeamMacLean/pepdiff/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 The goal of pepdiff is to provide functions and plots for normalising peptide data from 'PRM' experiments.
@@ -30,23 +31,55 @@ Install direct from [GitHub](https://github.com/) with:
 devtools::install_github("TeamMacLean/pepdiff")
 ```
 
-Or via `renv` . Some bioconductor packages won't automatically install this way, so do them first.
+Or via `renv`.
 
 ``` r
-renv::install("bioc::ComplexHeatmap)
-renv::install("bioc::tidybulk)
-
+# install.packages("devtools")
 renv::install("TeamMacLean/pepdiff)
 ```
 
 ## Use
 
-Basic functions and a typical workflow are outlined in the `basic_use` vignette.
+The package contains vignettes describing the basic workflows and you should read them before using the 
+package.
 
+There are four vignettes and they should be read in order as they follow the analysis from start to finish.
 
-```{r example, eval=FALSE}
+### Data Checks
+
+How to check the coverage in the data and assess things like it's distribution.
+
+```{r, eval=FALSE}
 library(pepdiff)
-vignette('basic_use', package="pepdiff")
+vignette('data-checks', package="pepdiff")
 ```
 
 
+### Doing Comparisons
+
+How to perform comparisons with selected tests
+
+
+```{r, eval=FALSE}
+library(pepdiff)
+vignette('doing-comparisons', package="pepdiff")
+```
+
+
+### Check Results
+
+How to evaluate the tests you've chosen and make wiser interpretations and experimental designs
+
+```{r, eval=FALSE}
+library(pepdiff)
+vignette('check-results', package="pepdiff")
+```
+
+### Analysis
+
+How to perform an analysis of a broad set of comparisons
+
+```{r, eval=FALSE}
+library(pepdiff)
+vignette('analysis', package="pepdiff")
+```

@@ -4,13 +4,12 @@
 \alias{results_dataframe}
 \title{convert wide format results table containing fold change and p-value estimates etc to long format}
 \usage{
-results_dataframe(r, kmeans = NULL, se)
+results_dataframe(r, kmeans = NULL)
 }
 \arguments{
-\item{l}{results list typically from `compare()` or `compare_many()`}
-}
-\value{
-dataframe in long format
+\item{r}{results list typically from `compare()` or `compare_many()`}
+
+\item{kmeans}{a kmeans result to append}
 }
 \description{
 tidies up the wide results table from `compare()` to a long format, incorporating cluster information if needed

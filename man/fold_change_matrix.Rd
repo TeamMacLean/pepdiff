@@ -24,11 +24,12 @@ fold_change_matrix(
 
 \item{sig_level}{significance level cutoff}
 
-\item{metric}{the test metric used to determine significance one of:
+\item{metric}{the test metric used to determine significance one of: `metrics()`
 `bootstrap_t_p_val`, `bootstrap_t_fdr`
 `wilcoxon_p_val`, `wilcoxon_fdr`
 `kruskal_p_val`,  `kruskal_fdr`
-`rank_prod_p1_p_val`, `rank_prod_p2_p_val`, `rank_prod_p1_fdr`, `rank_prod_p2_fdr`.}
+`rank_prod_p1_p_val`, `rank_prod_p2_p_val`, `rank_prod_p1_fdr`, `rank_prod_p2_fdr`,
+`eb_p_val`, `eb_vs_p_val`, `gamma_p_val`, `eb_fdr`, `eb_vs_fdr`, `gamma_fdr`}
 }
 \value{
 matrix

@@ -20,7 +20,7 @@ compare_many(
 
 \item{iters}{The number of iterations to perform for iterative tests. Default is 1000.}
 
-\item{tests}{#' @param tests character vector of tests to use, one or more of: `norm_quantile`, `bootstrap_t`, `wilcoxon`, `kruskal-wallis`, `rank_product`}
+\item{tests}{#' @param tests character vector of tests to use, one or more of: `norm_quantile`, `bootstrap_t`, `wilcoxon`, `kruskal-wallis`, `rank_product`, `gamma`, `eb`}
 
 \item{log}{should the data be logged prior to analysis}
 
@@ -33,16 +33,16 @@ A list of dataframes, where each dataframe represents the comparison results for
 This function compares peptide quantities between multiple experimental conditions specified in a comparison dataframe. It applies selected statistical tests to identify differentially abundant peptides for each pairwise condition comparison.
 }
 \examples{
+\dontrun{
 # Example using imported data and a comparison dataframe:
 data_file <- "peptide_quantification_data.csv"
 comparison_data <- "comparison_conditions.csv"
 imported_data <- import_data(data_file)
-comparison_result <- compare_many(imported_data, comparison_data, tests = c("bootstrap_t", "wilcoxon"))
-
+comparison_result <- compare_many(imported_data, comparison_data,
+tests = c("bootstrap_t", "wilcoxon"))
+}
 }
 \seealso{
-\code{\link{import_data}}, \code{\link{compare}}, \code{\link{readr::read_csv}}
-
 Other statistical analysis: 
 \code{\link{compare}()},
 \code{\link{get_bootstrap_percentile}()},

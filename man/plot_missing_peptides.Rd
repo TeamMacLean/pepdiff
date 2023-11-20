@@ -16,6 +16,7 @@ A ggplot object representing the heatmap.
 This function takes a data frame and generates a heatmap showing the percent of missing (NA) peptide quantification values by biological and technical replicates. It uses the `assess_missing` function to calculate the missing values and ggplot2 for creating the heatmap.
 }
 \examples{
+\dontrun{
 data <- data.frame(treatment = rep(c("A", "B"), each = 12),
                    seconds = rep(rep(0, 6), 2),
                    bio_rep = rep(1:6, 2),
@@ -23,13 +24,10 @@ data <- data.frame(treatment = rep(c("A", "B"), each = 12),
                    percent_missing = runif(12, 0, 100))
 
 plot_missing_peptides(data)
+}
 
 }
 \seealso{
-\code{\link{assess_missing}}, \code{\link{ggplot2::ggplot}}, \code{\link{ggplot2::aes}},
-\code{\link{ggplot2::geom_tile}}, \code{\link{ggplot2::facet_grid}}, \code{\link{ggplot2::scale_fill_viridis_c}},
-\code{\link{ggplot2::theme_minimal}}, \code{\link{ggplot2::labs}}
-
 Other data visualization: 
 \code{\link{plot_norm_qq}()},
 \code{\link{plot_pca}()},

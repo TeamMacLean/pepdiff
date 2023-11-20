@@ -2,8 +2,7 @@
 % Please edit documentation in R/plots.R
 \name{plot_cluster_estimate}
 \alias{plot_cluster_estimate}
-\title{plots a Figure of Merit curve to help estimate the number of clusters in the results for a given metric and a
-given significance level. Clustering is done based on Fold}
+\title{Plot Cluster Estimate for Figure of Merit}
 \usage{
 plot_cluster_estimate(
   r,
@@ -15,17 +14,26 @@ plot_cluster_estimate(
 )
 }
 \arguments{
-\item{r}{the results object from `compare()` or `compare_many()`}
+\item{r}{The results object from `compare()` or `compare_many()`.}
 
-\item{log}{log the fold changes}
+\item{log}{Logical, indicating whether to log-transform the fold changes.}
 
-\item{base}{base for logging}
+\item{base}{The base for logarithmic transformation.}
 
-\item{sig_level}{significance cutoff for colour}
+\item{sig_only}{Logical, indicating whether to consider only significant values.}
 
-\item{metric}{metric to use for significance}
+\item{sig_level}{Significance cutoff for color.}
+
+\item{metric}{The metric to use for significance.}
 }
 \description{
-plots a Figure of Merit curve to help estimate the number of clusters in the results for a given metric and a
-given significance level. Clustering is done based on Fold
+This function plots a Figure of Merit curve to help estimate the number of clusters in the results for a given metric and significance level.
+Clustering is done based on Fold Change.
+}
+\examples{
+\dontrun{
+# Example Usage:
+plot_cluster_estimate(my_results, log = TRUE, base = 2, sig_level = 0.05,
+metric = "bootstrap_t_fdr")
+}
 }

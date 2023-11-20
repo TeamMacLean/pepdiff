@@ -2,16 +2,23 @@
 % Please edit documentation in R/plots.R
 \name{plot_fc}
 \alias{plot_fc}
-\title{plot histogram of fold change distribution for a comparison}
+\title{Plot Histogram of Fold Change Distribution for a Comparison}
 \usage{
 plot_fc(r)
 }
 \arguments{
-\item{r}{result dataframe or list, typically from `compare()` or `compare_many()`}
+\item{r}{A result dataframe or list of result dataframes.}
 }
 \value{
-ggplot2 plot
+A ggplot2 plot showing the histogram of fold change distribution for each comparison.
 }
 \description{
-plot histogram of fold change distribution for a comparison
+This function takes a result dataframe or a list, typically obtained from functions like
+`compare()` or `compare_many()`, and plots a histogram of the fold change distribution for each comparison.
+}
+\examples{
+\dontrun{
+plot_fc(my_results)
+}
+
 }

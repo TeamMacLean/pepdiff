@@ -64,11 +64,12 @@ get_power <- function(treatment, control, sig_level=0.05, b=0.8, max_n=50) {
 #' @import stats
 #'
 #' @examples
+#' \dontrun{
 #' # Example using two dataframes for treatment and control with 1000 iterations:
 #' treatment_data <- data.frame(peptide1 = c(10, 20, 30), peptide2 = c(15, 25, 35))
 #' control_data <- data.frame(peptide1 = c(12, 22, 32), peptide2 = c(18, 28, 38))
 #' result <- get_percentile_lowest_observed_value_iterative(treatment_data, control_data, iters = 1000)
-#'
+#' }
 #' @keywords data
 #' @family statistical analysis
 #' @rdname get_percentile_lowest_observed_value_iterative
@@ -108,14 +109,15 @@ get_percentile_lowest_observed_value_iterative <- function(treatment, control, i
 #' @import MKinfer
 #'
 #' @examples
+#' \dontrun{
 #' # Example using two dataframes for treatment and control with 1000 bootstrap iterations:
-#' treatment_data <- data.frame(peptide1 = c(10, 20, 30), peptide2 = c(15, 25, 35))
-#' control_data <- data.frame(peptide1 = c(12, 22, 32), peptide2 = c(18, 28, 38))
-#' result <- get_bootstrap_percentile(treatment_data, control_data, iters = 1000)
-#'
-#' @seealso
-#' \code{\link{MKinfer::boot.t.test}}, \code{\link{stats::p.adjust}}
-#'
+#' treatment_data <- data.frame(peptide1 = c(10, 20, 30),
+#' peptide2 = c(15, 25, 35))
+#' control_data <- data.frame(peptide1 = c(12, 22, 32),
+#' peptide2 = c(18, 28, 38))
+#' result <- get_bootstrap_percentile(treatment_data, control_data,
+#' iters = 1000)
+#' }
 #' @keywords data
 #' @family statistical analysis
 #' @rdname get_bootstrap_percentile
@@ -149,14 +151,14 @@ get_bootstrap_percentile <- function(treatment, control, iters){
 #' @import stats
 #'
 #' @examples
+#' \dontrun{
 #' # Example using two dataframes for treatment and control:
-#' treatment_data <- data.frame(peptide1 = c(10, 20, 30), peptide2 = c(15, 25, 35))
-#' control_data <- data.frame(peptide1 = c(12, 22, 32), peptide2 = c(18, 28, 38))
+#' treatment_data <- data.frame(peptide1 = c(10, 20, 30),
+#' peptide2 = c(15, 25, 35))
+#' control_data <- data.frame(peptide1 = c(12, 22, 32),
+#' peptide2 = c(18, 28, 38))
 #' result <- get_wilcoxon_percentile(treatment_data, control_data)
-#'
-#' @seealso
-#' \code{\link{stats::wilcox.test}}, \code{\link{stats::p.adjust}}
-#'
+#' }
 #' @keywords data
 #' @family statistical analysis
 #' @rdname get_wilcoxon_percentile
@@ -190,14 +192,14 @@ get_wilcoxon_percentile <- function(treatment, control){
 #' @import stats
 #'
 #' @examples
+#' \dontrun{
 #' # Example using two dataframes for treatment and control:
-#' treatment_data <- data.frame(peptide1 = c(10, 20, 30), peptide2 = c(15, 25, 35))
-#' control_data <- data.frame(peptide1 = c(12, 22, 32), peptide2 = c(18, 28, 38))
+#' treatment_data <- data.frame(peptide1 = c(10, 20, 30),
+#' peptide2 = c(15, 25, 35))
+#' control_data <- data.frame(peptide1 = c(12, 22, 32),
+#' peptide2 = c(18, 28, 38))
 #' result <- get_kruskal_percentile(treatment_data, control_data)
-#'
-#' @seealso
-#' \code{\link{stats::kruskal.test}}, \code{\link{stats::p.adjust}}
-#'
+#' }
 #' @keywords data
 #' @family statistical analysis
 #' @rdname get_kruskal_percentile
@@ -232,13 +234,14 @@ get_kruskal_percentile <- function(treatment, control){
 #' @import RankProd
 #'
 #' @examples
+#' \dontrun{
 #' # Example using two dataframes for treatment and control:
-#' treatment_data <- data.frame(peptide1 = c(10, 20, 30), peptide2 = c(15, 25, 35))
-#' control_data <- data.frame(peptide1 = c(12, 22, 32), peptide2 = c(18, 28, 38))
+#' treatment_data <- data.frame(peptide1 = c(10, 20, 30),
+#' peptide2 = c(15, 25, 35))
+#' control_data <- data.frame(peptide1 = c(12, 22, 32),
+#' peptide2 = c(18, 28, 38))
 #' result <- get_rp_percentile(treatment_data, control_data)
-#'
-#' @seealso
-#' \code{\link{RankProd::RankProducts}}
+#' }
 #'
 #' @keywords data
 #' @family statistical analysis
@@ -261,7 +264,29 @@ get_rp_percentile <- function(treatment, control){
 
 }
 
-#' @export
+#' Calculate Gamma Values for Peptide Data
+#'
+#' This function computes gamma values for each peptide based on a treatment and control group.
+#'
+#' @param treatment A matrix or data frame representing the treatment group's data.
+#' @param control A matrix or data frame representing the control group's data.
+#'
+#' @return A data frame containing gamma p-values and FDR-adjusted gamma values for each peptide.
+#'
+#' @details The function fits a Generalized Linear Model (GLM) using the Gamma family to compare treatment and control groups for each peptide.
+#'
+#' @references
+#' Davison, A. C., & Hinkley, D. V. (1997). Bootstrap Methods and Their Application.
+#'
+#' @examples
+#' \dontrun{
+#' treatment <- matrix(rnorm(100), ncol = 5)
+#' control <- matrix(rnorm(100), ncol = 5)
+#' results <- get_gamma(treatment, control)
+#' }
+#' @seealso
+#' \code{\link{glm}}, \code{\link{p.adjust}}
+#'
 get_gamma <- function(treatment, control) {
 
   peptide_count <- dim(control)[1]
@@ -284,27 +309,47 @@ get_gamma <- function(treatment, control) {
              )
 }
 
+#' Calculate Empirical Bayes Statistics for Treatment vs. Control Comparison
+#'
+#' This function computes empirical Bayes statistics for comparing treatment and control groups.
+#'
+#' @param treatment A matrix or data frame representing the treatment group's data.
+#' @param control A matrix or data frame representing the control group's data.
+#'
+#' @return A data frame containing empirical Bayes p-values, FDR-adjusted p-values, and Vash statistics.
+#'
+#' @details The function fits a linear model using limma::lmFit and performs empirical Bayes moderation with limma::eBayes.
+#' The Vashr package is used to compute additional statistics for the comparison.
+#'
+#' @references
+#' Ritchie, M. E., Phipson, B., Wu, D., Hu, Y., Law, C. W., Shi, W., & Smyth, G. K. (2015).
+#' limma powers differential expression analyses for RNA-sequencing and microarray studies.
+#'
+#' @examples
+#' \dontrun{
+#' treatment <- matrix(rnorm(100), ncol = 5)
+#' control <- matrix(rnorm(100), ncol = 5)
+#' results <- get_eb(treatment, control)
+#' }
+#'
 #' @export
 get_eb <- function(treatment, control) {
-  #check this is in correct order wrt peptides... should be.
   m <- log(cbind(treatment, control))
-  tc <- c(rep("treatment", 3), rep("control", 3))
+  tc <- c(rep("treatment", ncol(treatment)), rep("control", ncol(control)))
   design <- model.matrix(~factor(tc))
-  colnames(design) <- c("trt","ctrl")
+  colnames(design) <- c("trt", "ctrl")
   fit <- limma::lmFit(m, design)
   fit <- limma::eBayes(fit)
-  betahat <- fit$coefficients[,2]
-  sehat <- fit$stdev.unscaled[,2]*fit$sigma
-  fit.vash <- vashr::vash(sehat=sehat, df=fit$df.residual[1], betahat=betahat)
-
+  betahat <- fit$coefficients[, 2]
+  sehat <- fit$stdev.unscaled[, 2] * fit$sigma
+  fit.vash <- vashr::vash(sehat = sehat, df = fit$df.residual[1], betahat = betahat)
 
   data.frame(
     eb_vs_p_val = fit.vash$pvalue,
     eb_vs_fdr = fit.vash$qvalue,
-    eb_p_val = fit$p.value[,2],
-    eb_fdr = p.adjust(fit$p.value[,2], method="fdr")
+    eb_p_val = fit$p.value[, 2],
+    eb_fdr = p.adjust(fit$p.value[, 2], method = "fdr")
   )
-
 }
 
 #' Perform kmeans of a dataset using just data in selected comparisons columns, then return matrices of all clusters

@@ -2,20 +2,25 @@
 % Please edit documentation in R/plots.R
 \name{plot_compared_calls}
 \alias{plot_compared_calls}
-\title{compare sets of significant peptides called by the used data}
+\title{Compare Sets of Significant Peptides Called by the Used Data}
 \usage{
 plot_compared_calls(r, sig = 0.05)
 }
 \arguments{
-\item{r}{result dataframe or list typically from `compare()` or `compare_many()`}
+\item{r}{A result dataframe or list typically obtained from `compare()` or `compare_many()`.}
 
-\item{sig}{significance cut-off to select peptides}
+\item{sig}{Significance cutoff to select peptides.}
 }
 \value{
-UpSet plot
+UpSet plot.
 }
 \description{
-produces an UpSet plot showing intersections and set-size of the different
+Produces an UpSet plot showing intersections and set-size of the different
 sets of significant peptides called by the methods used in the provided result
-dataframe
+dataframe.
+}
+\examples{
+\dontrun{
+plot_compared_calls(my_results, sig = 0.05)
+}
 }

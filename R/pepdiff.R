@@ -18,10 +18,11 @@
 #' @param peptide The column name representing peptide sequences. Default is "peptide_sequence".
 #' @param quant The column name representing the peptide quantification. Default is "total_area"
 #'
-#' @return A preprocessed data frame with standardized column names and data types.
 #'
 #' @export
+#'
 #' @examples
+#' \dontrun{
 #' # Example using a CSV file:
 #' data_file <- "peptide_quantification_data.csv"
 #' imported_data <- import_data(data_file)
@@ -35,15 +36,10 @@
 #'                          gene_id = c("Gene1", "Gene2", "Gene1"),
 #'                          quant = runif(3),
 #'                          peptide_sequence = c("AAA", "BBB", "CCC"))
-# imported_data <- import_data(data_frame)
+#  imported_data <- import_data(data_frame)
+#' }
 #'
-#' @seealso
-#' \code{\link{dplyr::rename}}, \code{\link{dplyr::mutate}}, \code{\link{dplyr::transmute}}, \code{\link{dplyr::distinct}},
-#' \code{\link{readr::read_csv}}
-#'
-#' @keywords data
-#' @family data manipulation
-#' @rdname import_data
+#' @return A preprocessed data frame with standardized column names and data types.
 import_data <- function(file,
                         treatment = "genotype",
                         bio_rep = "bio_rep",
@@ -130,23 +126,20 @@ count_peptides_measured <- function(df){
 #' @param control The name of the experimental control condition to compare.
 #' @param c_seconds The time point of the control condition to compare.
 #' @param tests A character vector of tests to use, one or more of: 'norm_quantile', 'bootstrap_t', 'wilcoxon', 'kruskal-wallis', 'rank_product', 'gamma', 'eb'
-#'
+#' @param log whether or not to log the data
+#' @param base base for logs
 #' @return A data frame with information about original and replaced quantification values, natural fold changes, replicates, p-values, false discovery rate (FDR), and statistical power for each peptide.
 #'
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' # Example using imported data and performing a bootstrap t-test:
 #' data_file <- "peptide_quantification_data.csv"
 #' imported_data <- import_data(data_file)
-#' comparison_result <- compare(imported_data, treatment = "A", control = "B", tests = "bootstrap_t")
-#'
-#' @seealso
-#' \code{\link{import_data}}, \code{\link{select_columns_for_contrast}}, \code{\link{min_peptide_values}},
-#' \code{\link{mean_fold_change}}, \code{\link{get_percentile_lowest_observed_value_iterative}},
-#' \code{\link{get_bootstrap_percentile}}, \code{\link{get_wilcoxon_percentile}}, \code{\link{get_kruskal_percentile}},
-#' \code{\link{get_rp_percentile}}, \code{\link{get_power}}
-#'
+#' comparison_result <- compare(imported_data, treatment = "A",
+#' control = "B", tests = "bootstrap_t")
+#' }
 #' @keywords data
 #' @family statistical analysis
 #' @rdname compare
@@ -247,15 +240,14 @@ compare <- function(df,
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' # Example using imported data and a comparison dataframe:
 #' data_file <- "peptide_quantification_data.csv"
 #' comparison_data <- "comparison_conditions.csv"
 #' imported_data <- import_data(data_file)
-#' comparison_result <- compare_many(imported_data, comparison_data, tests = c("bootstrap_t", "wilcoxon"))
-#'
-#' @seealso
-#' \code{\link{import_data}}, \code{\link{compare}}, \code{\link{readr::read_csv}}
-#'
+#' comparison_result <- compare_many(imported_data, comparison_data,
+#' tests = c("bootstrap_t", "wilcoxon"))
+#' }
 #' @keywords data
 #' @family statistical analysis
 #' @rdname compare_many
@@ -294,10 +286,11 @@ compare_many <- function(df, comparison, iters = 1000, tests = c("bootstrap_t"),
 
 #' summarize the health of the experiment as a whole
 #'
-#' returns statistics on the probability of detecting effects on at least half the outcomes and completeness of sampling
+#' returns statistics on the probability of detecting effects on at least half
+#' the outcomes and completeness of sampling
 #' over threshold b
 #'
-#' @param the results object, from `compare()` or `compare_many()`
+#' @param r the results object, from `compare()` or `compare_many()`
 #' @param b the statistical power at which to evaluate
 #' @return i
 #' @export
@@ -332,9 +325,6 @@ health <- function(r, b=0.8) {
 #' @return A data frame with counts of peptides for each comparison and power category.
 #'
 #' @export
-#' @examples
-#' # Example Usage:
-#' count_peptides_needing_m_reps(results, m = 10, b = 0.8)
 #'
 count_peptides_needing_m_reps <- function(r, m=10, b=0.8) {
 

@@ -20,15 +20,12 @@ A ggplot object representing the Normal QQ plot.
 This function takes a data frame and generates a Normal QQ plot to visualize the distribution of peptide quantity in biological replicates. It can optionally apply a logarithmic transformation to the quantity values.
 }
 \examples{
-
+\dontrun{
 plot_norm_qq(data)
+}
 
 }
 \seealso{
-\code{\link{combine_tech_reps}}, \code{\link{ggplot2::ggplot}}, \code{\link{ggplot2::aes}},
-\code{\link{ggplot2::geom_qq}}, \code{\link{ggplot2::geom_qq_line}}, \code{\link{ggplot2::facet_grid}},
-\code{\link{ggplot2::scale_color_viridis_d}}, \code{\link{ggplot2::theme_minimal}}, \code{\link{ggplot2::labs}}
-
 Other data visualization: 
 \code{\link{plot_missing_peptides}()},
 \code{\link{plot_pca}()},

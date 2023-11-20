@@ -18,15 +18,17 @@ A dataframe containing Rank Products test p-values and corresponding adjusted FD
 This function computes p-values and adjusted false discovery rates (FDR) using the Rank Products (RankProd) statistical test for each peptide comparison between treatment and control groups. The Rank Products test is specifically designed for identifying differentially abundant features (e.g., peptides) in high-throughput data.
 }
 \examples{
+\dontrun{
 # Example using two dataframes for treatment and control:
-treatment_data <- data.frame(peptide1 = c(10, 20, 30), peptide2 = c(15, 25, 35))
-control_data <- data.frame(peptide1 = c(12, 22, 32), peptide2 = c(18, 28, 38))
+treatment_data <- data.frame(peptide1 = c(10, 20, 30),
+peptide2 = c(15, 25, 35))
+control_data <- data.frame(peptide1 = c(12, 22, 32),
+peptide2 = c(18, 28, 38))
 result <- get_rp_percentile(treatment_data, control_data)
+}
 
 }
 \seealso{
-\code{\link{RankProd::RankProducts}}
-
 Other statistical analysis: 
 \code{\link{compare_many}()},
 \code{\link{compare}()},
