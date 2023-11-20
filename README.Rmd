@@ -20,7 +20,9 @@ knitr::opts_chunk$set(
 [![R-CMD-check](https://github.com/TeamMacLean/pepdiff/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/TeamMacLean/pepdiff/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
-The goal of pepdiff is to provide functions and plots for normalising peptide data from 'PRM' experiments.
+Workflows for Characterising and Analysing Peptide Quantifications
+
+Provides functions for developing workflows to characterise, evaluate and perform differential abundance analysis in tabular data from quantified Mass Spec experiments. Typically used for experiments with Gene, Peptide, Time, Genotype, Biorep, Techrep and Quantification variables.
 
 ## Installation
 
