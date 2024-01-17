@@ -168,14 +168,15 @@ get_wilcoxon_percentile <- function(treatment, control){
   result <- rep(NA, peptide_count)
   for (i in 1:peptide_count){
     tryCatch(
-      {wcox <- wilcox.test(treatment[i,], control[i,]) },
+      {wcox <- wilcox.test(treatment[i,], control[i,])
+      result[i] <- wcox$p.value
+      },
       warning = function(w){ list(p.value = NA) },
       error = function(e){
         return( list(p.value = NA) )
       },
       finally = {})
 
-    result[i] <- wcox$p.value
   }
   return(data.frame(wilcoxon_p_val = result, wilcoxon_fdr = p.adjust(result, method = 'bonferroni')))
 }

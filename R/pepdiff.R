@@ -178,6 +178,7 @@ compare <- function(df,
   result$info <- as.data.frame(d$row_info)
   result$treatment <- as.data.frame(treatment)
   result$control <- as.data.frame(control)
+
   result$fold_change <- data.frame(fold_change = fc)
   result$treatment_mean_count <- data.frame(treatment_mean_count = treatment_mean_count)
   result$control_mean_count <- data.frame(control_mean_count = control_mean_count)
@@ -189,6 +190,16 @@ compare <- function(df,
 
   result$treatment_replicates <- data.frame(treatment_replicates = treatment_reps)
   result$control_replicates <- data.frame(control_replicates = control_reps)
+
+  if (all(colnames(result$treatment) %in% colnames(result$control))  ) {
+    warning("Duplicated names for test and control found. Presuming self vs self comparison - do you need this\nAppending _t and _c to treatment and control names.")
+    colnames(result$treatment) <- paste0(colnames(result$treatment), "_t")
+    colnames(result$control) <- paste0(colnames(result$control), "_c")
+    colnames(result$unreplaced_treatment) <- paste0(colnames(result$unreplaced_treatment), "_t")
+    colnames(result$unreplaced_treatment) <- paste0(colnames(result$unreplaced_treatment), "_c")
+  }
+
+
 
   if ("norm_quantile" %in% tests){
     result$norm_quantile <- get_percentile_lowest_observed_value_iterative(treatment, control, iters)
@@ -220,7 +231,8 @@ compare <- function(df,
   result$d <- powers$d
   result$min_reps <- powers$min_reps
 
-  return(tibble::as_tibble(dplyr::bind_cols(result)))
+  return(tibble::as_tibble(dplyr::bind_cols(result, .name_repair="minimal")))
+  #return(result)
 }
 
 
