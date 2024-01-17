@@ -893,9 +893,9 @@ plot_power_volcano <- function(r, which="fold_change", base=2, b=0.8, option="E"
     ggplot2::ylab("P detection of effect, given variability, at p-value previously chosen") +
     ggplot2::labs(colour = "Power")
 
-    if (which == "cohens_d"){
-      p <- p + ggplot2::coord_trans(x="log10")
-    }
+#    if (which == "fold_change"){
+#      p <- p + ggplot2::coord_trans(x="log10")
+#    }
    p
 }
 
