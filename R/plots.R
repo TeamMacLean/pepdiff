@@ -55,7 +55,7 @@ plot_missing_peptides <- function(i){
     ggplot2::aes(.data$bio_rep, .data$tech_rep) +
     ggplot2::geom_tile(  ggplot2::aes(fill = .data$percent_missing)) +
     ggplot2::facet_grid(treatment ~ seconds) +
-    ggplot2::scale_fill_viridis_c(guide=ggplot2::guide_legend(title = "% NA")) +
+    ggplot2::scale_fill_viridis_c(guide=ggplot2::guide_legend(title = "% NA"), limits=c(0,100)) +
     ggplot2::theme_minimal() +
     ggplot2::labs( x="Biolgical Replicate", y="Technical Replicate",
                    title = "Percent of peptides with a missing quantification value (NA) in each sample"
