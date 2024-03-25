@@ -1,8 +1,4 @@
-##TODO
-## document functions
-## update plot_compared_calls to include new tests
-## Tests
-## Check installation
+
 
 #' Import and preprocess peptide quantification data from a file or data frame.
 #'

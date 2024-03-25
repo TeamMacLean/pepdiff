@@ -268,6 +268,7 @@ get_rp_percentile <- function(treatment, control){
 #' Calculate Gamma Values for Peptide Data
 #'
 #' This function computes gamma values for each peptide based on a treatment and control group.
+#' Compares a null and a full model a la sleuth for RNAseq.
 #'
 #' @param treatment A matrix or data frame representing the treatment group's data.
 #' @param control A matrix or data frame representing the control group's data.
@@ -300,8 +301,18 @@ get_gamma <- function(treatment, control) {
       y = c(treatment[i,], control[i,])
     )
 
-      fit <- glm(y ~ x, data=df, family = Gamma, na.action=na.exclude)
-      result[i] <- coef(summary(fit))[2,4]
+      full <- glm(y ~ x, data=df, family = Gamma)
+      int_only <- glm(y ~ 1, data=df, family = Gamma)
+
+      result[i] <- log_likelihood_p(int_only, full)
+
+      #fit <- glm(y ~ x, data=df, family = Gamma)
+      #result[i] <- coef(summary(fit, dispersion = est$parameters[1]))[2,4]
+
+      ##TODO
+      ## Above computes a dispersion corrected gamma glm and looks at the co-efficient. Instead compare with a null
+      ## model. Intercept only model.
+      ## Check out how to do likelihood ratio test between two models if model from here is better than simple intercept model then the difference is likely significant! CF limma. Sleuth.
 
   }
 
@@ -309,6 +320,32 @@ get_gamma <- function(treatment, control) {
              gamma_fdr = p.adjust(result, method = "fdr")
              )
 }
+
+
+get_log <- function(treatment, control) {
+  peptide_count <- dim(control)[1]
+  result <- rep(NA, peptide_count)
+  for (i in 1:peptide_count){
+    df <- data.frame(
+      x = c( rep("treatment", ncol(treatment) ),
+             rep("control", ncol(control) )
+      ),
+      y = c(treatment[i,], control[i,])
+    )
+
+  }
+}
+
+
+log_likelihood_p <- function(null, full) {
+  a <- logLik(null)
+  b <- logLik(full)
+  st <- -2 * (as.numeric(a) - as.numeric(b))
+
+  pchisq(st, df=1, lower.tail=FALSE) #df is number of variables in full - number of variables in null ( 1 - 0 in this.)
+}
+
+
 
 #' Calculate Empirical Bayes Statistics for Treatment vs. Control Comparison
 #'
