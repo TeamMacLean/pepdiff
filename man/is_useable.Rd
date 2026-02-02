@@ -2,16 +2,17 @@
 % Please edit documentation in R/utils.R
 \name{is_useable}
 \alias{is_useable}
-\title{calculate the number of non- NA or NaNs in a vector}
+\title{Check if values are useable (non-NA and non-NaN)}
 \usage{
 is_useable(x)
 }
 \arguments{
-\item{x}{vector of values}
+\item{x}{Vector of values}
 }
 \value{
-vector of TRUE/FALSE indicating positions of useable stuff
+Logical vector indicating positions of useable values
 }
 \description{
-calculate the number of non- NA or NaNs in a vector
+Check if values are useable (non-NA and non-NaN)
 }
+\keyword{internal}

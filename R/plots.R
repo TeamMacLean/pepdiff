@@ -1,3 +1,315 @@
+# =============================================================================
+# Plot Methods for S3 Classes
+# =============================================================================
+
+#' Plot method for pepdiff_data
+#'
+#' Creates a multi-panel diagnostic plot showing PCA, distributions, and missingness.
+#'
+#' @param x A pepdiff_data object
+#' @param ... Additional arguments (ignored)
+#' @return A cowplot grid of plots
+#' @export
+#' @importFrom rlang .data
+plot.pepdiff_data <- function(x, ...) {
+  # PCA plot
+  pca_plot <- plot_pca_simple(x)
+
+  # Distribution plot
+  dist_plot <- plot_distributions_simple(x)
+
+  # Missingness plot
+  miss_plot <- plot_missingness_simple(x)
+
+  cowplot::plot_grid(pca_plot, dist_plot, miss_plot, nrow = 2, ncol = 2)
+}
+
+
+#' Simple PCA plot for pepdiff_data
+#'
+#' @param data A pepdiff_data object
+#' @param color_by Factor to color points by (default: first factor)
+#' @return A ggplot object
+#' @export
+#' @importFrom rlang .data
+#' @importFrom stats complete.cases
+plot_pca_simple <- function(data, color_by = NULL) {
+  if (!inherits(data, "pepdiff_data")) {
+    stop("Data must be a pepdiff_data object", call. = FALSE)
+  }
+
+  if (is.null(color_by)) {
+    color_by <- data$factors[1]
+  }
+
+  # Pivot to wide format for PCA
+  wide_data <- data$data %>%
+    dplyr::mutate(sample_id = paste(.data$bio_rep, !!!rlang::syms(data$factors), sep = "_")) %>%
+    tidyr::pivot_wider(
+      id_cols = "peptide",
+      names_from = "sample_id",
+      values_from = "value",
+      values_fn = mean
+    )
+
+  # Remove peptides with missing values
+  mat <- as.matrix(wide_data[, -1])
+  complete_rows <- complete.cases(mat)
+  mat <- mat[complete_rows, ]
+
+  if (nrow(mat) < 3) {
+    return(ggplot2::ggplot() + ggplot2::annotate("text", x = 0.5, y = 0.5, label = "Insufficient data for PCA"))
+  }
+
+  # Perform PCA on transposed matrix (samples as rows)
+  pca_result <- stats::prcomp(t(mat), scale. = TRUE, center = TRUE)
+
+  # Create plot data
+  pca_df <- as.data.frame(pca_result$x[, 1:2])
+  pca_df$sample <- rownames(pca_df)
+
+  # Parse sample info
+  sample_info <- do.call(rbind, strsplit(pca_df$sample, "_"))
+  pca_df$bio_rep <- sample_info[, 1]
+  for (i in seq_along(data$factors)) {
+    pca_df[[data$factors[i]]] <- sample_info[, i + 1]
+  }
+
+  # Variance explained
+  var_explained <- round(100 * pca_result$sdev^2 / sum(pca_result$sdev^2), 1)
+
+  ggplot2::ggplot(pca_df, ggplot2::aes(x = .data$PC1, y = .data$PC2, color = .data[[color_by]])) +
+    ggplot2::geom_point(size = 3) +
+    ggplot2::labs(
+      x = paste0("PC1 (", var_explained[1], "%)"),
+      y = paste0("PC2 (", var_explained[2], "%)"),
+      title = "PCA"
+    ) +
+    ggplot2::theme_minimal() +
+    ggplot2::scale_color_viridis_d()
+}
+
+
+#' Simple distribution plot for pepdiff_data
+#'
+#' @param data A pepdiff_data object
+#' @param facet_by Factor to facet by (default: first factor)
+#' @return A ggplot object
+#' @export
+#' @importFrom rlang .data
+plot_distributions_simple <- function(data, facet_by = NULL) {
+  if (!inherits(data, "pepdiff_data")) {
+    stop("Data must be a pepdiff_data object", call. = FALSE)
+  }
+
+  if (is.null(facet_by)) {
+    facet_by <- data$factors[1]
+  }
+
+  plot_data <- data$data %>%
+    dplyr::filter(!is.na(.data$value)) %>%
+    dplyr::mutate(log_value = log10(.data$value))
+
+  ggplot2::ggplot(plot_data, ggplot2::aes(x = .data$log_value, fill = .data$bio_rep)) +
+    ggplot2::geom_density(alpha = 0.5) +
+    ggplot2::facet_wrap(stats::as.formula(paste("~", facet_by))) +
+    ggplot2::labs(
+      x = "Log10 Abundance",
+      y = "Density",
+      title = "Abundance Distribution"
+    ) +
+    ggplot2::theme_minimal() +
+    ggplot2::scale_fill_viridis_d()
+}
+
+
+#' Simple missingness plot for pepdiff_data
+#'
+#' @param data A pepdiff_data object
+#' @return A ggplot object
+#' @export
+#' @importFrom rlang .data
+plot_missingness_simple <- function(data) {
+  if (!inherits(data, "pepdiff_data")) {
+    stop("Data must be a pepdiff_data object", call. = FALSE)
+  }
+
+  miss_data <- data$missingness %>%
+    dplyr::filter(.data$na_rate > 0) %>%
+    dplyr::arrange(dplyr::desc(.data$na_rate)) %>%
+    dplyr::slice_head(n = 50)
+
+  if (nrow(miss_data) == 0) {
+    return(
+      ggplot2::ggplot() +
+        ggplot2::annotate("text", x = 0.5, y = 0.5, label = "No missing values") +
+        ggplot2::theme_void()
+    )
+  }
+
+  miss_data$peptide <- factor(miss_data$peptide, levels = miss_data$peptide)
+
+  ggplot2::ggplot(miss_data, ggplot2::aes(x = .data$peptide, y = .data$na_rate * 100)) +
+    ggplot2::geom_col(fill = "steelblue") +
+    ggplot2::coord_flip() +
+    ggplot2::labs(
+      x = "Peptide",
+      y = "% Missing",
+      title = "Missingness (top 50)"
+    ) +
+    ggplot2::theme_minimal()
+}
+
+
+#' Plot method for pepdiff_results
+#'
+#' Creates a multi-panel plot showing volcano, p-value histogram, and FC distribution.
+#'
+#' @param x A pepdiff_results object
+#' @param ... Additional arguments (ignored)
+#' @return A cowplot grid of plots
+#' @export
+#' @importFrom rlang .data
+plot.pepdiff_results <- function(x, ...) {
+  # Volcano plot
+  volcano <- plot_volcano_new(x)
+
+  # P-value histogram
+  pval_hist <- plot_pvalue_histogram(x)
+
+  # FC distribution
+  fc_dist <- plot_fc_distribution_new(x)
+
+  cowplot::plot_grid(volcano, pval_hist, fc_dist, nrow = 2, ncol = 2)
+}
+
+
+#' Volcano plot for pepdiff_results
+#'
+#' @param results A pepdiff_results object
+#' @param comparison Optional comparison name to filter by
+#' @param alpha Significance threshold for coloring
+#' @param fc_threshold Fold change threshold for labeling
+#' @return A ggplot object
+#' @export
+#' @importFrom rlang .data
+plot_volcano_new <- function(results, comparison = NULL, alpha = 0.05, fc_threshold = 1) {
+  if (!inherits(results, "pepdiff_results")) {
+    stop("Results must be a pepdiff_results object", call. = FALSE)
+  }
+
+  plot_data <- results$results
+
+  if (!is.null(comparison)) {
+    plot_data <- plot_data[plot_data$comparison == comparison, ]
+  }
+
+  if (!"log2_fc" %in% names(plot_data) || all(is.na(plot_data$log2_fc))) {
+    plot_data$log2_fc <- log2(plot_data$fold_change)
+  }
+
+  plot_data <- plot_data %>%
+    dplyr::filter(!is.na(.data$p_value) & !is.na(.data$log2_fc)) %>%
+    dplyr::mutate(
+      neg_log_p = -log10(.data$p_value),
+      direction = dplyr::case_when(
+        .data$fdr < alpha & .data$log2_fc > log2(fc_threshold) ~ "Up",
+        .data$fdr < alpha & .data$log2_fc < -log2(fc_threshold) ~ "Down",
+        TRUE ~ "NS"
+      )
+    )
+
+  ggplot2::ggplot(plot_data, ggplot2::aes(x = .data$log2_fc, y = .data$neg_log_p, color = .data$direction)) +
+    ggplot2::geom_point(alpha = 0.6) +
+    ggplot2::scale_color_manual(values = c("Up" = "red", "Down" = "blue", "NS" = "grey50")) +
+    ggplot2::geom_hline(yintercept = -log10(alpha), linetype = "dashed", color = "grey30") +
+    ggplot2::geom_vline(xintercept = c(-log2(fc_threshold), log2(fc_threshold)), linetype = "dashed", color = "grey30") +
+    ggplot2::labs(
+      x = "Log2 Fold Change",
+      y = "-Log10 P-value",
+      title = "Volcano Plot",
+      color = "Direction"
+    ) +
+    ggplot2::theme_minimal() +
+    ggplot2::facet_wrap(~ comparison)
+}
+
+
+#' P-value histogram for pepdiff_results
+#'
+#' @param results A pepdiff_results object
+#' @param comparison Optional comparison to filter by
+#' @return A ggplot object
+#' @export
+#' @importFrom rlang .data
+plot_pvalue_histogram <- function(results, comparison = NULL) {
+  if (!inherits(results, "pepdiff_results")) {
+    stop("Results must be a pepdiff_results object", call. = FALSE)
+  }
+
+  plot_data <- results$results
+
+  if (!is.null(comparison)) {
+    plot_data <- plot_data[plot_data$comparison == comparison, ]
+  }
+
+  plot_data <- plot_data %>%
+    dplyr::filter(!is.na(.data$p_value))
+
+  ggplot2::ggplot(plot_data, ggplot2::aes(x = .data$p_value)) +
+    ggplot2::geom_histogram(bins = 20, fill = "steelblue", color = "white") +
+    ggplot2::labs(
+      x = "P-value",
+      y = "Count",
+      title = "P-value Distribution"
+    ) +
+    ggplot2::theme_minimal() +
+    ggplot2::facet_wrap(~ comparison)
+}
+
+
+#' Fold change distribution for pepdiff_results
+#'
+#' @param results A pepdiff_results object
+#' @param comparison Optional comparison to filter by
+#' @return A ggplot object
+#' @export
+#' @importFrom rlang .data
+plot_fc_distribution_new <- function(results, comparison = NULL) {
+  if (!inherits(results, "pepdiff_results")) {
+    stop("Results must be a pepdiff_results object", call. = FALSE)
+  }
+
+  plot_data <- results$results
+
+  if (!is.null(comparison)) {
+    plot_data <- plot_data[plot_data$comparison == comparison, ]
+  }
+
+  if (!"log2_fc" %in% names(plot_data)) {
+    plot_data$log2_fc <- log2(plot_data$fold_change)
+  }
+
+  plot_data <- plot_data %>%
+    dplyr::filter(!is.na(.data$log2_fc) & is.finite(.data$log2_fc))
+
+  ggplot2::ggplot(plot_data, ggplot2::aes(x = .data$log2_fc)) +
+    ggplot2::geom_histogram(bins = 30, fill = "steelblue", color = "white") +
+    ggplot2::geom_vline(xintercept = 0, linetype = "dashed", color = "red") +
+    ggplot2::labs(
+      x = "Log2 Fold Change",
+      y = "Count",
+      title = "Fold Change Distribution"
+    ) +
+    ggplot2::theme_minimal() +
+    ggplot2::facet_wrap(~ comparison)
+}
+
+
+# =============================================================================
+# Legacy Plot Functions
+# =============================================================================
+
 #' plot the count of the number of times peptides were measured.
 #'
 #' Calculates and plots the number of times each peptide was measured in each

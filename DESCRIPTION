@@ -1,40 +1,47 @@
 Package: pepdiff
 Type: Package
-Title: Analysing TSL PRM Peptide Data
-Version: 0.1.2
+Title: Differential Abundance Analysis for PRM Proteomics Data
+Version: 2.0.0
 Author: Dan MacLean
 Maintainer: Dan MacLean <dan.maclean@tsl.ac.uk>
-Description: Provides plots and stats functions for evaluating and pefroming
-    differential abundance analysis on experiments with Time, Genotype, Biorep and Techrep
-    variables in PRM data.
+Description: Provides tools for analyzing differential abundance in PRM
+    (Parallel Reaction Monitoring) proteomics experiments. Implements S3
+    classes for data management and supports GLM, ART, and pairwise test
+    methods for statistical analysis. Includes visualization functions for
+    PCA, volcano plots, and heatmaps.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.3
 biocViews:
-Imports: 
-    circlize,
-    ComplexHeatmap,
-    cowplot,
+Imports:
     dplyr,
-    factoextra,
-    forcats,
-    ggplot2,
-    magrittr,
-    MKinfer,
-    RankProd,
-    RColorBrewer,
-    readr,
-    rlang,
-    stats,
-    stringr,
-    tibble,
     tidyr,
+    tibble,
+    rlang,
+    readr,
+    ggplot2,
+    cowplot,
+    emmeans,
+    stats,
+    magrittr,
+    stringr,
+    forcats,
+    grid
+Suggests:
+    ARTool,
+    ComplexHeatmap,
     UpSetR,
-    viridis
-Suggests: 
+    RColorBrewer,
+    viridis,
+    circlize,
+    factoextra,
+    RankProd,
+    MKinfer,
+    testthat (>= 3.0.0),
     knitr,
     rmarkdown
 Depends:
     R (>= 4.1.0)
 VignetteBuilder: knitr
+Config/testthat/edition: 3

@@ -80,7 +80,7 @@ times_measured <- function(df){
 }
 
 
-#' compare the peptide quantities in two experiments
+#' Legacy compare function (deprecated)
 #'
 #' For each peptide this function carries out the selected tests to determine peptides
 #' that are differentially abundant in the two experiments specified. Before tests are
@@ -95,8 +95,8 @@ times_measured <- function(df){
 #' @param c_seconds time point of the `control` condition to use
 #' @param tests character vector of tests to use, one or more of: `norm_quantile`, `bootstrap_t`, `wilcoxon`, `kruskal-wallis`, `rank_product`
 #' @return dataframe with original and replaced quantification values, natural fold change, biological replicates and p-value / fdr for each
-#' @export
-compare <- function(df,
+#' @keywords internal
+compare_legacy <- function(df,
                     iters = 1000,
                     treatment = NA,
                     t_seconds = NA,
@@ -189,7 +189,7 @@ compare_many <- function(df, comparison, iters = 1000, tests = c("bootstrap_t"))
     t_seconds = r['t_seconds']
     control = r['control']
     c_seconds = r['c_seconds']
-    compare(df, iters = iters, tests = tests,
+    compare_legacy(df, iters = iters, tests = tests,
             treatment = treatment,
             t_seconds = t_seconds,
             control = control,

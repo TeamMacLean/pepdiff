@@ -2,19 +2,20 @@
 % Please edit documentation in R/utils.R
 \name{mean_fold_change}
 \alias{mean_fold_change}
-\title{calculate mean fold change for peptide}
+\title{Calculate mean fold change for peptide}
 \usage{
 mean_fold_change(treatment, control)
 }
 \arguments{
-\item{treatment}{vector of `treatment` data}
+\item{treatment}{Vector or matrix of treatment data}
 
-\item{control}{vector of `control` data}
+\item{control}{Vector or matrix of control data}
 }
 \value{
-vector of mean fold changes `mean(treatment) / mean(control)`
+Vector of mean fold changes: mean(treatment) / mean(control)
 }
 \description{
-for each peptide calculate the mean quantification over all experiments
+For each peptide calculate the mean quantification over all experiments
 then get the natural scale fold change.
 }
+\keyword{internal}
