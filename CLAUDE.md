@@ -6,6 +6,18 @@ Differential abundance analysis for PRM proteomics data.
 
 Identify peptides with significant abundance changes between experimental conditions. Answers: "What's differentially abundant?"
 
+## Project Status
+
+**v2 implementation complete** (Feb 2026). The package includes:
+- S3 classes: `pepdiff_data` and `pepdiff_results`
+- Three analysis methods: GLM (Gamma + emmeans), ART, pairwise
+- Four pairwise tests: wilcoxon, bootstrap_t, bayes_t, rankprod
+- Plot methods for both classes
+- 257 passing tests, `devtools::check()` passes with 0 errors/warnings
+- Legacy functions preserved with deprecation warnings
+
+**Next:** Vignettes (see `vignette_plan.md` and `vignette_prompt.md`)
+
 **Companion to peppwR:**
 - peppwR: "How many samples do I need?" (power analysis, planning)
 - pepdiff: "What's differentially abundant?" (analysis, results)
@@ -135,14 +147,18 @@ R/
   results.R         # pepdiff_results class, print/summary methods
   plots.R           # All plot functions and plot methods
   utils.R           # Helpers, validation, internal utilities
+  legacy.R          # Deprecated compare.data.frame method
+  legacy-pepdiff.R  # Original v1 functions (preserved for compatibility)
 
 tests/testthat/
+  helper-fixtures.R # Synthetic test data generators
   test-data.R       # Import and preprocessing tests
   test-compare.R    # compare() function tests
   test-models.R     # Model fitting tests
   test-tests.R      # Statistical test implementations
   test-results.R    # Results class tests
   test-plots.R      # Plot output tests
+  test-legacy.R     # Backwards compatibility tests
 ```
 
 ## Error Handling
@@ -244,17 +260,22 @@ devtools::check()
 ## Dependencies
 
 ### Imports
-- dplyr, tidyr, tibble, purrr, rlang - data manipulation
+- dplyr, tidyr, tibble, rlang, magrittr - data manipulation
 - readr - CSV import
 - ggplot2, cowplot - core plotting
 - emmeans - GLM contrast extraction
+- stringr, forcats - string/factor utilities
 
 ### Suggests
 - ARTool - ART method
-- BayesFactor - Bayes factor t-test
-- ComplexHeatmap, UpSetR - specialized plots
+- ComplexHeatmap - heatmaps (Bioconductor)
+- RankProd - rank products (Bioconductor)
+- UpSetR - upset plots
+- MKinfer - bootstrap tests
 - testthat - testing
 - knitr, rmarkdown - vignettes
+
+Note: bayes_t uses a native JZS approximation (no BayesFactor dependency)
 
 ---
 
