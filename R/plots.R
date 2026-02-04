@@ -173,7 +173,7 @@ plot_missingness_simple <- function(data) {
 #' @importFrom rlang .data
 plot.pepdiff_results <- function(x, ...) {
   # Check if this is a Bayes factor test
-  is_bayes <- !is.null(x$params$test) && x$params$test == "bayes_t"
+  is_bayes <- identical(x$params$test, "bayes_t")
 
   if (is_bayes) {
     # BF-specific plots

@@ -122,7 +122,7 @@ print.pepdiff_results <- function(x, ...) {
   cat(sprintf("Total tests: %d\n", n_tests))
 
   # Check if this is a Bayes factor test
-  is_bayes <- !is.null(x$params$test) && x$params$test == "bayes_t"
+  is_bayes <- identical(x$params$test, "bayes_t")
 
   if (is_bayes) {
     # Evidence breakdown for Bayes factor results
@@ -184,7 +184,7 @@ summary.pepdiff_results <- function(object, ...) {
   cat("=======================\n\n")
 
   # Check if this is a Bayes factor test
-  is_bayes <- !is.null(object$params$test) && object$params$test == "bayes_t"
+  is_bayes <- identical(object$params$test, "bayes_t")
 
   # Method and parameters
   cat("Analysis method:", object$method, "\n")
@@ -285,7 +285,7 @@ significant <- function(x, alpha = NULL, by_fdr = TRUE, bf_threshold = NULL) {
 #' @export
 significant.pepdiff_results <- function(x, alpha = NULL, by_fdr = TRUE, bf_threshold = NULL) {
   # Check if this is a Bayes factor test
-  is_bayes <- !is.null(x$params$test) && x$params$test == "bayes_t"
+  is_bayes <- identical(x$params$test, "bayes_t")
 
   if (is_bayes) {
     # Use BF threshold for bayes_t
