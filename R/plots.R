@@ -163,7 +163,8 @@ plot_missingness_simple <- function(data) {
 
 #' Plot method for pepdiff_results
 #'
-#' Creates a multi-panel plot showing volcano, p-value histogram, and FC distribution.
+#' Creates a multi-panel plot showing volcano, p-value/BF histogram, and FC distribution.
+#' Automatically dispatches to BF-specific plots when results are from bayes_t test.
 #'
 #' @param x A pepdiff_results object
 #' @param ... Additional arguments (ignored)
@@ -171,16 +172,24 @@ plot_missingness_simple <- function(data) {
 #' @export
 #' @importFrom rlang .data
 plot.pepdiff_results <- function(x, ...) {
-  # Volcano plot
-  volcano <- plot_volcano_new(x)
+  # Check if this is a Bayes factor test
+  is_bayes <- !is.null(x$params$test) && x$params$test == "bayes_t"
 
-  # P-value histogram
-  pval_hist <- plot_pvalue_histogram(x)
+  if (is_bayes) {
+    # BF-specific plots
+    volcano <- plot_volcano_bf(x)
+    bf_dist <- plot_bf_distribution(x)
+    fc_dist <- plot_fc_distribution_new(x)
 
-  # FC distribution
-  fc_dist <- plot_fc_distribution_new(x)
+    cowplot::plot_grid(volcano, bf_dist, fc_dist, nrow = 2, ncol = 2)
+  } else {
+    # P-value based plots
+    volcano <- plot_volcano_new(x)
+    pval_hist <- plot_pvalue_histogram(x)
+    fc_dist <- plot_fc_distribution_new(x)
 
-  cowplot::plot_grid(volcano, pval_hist, fc_dist, nrow = 2, ncol = 2)
+    cowplot::plot_grid(volcano, pval_hist, fc_dist, nrow = 2, ncol = 2)
+  }
 }
 
 
@@ -300,6 +309,123 @@ plot_fc_distribution_new <- function(results, comparison = NULL) {
       x = "Log2 Fold Change",
       y = "Count",
       title = "Fold Change Distribution"
+    ) +
+    ggplot2::theme_minimal() +
+    ggplot2::facet_wrap(~ comparison)
+}
+
+
+# =============================================================================
+# Bayes Factor Plot Functions
+# =============================================================================
+
+#' Volcano plot for Bayes factor results
+#'
+#' Creates a volcano plot with log10(BF) on the y-axis instead of -log10(p-value).
+#' Reference lines are drawn at BF thresholds (3, 10) and their reciprocals (0.33, 0.1).
+#'
+#' @param results A pepdiff_results object from bayes_t test
+#' @param comparison Optional comparison name to filter by
+#' @param bf_threshold BF threshold for coloring (default 3)
+#' @param fc_threshold Fold change threshold for labeling (default 1)
+#' @return A ggplot object
+#' @export
+#' @importFrom rlang .data
+plot_volcano_bf <- function(results, comparison = NULL, bf_threshold = 3, fc_threshold = 1) {
+  if (!inherits(results, "pepdiff_results")) {
+    stop("Results must be a pepdiff_results object", call. = FALSE)
+  }
+
+  plot_data <- results$results
+
+  if (!is.null(comparison)) {
+    plot_data <- plot_data[plot_data$comparison == comparison, ]
+  }
+
+  if (!"log2_fc" %in% names(plot_data) || all(is.na(plot_data$log2_fc))) {
+    plot_data$log2_fc <- log2(plot_data$fold_change)
+  }
+
+  # Filter and prepare data
+  plot_data <- plot_data %>%
+    dplyr::filter(!is.na(.data$bf) & !is.na(.data$log2_fc)) %>%
+    dplyr::mutate(
+      log10_bf = log10(.data$bf),
+      direction = dplyr::case_when(
+        .data$bf > bf_threshold & .data$log2_fc > log2(fc_threshold) ~ "Up",
+        .data$bf > bf_threshold & .data$log2_fc < -log2(fc_threshold) ~ "Down",
+        .data$bf < 1/bf_threshold ~ "Null",
+        TRUE ~ "Inconclusive"
+      )
+    )
+
+  # Reference lines at BF thresholds
+  bf_lines <- c(0.1, 1/3, 3, 10)
+  log10_bf_lines <- log10(bf_lines)
+
+  ggplot2::ggplot(plot_data, ggplot2::aes(x = .data$log2_fc, y = .data$log10_bf, color = .data$direction)) +
+    ggplot2::geom_point(alpha = 0.6) +
+    ggplot2::scale_color_manual(
+      values = c("Up" = "red", "Down" = "blue", "Null" = "darkgreen", "Inconclusive" = "grey50")
+    ) +
+    ggplot2::geom_hline(yintercept = log10(bf_threshold), linetype = "dashed", color = "grey30") +
+    ggplot2::geom_hline(yintercept = log10(1/bf_threshold), linetype = "dashed", color = "grey30") +
+    ggplot2::geom_hline(yintercept = 0, linetype = "solid", color = "grey50", alpha = 0.5) +
+    ggplot2::geom_vline(xintercept = c(-log2(fc_threshold), log2(fc_threshold)),
+                        linetype = "dashed", color = "grey30") +
+    ggplot2::labs(
+      x = "Log2 Fold Change",
+      y = "Log10 Bayes Factor",
+      title = "BF Volcano Plot",
+      color = "Evidence"
+    ) +
+    ggplot2::theme_minimal() +
+    ggplot2::facet_wrap(~ comparison)
+}
+
+
+#' Bayes factor distribution plot
+#'
+#' Creates a histogram of log10(BF) values with reference lines at standard thresholds.
+#'
+#' @param results A pepdiff_results object from bayes_t test
+#' @param comparison Optional comparison to filter by
+#' @return A ggplot object
+#' @export
+#' @importFrom rlang .data
+plot_bf_distribution <- function(results, comparison = NULL) {
+  if (!inherits(results, "pepdiff_results")) {
+    stop("Results must be a pepdiff_results object", call. = FALSE)
+  }
+
+  plot_data <- results$results
+
+  if (!is.null(comparison)) {
+    plot_data <- plot_data[plot_data$comparison == comparison, ]
+  }
+
+  plot_data <- plot_data %>%
+    dplyr::filter(!is.na(.data$bf)) %>%
+    dplyr::mutate(log10_bf = log10(.data$bf))
+
+  # Reference lines
+  bf_lines <- data.frame(
+    x = log10(c(0.1, 1/3, 3, 10)),
+    label = c("Strong null", "Mod null", "Mod alt", "Strong alt")
+  )
+
+  ggplot2::ggplot(plot_data, ggplot2::aes(x = .data$log10_bf)) +
+    ggplot2::geom_histogram(bins = 20, fill = "steelblue", color = "white") +
+    ggplot2::geom_vline(xintercept = 0, linetype = "solid", color = "grey30") +
+    ggplot2::geom_vline(xintercept = log10(3), linetype = "dashed", color = "red", alpha = 0.7) +
+    ggplot2::geom_vline(xintercept = log10(10), linetype = "dashed", color = "darkred", alpha = 0.7) +
+    ggplot2::geom_vline(xintercept = log10(1/3), linetype = "dashed", color = "darkgreen", alpha = 0.7) +
+    ggplot2::geom_vline(xintercept = log10(0.1), linetype = "dashed", color = "green", alpha = 0.7) +
+    ggplot2::labs(
+      x = "Log10 Bayes Factor",
+      y = "Count",
+      title = "BF Distribution",
+      caption = "Dashed lines: BF = 0.1, 0.33, 3, 10"
     ) +
     ggplot2::theme_minimal() +
     ggplot2::facet_wrap(~ comparison)

@@ -15,5 +15,6 @@
 A cowplot grid of plots
 }
 \description{
-Creates a multi-panel plot showing volcano, p-value histogram, and FC distribution.
+Creates a multi-panel plot showing volcano, p-value/BF histogram, and FC distribution.
+Automatically dispatches to BF-specific plots when results are from bayes_t test.
 }

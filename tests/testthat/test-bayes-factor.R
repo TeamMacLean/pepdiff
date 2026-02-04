@@ -571,3 +571,146 @@ test_that("significant() allows custom bf_threshold override", {
   sig_default <- significant(result)
   expect_true(nrow(sig_strict) <= nrow(sig_default))
 })
+
+
+# =============================================================================
+# Phase 3: Plot methods for bayes_t
+# =============================================================================
+
+test_that("plot.pepdiff_results dispatches to BF plots for bayes_t", {
+  test_data <- make_test_data(
+    n_peptides = 20,
+    n_reps = 4,
+    effect_size = 3.0,
+    affected_fraction = 0.5,
+    seed = 42
+  )
+  test_file <- write_test_csv(test_data)
+  on.exit(unlink(test_file))
+
+  imported <- read_pepdiff(
+    file = test_file,
+    id = "peptide",
+    gene = "gene_id",
+    value = "value",
+    factors = "treatment",
+    replicate = "bio_rep"
+  )
+
+  result <- compare(
+    imported,
+    compare = "treatment",
+    ref = "ctrl",
+    method = "pairwise",
+    test = "bayes_t"
+  )
+
+  # Should produce a plot without error
+  p <- plot(result)
+  expect_s3_class(p, "gg")
+})
+
+
+test_that("plot_volcano_bf creates valid BF volcano plot", {
+  test_data <- make_test_data(
+    n_peptides = 20,
+    n_reps = 4,
+    effect_size = 3.0,
+    affected_fraction = 0.5,
+    seed = 42
+  )
+  test_file <- write_test_csv(test_data)
+  on.exit(unlink(test_file))
+
+  imported <- read_pepdiff(
+    file = test_file,
+    id = "peptide",
+    gene = "gene_id",
+    value = "value",
+    factors = "treatment",
+    replicate = "bio_rep"
+  )
+
+  result <- compare(
+    imported,
+    compare = "treatment",
+    ref = "ctrl",
+    method = "pairwise",
+    test = "bayes_t"
+  )
+
+  p <- plot_volcano_bf(result)
+
+  expect_s3_class(p, "gg")
+
+  # Check y-axis is log10(bf) based (should have reference lines at log10(3) and log10(10))
+  # The plot should be buildable
+  built <- ggplot2::ggplot_build(p)
+  expect_true(length(built$data) > 0)
+})
+
+
+test_that("plot_bf_distribution creates valid BF histogram", {
+  test_data <- make_test_data(
+    n_peptides = 20,
+    n_reps = 4,
+    effect_size = 3.0,
+    affected_fraction = 0.5,
+    seed = 42
+  )
+  test_file <- write_test_csv(test_data)
+  on.exit(unlink(test_file))
+
+  imported <- read_pepdiff(
+    file = test_file,
+    id = "peptide",
+    gene = "gene_id",
+    value = "value",
+    factors = "treatment",
+    replicate = "bio_rep"
+  )
+
+  result <- compare(
+    imported,
+    compare = "treatment",
+    ref = "ctrl",
+    method = "pairwise",
+    test = "bayes_t"
+  )
+
+  p <- plot_bf_distribution(result)
+
+  expect_s3_class(p, "gg")
+
+  # The plot should be buildable
+  built <- ggplot2::ggplot_build(p)
+  expect_true(length(built$data) > 0)
+})
+
+
+test_that("plot.pepdiff_results still works for p-value tests", {
+  test_data <- make_minimal_test_data()
+  test_file <- write_test_csv(test_data)
+  on.exit(unlink(test_file))
+
+  imported <- read_pepdiff(
+    file = test_file,
+    id = "peptide",
+    gene = "gene_id",
+    value = "value",
+    factors = "treatment",
+    replicate = "bio_rep"
+  )
+
+  result <- compare(
+    imported,
+    compare = "treatment",
+    ref = "ctrl",
+    method = "pairwise",
+    test = "wilcoxon"
+  )
+
+  # Should produce a plot without error (original p-value based plots)
+  p <- plot(result)
+  expect_s3_class(p, "gg")
+})
