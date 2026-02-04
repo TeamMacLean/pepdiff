@@ -346,3 +346,228 @@ test_that("bf_to_pvalue function no longer exists", {
   # This function should be removed as it's statistically invalid
   expect_false(exists("bf_to_pvalue", envir = asNamespace("pepdiff")))
 })
+
+
+# =============================================================================
+# Phase 2: Results class methods for bayes_t
+# =============================================================================
+
+test_that("print.pepdiff_results shows evidence breakdown for bayes_t", {
+  test_data <- make_test_data(
+    n_peptides = 20,
+    n_reps = 4,
+    effect_size = 3.0,
+    affected_fraction = 0.5,
+    seed = 42
+  )
+  test_file <- write_test_csv(test_data)
+  on.exit(unlink(test_file))
+
+  imported <- read_pepdiff(
+    file = test_file,
+    id = "peptide",
+    gene = "gene_id",
+    value = "value",
+    factors = "treatment",
+    replicate = "bio_rep"
+  )
+
+  result <- compare(
+    imported,
+    compare = "treatment",
+    ref = "ctrl",
+    method = "pairwise",
+    test = "bayes_t"
+  )
+
+  output <- capture.output(print(result))
+  output_text <- paste(output, collapse = "\n")
+
+  # Should show evidence breakdown, not FDR
+  expect_true(grepl("Evidence", output_text, ignore.case = TRUE))
+  expect_false(grepl("FDR <", output_text))
+
+  # Should mention BF threshold
+  expect_true(grepl("BF", output_text))
+})
+
+
+test_that("print.pepdiff_results shows FDR for p-value tests", {
+  test_data <- make_minimal_test_data()
+  test_file <- write_test_csv(test_data)
+  on.exit(unlink(test_file))
+
+  imported <- read_pepdiff(
+    file = test_file,
+    id = "peptide",
+    gene = "gene_id",
+    value = "value",
+    factors = "treatment",
+    replicate = "bio_rep"
+  )
+
+  result <- compare(
+    imported,
+    compare = "treatment",
+    ref = "ctrl",
+    method = "pairwise",
+    test = "wilcoxon"
+  )
+
+  output <- capture.output(print(result))
+  output_text <- paste(output, collapse = "\n")
+
+  # Should show FDR for p-value tests
+  expect_true(grepl("FDR", output_text))
+})
+
+
+test_that("summary.pepdiff_results shows evidence breakdown for bayes_t", {
+  test_data <- make_test_data(
+    n_peptides = 20,
+    n_reps = 4,
+    effect_size = 3.0,
+    affected_fraction = 0.5,
+    seed = 42
+  )
+  test_file <- write_test_csv(test_data)
+  on.exit(unlink(test_file))
+
+  imported <- read_pepdiff(
+    file = test_file,
+    id = "peptide",
+    gene = "gene_id",
+    value = "value",
+    factors = "treatment",
+    replicate = "bio_rep"
+  )
+
+  result <- compare(
+    imported,
+    compare = "treatment",
+    ref = "ctrl",
+    method = "pairwise",
+    test = "bayes_t"
+  )
+
+  output <- capture.output(summ <- summary(result))
+  output_text <- paste(output, collapse = "\n")
+
+  # Should show evidence categories
+  expect_true(grepl("Evidence|BF", output_text, ignore.case = TRUE))
+
+  # Summary should include bf_threshold
+  expect_equal(summ$params$bf_threshold, 3)
+})
+
+
+test_that("significant() works with bayes_t results", {
+  test_data <- make_test_data(
+    n_peptides = 20,
+    n_reps = 4,
+    effect_size = 3.0,
+    affected_fraction = 0.5,
+    seed = 42
+  )
+  test_file <- write_test_csv(test_data)
+  on.exit(unlink(test_file))
+
+  imported <- read_pepdiff(
+    file = test_file,
+    id = "peptide",
+    gene = "gene_id",
+    value = "value",
+    factors = "treatment",
+    replicate = "bio_rep"
+  )
+
+  result <- compare(
+    imported,
+    compare = "treatment",
+    ref = "ctrl",
+    method = "pairwise",
+    test = "bayes_t"
+  )
+
+  sig <- significant(result)
+
+  # All returned results should have bf > threshold (default 3)
+  expect_true(all(sig$bf > 3, na.rm = TRUE))
+})
+
+
+test_that("significant() respects bf_threshold parameter for bayes_t", {
+  test_data <- make_test_data(
+    n_peptides = 20,
+    n_reps = 4,
+    effect_size = 3.0,
+    affected_fraction = 0.5,
+    seed = 42
+  )
+  test_file <- write_test_csv(test_data)
+  on.exit(unlink(test_file))
+
+  imported <- read_pepdiff(
+    file = test_file,
+    id = "peptide",
+    gene = "gene_id",
+    value = "value",
+    factors = "treatment",
+    replicate = "bio_rep"
+  )
+
+  result <- compare(
+    imported,
+    compare = "treatment",
+    ref = "ctrl",
+    method = "pairwise",
+    test = "bayes_t",
+    bf_threshold = 10
+  )
+
+  sig <- significant(result)
+
+  # All returned results should have bf > 10
+  expect_true(all(sig$bf > 10, na.rm = TRUE))
+})
+
+
+test_that("significant() allows custom bf_threshold override", {
+  test_data <- make_test_data(
+    n_peptides = 20,
+    n_reps = 4,
+    effect_size = 3.0,
+    affected_fraction = 0.5,
+    seed = 42
+  )
+  test_file <- write_test_csv(test_data)
+  on.exit(unlink(test_file))
+
+  imported <- read_pepdiff(
+    file = test_file,
+    id = "peptide",
+    gene = "gene_id",
+    value = "value",
+    factors = "treatment",
+    replicate = "bio_rep"
+  )
+
+  result <- compare(
+    imported,
+    compare = "treatment",
+    ref = "ctrl",
+    method = "pairwise",
+    test = "bayes_t",
+    bf_threshold = 3
+  )
+
+  # Override with stricter threshold
+  sig_strict <- significant(result, bf_threshold = 10)
+
+  # All returned results should have bf > 10
+  expect_true(all(sig_strict$bf > 10, na.rm = TRUE))
+
+  # Stricter threshold should return fewer or equal results
+  sig_default <- significant(result)
+  expect_true(nrow(sig_strict) <= nrow(sig_default))
+})

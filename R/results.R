@@ -63,7 +63,8 @@ validate_pepdiff_results <- function(x) {
   }
 
   # Check required columns in results
-  required_cols <- c("peptide", "gene_id", "comparison", "p_value")
+  # Note: p_value is not required for bayes_t (has bf instead)
+  required_cols <- c("peptide", "gene_id", "comparison")
   missing_cols <- setdiff(required_cols, names(x$results))
   if (length(missing_cols) > 0) {
     stop(
@@ -71,6 +72,13 @@ validate_pepdiff_results <- function(x) {
       paste(missing_cols, collapse = ", "),
       call. = FALSE
     )
+  }
+
+  # Either p_value or bf must be present
+  has_pvalue <- "p_value" %in% names(x$results)
+  has_bf <- "bf" %in% names(x$results)
+  if (!has_pvalue && !has_bf) {
+    stop("Results must have either 'p_value' or 'bf' column", call. = FALSE)
   }
 
   # Check method is valid
@@ -113,17 +121,40 @@ print.pepdiff_results <- function(x, ...) {
   cat(sprintf("Comparisons: %d\n", n_comparisons))
   cat(sprintf("Total tests: %d\n", n_tests))
 
-  # Significance summary
-  alpha <- x$params$alpha %||% 0.05
-  if ("fdr" %in% names(x$results)) {
-    n_sig <- sum(x$results$fdr < alpha, na.rm = TRUE)
-    cat(sprintf("\nSignificant (FDR < %.2f): %d (%.1f%%)\n",
-                alpha, n_sig, 100 * n_sig / n_tests))
-  }
+  # Check if this is a Bayes factor test
+  is_bayes <- !is.null(x$params$test) && x$params$test == "bayes_t"
 
-  if ("significant" %in% names(x$results)) {
-    n_sig <- sum(x$results$significant, na.rm = TRUE)
-    cat(sprintf("Marked significant: %d\n", n_sig))
+  if (is_bayes) {
+    # Evidence breakdown for Bayes factor results
+    bf_threshold <- x$params$bf_threshold %||% 3
+    cat(sprintf("\nBF threshold: %g\n", bf_threshold))
+
+    if ("evidence" %in% names(x$results)) {
+      cat("\nEvidence breakdown:\n")
+      evidence_counts <- table(x$results$evidence)
+      for (level in names(evidence_counts)) {
+        cat(sprintf("  %s: %d\n", level, evidence_counts[level]))
+      }
+    }
+
+    if ("significant" %in% names(x$results)) {
+      n_sig <- sum(x$results$significant, na.rm = TRUE)
+      cat(sprintf("\nSignificant (BF > %g): %d (%.1f%%)\n",
+                  bf_threshold, n_sig, 100 * n_sig / n_tests))
+    }
+  } else {
+    # FDR-based significance for p-value tests
+    alpha <- x$params$alpha %||% 0.05
+    if ("fdr" %in% names(x$results) && !all(is.na(x$results$fdr))) {
+      n_sig <- sum(x$results$fdr < alpha, na.rm = TRUE)
+      cat(sprintf("\nSignificant (FDR < %.2f): %d (%.1f%%)\n",
+                  alpha, n_sig, 100 * n_sig / n_tests))
+    }
+
+    if ("significant" %in% names(x$results)) {
+      n_sig <- sum(x$results$significant, na.rm = TRUE)
+      cat(sprintf("Marked significant: %d\n", n_sig))
+    }
   }
 
   # Convergence warnings
@@ -152,29 +183,63 @@ summary.pepdiff_results <- function(object, ...) {
   cat("pepdiff_results Summary\n")
   cat("=======================\n\n")
 
+  # Check if this is a Bayes factor test
+  is_bayes <- !is.null(object$params$test) && object$params$test == "bayes_t"
+
   # Method and parameters
   cat("Analysis method:", object$method, "\n")
   if (!is.null(object$params$test)) {
     cat("Test:", object$params$test, "\n")
   }
-  cat("Alpha:", object$params$alpha %||% 0.05, "\n")
-  cat("FDR method:", object$params$fdr_method %||% "BH", "\n\n")
+
+  if (is_bayes) {
+    bf_threshold <- object$params$bf_threshold %||% 3
+    cat("BF threshold:", bf_threshold, "\n\n")
+  } else {
+    cat("Alpha:", object$params$alpha %||% 0.05, "\n")
+    cat("FDR method:", object$params$fdr_method %||% "BH", "\n\n")
+  }
 
   # Per-comparison breakdown
   cat("Results by comparison:\n")
-  alpha <- object$params$alpha %||% 0.05
 
-  comparison_summary <- object$results %>%
-    dplyr::group_by(.data$comparison) %>%
-    dplyr::summarize(
-      n_peptides = dplyr::n(),
-      n_tested = sum(!is.na(.data$p_value)),
-      n_significant = if ("fdr" %in% names(object$results)) sum(.data$fdr < alpha, na.rm = TRUE) else NA_integer_,
-      pct_significant = if ("fdr" %in% names(object$results)) 100 * mean(.data$fdr < alpha, na.rm = TRUE) else NA_real_,
-      .groups = "drop"
-    )
+  if (is_bayes) {
+    bf_threshold <- object$params$bf_threshold %||% 3
+    comparison_summary <- object$results %>%
+      dplyr::group_by(.data$comparison) %>%
+      dplyr::summarize(
+        n_peptides = dplyr::n(),
+        n_tested = sum(!is.na(.data$bf)),
+        n_significant = sum(.data$bf > bf_threshold, na.rm = TRUE),
+        pct_significant = 100 * mean(.data$bf > bf_threshold, na.rm = TRUE),
+        .groups = "drop"
+      )
 
-  print(comparison_summary, n = Inf)
+    print(comparison_summary, n = Inf)
+
+    # Evidence breakdown
+    if ("evidence" %in% names(object$results)) {
+      cat("\nEvidence breakdown:\n")
+      evidence_summary <- object$results %>%
+        dplyr::group_by(.data$comparison, .data$evidence) %>%
+        dplyr::summarize(n = dplyr::n(), .groups = "drop") %>%
+        tidyr::pivot_wider(names_from = "evidence", values_from = "n", values_fill = 0)
+      print(evidence_summary, n = Inf)
+    }
+  } else {
+    alpha <- object$params$alpha %||% 0.05
+    comparison_summary <- object$results %>%
+      dplyr::group_by(.data$comparison) %>%
+      dplyr::summarize(
+        n_peptides = dplyr::n(),
+        n_tested = sum(!is.na(.data$p_value)),
+        n_significant = if ("fdr" %in% names(object$results)) sum(.data$fdr < alpha, na.rm = TRUE) else NA_integer_,
+        pct_significant = if ("fdr" %in% names(object$results)) 100 * mean(.data$fdr < alpha, na.rm = TRUE) else NA_real_,
+        .groups = "drop"
+      )
+
+    print(comparison_summary, n = Inf)
+  }
 
   # Convergence summary
   if (!is.null(object$diagnostics) && "converged" %in% names(object$diagnostics)) {
@@ -206,28 +271,46 @@ summary.pepdiff_results <- function(object, ...) {
 #' Extract significant results
 #'
 #' @param x A pepdiff_results object
-#' @param alpha Significance threshold (default uses analysis alpha)
-#' @param by_fdr Logical, use FDR-adjusted p-values (default TRUE)
+#' @param alpha Significance threshold for p-value tests (default uses analysis alpha)
+#' @param by_fdr Logical, use FDR-adjusted p-values for p-value tests (default TRUE)
+#' @param bf_threshold BF threshold for bayes_t results (default uses analysis bf_threshold)
 #'
 #' @return A tibble of significant results
 #' @export
-significant <- function(x, alpha = NULL, by_fdr = TRUE) {
+significant <- function(x, alpha = NULL, by_fdr = TRUE, bf_threshold = NULL) {
   UseMethod("significant")
 }
 
 
 #' @export
-significant.pepdiff_results <- function(x, alpha = NULL, by_fdr = TRUE) {
-  if (is.null(alpha)) {
-    alpha <- x$params$alpha %||% 0.05
-  }
+significant.pepdiff_results <- function(x, alpha = NULL, by_fdr = TRUE, bf_threshold = NULL) {
+  # Check if this is a Bayes factor test
+  is_bayes <- !is.null(x$params$test) && x$params$test == "bayes_t"
 
-  if (by_fdr && "fdr" %in% names(x$results)) {
-    x$results[x$results$fdr < alpha & !is.na(x$results$fdr), ]
-  } else if ("p_value" %in% names(x$results)) {
-    x$results[x$results$p_value < alpha & !is.na(x$results$p_value), ]
+  if (is_bayes) {
+    # Use BF threshold for bayes_t
+    if (is.null(bf_threshold)) {
+      bf_threshold <- x$params$bf_threshold %||% 3
+    }
+
+    if ("bf" %in% names(x$results)) {
+      x$results[x$results$bf > bf_threshold & !is.na(x$results$bf), ]
+    } else {
+      x$results[0, ]  # Empty tibble with same structure
+    }
   } else {
-    x$results[0, ]  # Empty tibble with same structure
+    # Use p-value/FDR for other tests
+    if (is.null(alpha)) {
+      alpha <- x$params$alpha %||% 0.05
+    }
+
+    if (by_fdr && "fdr" %in% names(x$results)) {
+      x$results[x$results$fdr < alpha & !is.na(x$results$fdr), ]
+    } else if ("p_value" %in% names(x$results)) {
+      x$results[x$results$p_value < alpha & !is.na(x$results$p_value), ]
+    } else {
+      x$results[0, ]  # Empty tibble with same structure
+    }
   }
 }
 

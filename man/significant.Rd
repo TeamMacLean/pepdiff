@@ -4,14 +4,16 @@
 \alias{significant}
 \title{Extract significant results}
 \usage{
-significant(x, alpha = NULL, by_fdr = TRUE)
+significant(x, alpha = NULL, by_fdr = TRUE, bf_threshold = NULL)
 }
 \arguments{
 \item{x}{A pepdiff_results object}
 
-\item{alpha}{Significance threshold (default uses analysis alpha)}
+\item{alpha}{Significance threshold for p-value tests (default uses analysis alpha)}
 
-\item{by_fdr}{Logical, use FDR-adjusted p-values (default TRUE)}
+\item{by_fdr}{Logical, use FDR-adjusted p-values for p-value tests (default TRUE)}
+
+\item{bf_threshold}{BF threshold for bayes_t results (default uses analysis bf_threshold)}
 }
 \value{
 A tibble of significant results
