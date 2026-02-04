@@ -201,16 +201,19 @@ calc_t_statistic <- function(x, y) {
 #'
 #' @return A list with components:
 #'   \item{bf}{Bayes factor (BF10) - evidence for alternative vs null}
-#'   \item{p_value}{Approximate p-value derived from BF}
 #'   \item{effect_size}{Cohen's d effect size}
 #'   \item{method}{"bayes_t"}
 #'
 #' @details
 #' The Bayes factor is interpreted as:
-#' - BF10 > 3: Moderate evidence for difference
 #' - BF10 > 10: Strong evidence for difference
-#' - BF10 < 1/3: Moderate evidence for no difference
-#' - BF10 < 1/10: Strong evidence for no difference
+#' - BF10 > 3: Moderate evidence for difference
+#' - BF10 0.33-3: Inconclusive
+#' - BF10 < 0.33: Moderate evidence for no difference
+#' - BF10 < 0.1: Strong evidence for no difference
+#'
+#' Unlike p-values, Bayes factors are NOT converted to pseudo-p-values.
+#' Use [classify_bf_evidence()] to interpret BF values categorically.
 #'
 #' @export
 #' @examples
@@ -229,7 +232,6 @@ test_bayes_t <- function(control, treatment, r_scale = 0.707) {
   if (n_ctrl < 2 || n_trt < 2) {
     return(list(
       bf = NA_real_,
-      p_value = NA_real_,
       effect_size = NA_real_,
       method = "bayes_t"
     ))
@@ -242,7 +244,6 @@ test_bayes_t <- function(control, treatment, r_scale = 0.707) {
   if (is.na(t_stat)) {
     return(list(
       bf = NA_real_,
-      p_value = NA_real_,
       effect_size = NA_real_,
       method = "bayes_t"
     ))
@@ -259,13 +260,8 @@ test_bayes_t <- function(control, treatment, r_scale = 0.707) {
   # BF10 approximation based on t-statistic
   bf <- jzs_bf_approx(t_stat, n_eff, r_scale)
 
-  # Convert BF to approximate p-value using calibration
-  # This is an approximation: p ~ 1 / (1 + BF) for moderate BFs
-  p_value <- bf_to_pvalue(bf)
-
   list(
     bf = bf,
-    p_value = p_value,
     effect_size = effect_size,
     method = "bayes_t"
   )
@@ -308,34 +304,36 @@ jzs_bf_approx <- function(t_stat, n_eff, r_scale = 0.707) {
 }
 
 
-#' Convert Bayes factor to approximate p-value
+#' Classify Bayes factor into evidence categories
 #'
-#' @param bf Bayes factor (BF10)
-#' @return Approximate p-value
-#' @keywords internal
-bf_to_pvalue <- function(bf) {
-  # Calibration: higher BF10 means lower p-value
-  # Using a simple logistic transformation for approximation
-  # BF10 = 1 corresponds to p ~ 0.5
-  # BF10 = 3 corresponds to p ~ 0.1
-  # BF10 = 10 corresponds to p ~ 0.01
+#' Converts numeric Bayes factors into categorical evidence levels following
+#' conventional thresholds (Jeffreys, 1961; Lee & Wagenmakers, 2013).
+#'
+#' @param bf Numeric vector of Bayes factors (BF10)
+#'
+#' @return An ordered factor with levels:
+#'   \item{strong_null}{BF < 0.1 - Strong evidence for null hypothesis}
+#'   \item{moderate_null}{BF 0.1-0.33 - Moderate evidence for null}
+#'   \item{inconclusive}{BF 0.33-3 - Evidence is inconclusive}
+#'   \item{moderate_alt}{BF 3-10 - Moderate evidence for alternative}
+#'   \item{strong_alt}{BF > 10 - Strong evidence for alternative}
+#'
+#' @export
+#' @examples
+#' classify_bf_evidence(c(0.05, 0.2, 1, 5, 20))
+classify_bf_evidence <- function(bf) {
+  evidence_levels <- c("strong_null", "moderate_null", "inconclusive",
+                       "moderate_alt", "strong_alt")
 
-  # Approximate relationship: p ~ exp(-0.5 * log(BF10)^2)
-  # This is a heuristic calibration
-  if (is.na(bf)) return(NA_real_)
+  evidence <- dplyr::case_when(
+    bf < 0.1 ~ "strong_null",
+    bf < 1/3 ~ "moderate_null",
+    bf < 3 ~ "inconclusive",
+    bf < 10 ~ "moderate_alt",
+    TRUE ~ "strong_alt"
+  )
 
-  log_bf <- log(bf)
-
-  if (log_bf <= 0) {
-    # BF10 < 1: evidence for null, p > 0.5
-    p <- 0.5 + 0.5 * (1 - exp(log_bf))
-  } else {
-    # BF10 > 1: evidence for alternative
-    p <- exp(-log_bf / 2)
-  }
-
-  # Bound to (0, 1)
-  max(min(p, 0.999), 0.001)
+  factor(evidence, levels = evidence_levels, ordered = TRUE)
 }
 
 

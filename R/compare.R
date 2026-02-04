@@ -16,12 +16,15 @@
 #' @param within Optional factor(s) to stratify by
 #' @param method Analysis method: "glm" (default), "art", or "pairwise"
 #' @param test For pairwise method: "wilcoxon", "bootstrap_t", "bayes_t", or "rankprod"
-#' @param alpha Significance threshold (default 0.05)
-#' @param fdr_method FDR correction method (default "BH")
+#' @param alpha Significance threshold (default 0.05). Used for p-value based tests.
+#' @param fdr_method FDR correction method (default "BH"). Not applied for bayes_t.
+#' @param bf_threshold Bayes factor threshold for significance (default 3).
+#'   Only used when test = "bayes_t". BF > threshold marks peptide as significant.
 #' @param ... Additional arguments passed to methods
 #'
 #' @return A pepdiff_results object containing:
-#'   \item{results}{Tibble with peptide, gene_id, comparison, fold_change, log2_fc, p_value, fdr, significant}
+#'   \item{results}{Tibble with peptide, gene_id, comparison, fold_change, log2_fc,
+#'     p_value, fdr, significant. For bayes_t: p_value/fdr are NA, includes bf and evidence columns.}
 #'   \item{comparisons}{Tibble defining the comparisons made}
 #'   \item{method}{Statistical method used}
 #'   \item{diagnostics}{Model convergence information (for GLM/ART)}
@@ -41,6 +44,10 @@
 #' # Pairwise test
 #' results <- compare(data, compare = "treatment", ref = "ctrl",
 #'                    method = "pairwise", test = "wilcoxon")
+#'
+#' # Bayes factor test (uses bf_threshold instead of alpha/FDR)
+#' results <- compare(data, compare = "treatment", ref = "ctrl",
+#'                    method = "pairwise", test = "bayes_t", bf_threshold = 10)
 #' }
 compare <- function(data, ...) {
   UseMethod("compare")
@@ -56,6 +63,7 @@ compare.pepdiff_data <- function(data, compare, ref,
                                   test = c("wilcoxon", "bootstrap_t", "bayes_t", "rankprod"),
                                   alpha = 0.05,
                                   fdr_method = "BH",
+                                  bf_threshold = 3,
                                   ...) {
   # Capture call
   call <- match.call()
@@ -97,7 +105,7 @@ compare.pepdiff_data <- function(data, compare, ref,
 
   # Dispatch to appropriate method
   if (method == "pairwise") {
-    results <- compare_pairwise(data, compare, ref, within, test, alpha, fdr_method)
+    results <- compare_pairwise(data, compare, ref, within, test, alpha, fdr_method, bf_threshold)
   } else if (method == "glm") {
     results <- compare_glm(data, compare, ref, within, alpha, fdr_method)
   } else if (method == "art") {
@@ -126,7 +134,8 @@ compare.pepdiff_data <- function(data, compare, ref,
       method = method,
       test = if (method == "pairwise") test else NA,
       alpha = alpha,
-      fdr_method = fdr_method
+      fdr_method = fdr_method,
+      bf_threshold = if (method == "pairwise" && test == "bayes_t") bf_threshold else NA
     ),
     data = data,
     call = call
@@ -207,8 +216,9 @@ compare_art <- function(data, compare, ref, within, alpha, fdr_method) {
 #' Compare using pairwise tests
 #'
 #' @keywords internal
-compare_pairwise <- function(data, compare, ref, within, test, alpha, fdr_method) {
+compare_pairwise <- function(data, compare, ref, within, test, alpha, fdr_method, bf_threshold = 3) {
   peptides <- data$peptides
+  is_bayes <- test == "bayes_t"
 
   # Get treatment level(s)
   all_levels <- unique(data$data[[compare]])
@@ -258,20 +268,45 @@ compare_pairwise <- function(data, compare, ref, within, test, alpha, fdr_method
     # Build results for this comparison
     comparison_name <- paste(trt_level, "vs", ref)
 
-    results_df <- tibble::tibble(
-      peptide = peptides,
-      gene_id = vapply(peptides, function(pep) {
-        unique(data$data$gene_id[data$data$peptide == pep])[1]
-      }, character(1)),
-      comparison = comparison_name,
-      fold_change = vapply(test_results, function(x) x$fold_change %||% NA_real_, numeric(1)),
-      log2_fc = vapply(test_results, function(x) {
-        fc <- x$fold_change %||% NA_real_
-        if (is.na(fc) || fc <= 0) NA_real_ else log2(fc)
-      }, numeric(1)),
-      test = test,
-      p_value = vapply(test_results, function(x) x$p_value %||% NA_real_, numeric(1))
-    )
+    if (is_bayes) {
+      # Bayes factor results: bf and evidence columns, NA for p_value/fdr
+      bf_values <- vapply(test_results, function(x) x$bf %||% NA_real_, numeric(1))
+
+      results_df <- tibble::tibble(
+        peptide = peptides,
+        gene_id = vapply(peptides, function(pep) {
+          unique(data$data$gene_id[data$data$peptide == pep])[1]
+        }, character(1)),
+        comparison = comparison_name,
+        fold_change = vapply(test_results, function(x) x$fold_change %||% NA_real_, numeric(1)),
+        log2_fc = vapply(test_results, function(x) {
+          fc <- x$fold_change %||% NA_real_
+          if (is.na(fc) || fc <= 0) NA_real_ else log2(fc)
+        }, numeric(1)),
+        test = test,
+        p_value = NA_real_,
+        fdr = NA_real_,
+        bf = bf_values,
+        evidence = classify_bf_evidence(bf_values),
+        significant = bf_values > bf_threshold
+      )
+    } else {
+      # P-value based tests
+      results_df <- tibble::tibble(
+        peptide = peptides,
+        gene_id = vapply(peptides, function(pep) {
+          unique(data$data$gene_id[data$data$peptide == pep])[1]
+        }, character(1)),
+        comparison = comparison_name,
+        fold_change = vapply(test_results, function(x) x$fold_change %||% NA_real_, numeric(1)),
+        log2_fc = vapply(test_results, function(x) {
+          fc <- x$fold_change %||% NA_real_
+          if (is.na(fc) || fc <= 0) NA_real_ else log2(fc)
+        }, numeric(1)),
+        test = test,
+        p_value = vapply(test_results, function(x) x$p_value %||% NA_real_, numeric(1))
+      )
+    }
 
     all_results[[comparison_name]] <- results_df
   }
@@ -279,22 +314,31 @@ compare_pairwise <- function(data, compare, ref, within, test, alpha, fdr_method
   # Combine all comparisons
   results <- dplyr::bind_rows(all_results)
 
-  # Apply FDR correction within each comparison
-  results <- results %>%
-    dplyr::group_by(.data$comparison) %>%
-    dplyr::mutate(
-      fdr = stats::p.adjust(.data$p_value, method = fdr_method)
-    ) %>%
-    dplyr::ungroup() %>%
-    dplyr::mutate(
-      significant = .data$fdr < alpha
-    )
+  if (!is_bayes) {
+    # Apply FDR correction within each comparison (only for p-value tests)
+    results <- results %>%
+      dplyr::group_by(.data$comparison) %>%
+      dplyr::mutate(
+        fdr = stats::p.adjust(.data$p_value, method = fdr_method)
+      ) %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(
+        significant = .data$fdr < alpha
+      )
+  }
 
   # Diagnostics for pairwise (simpler - just track which had valid results)
-  diagnostics <- tibble::tibble(
-    peptide = peptides,
-    converged = !is.na(results$p_value[match(peptides, results$peptide)])
-  )
+  if (is_bayes) {
+    diagnostics <- tibble::tibble(
+      peptide = peptides,
+      converged = !is.na(results$bf[match(peptides, results$peptide)])
+    )
+  } else {
+    diagnostics <- tibble::tibble(
+      peptide = peptides,
+      converged = !is.na(results$p_value[match(peptides, results$peptide)])
+    )
+  }
 
   list(results = results, diagnostics = diagnostics)
 }

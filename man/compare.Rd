@@ -16,6 +16,7 @@ compare(data, ...)
   test = c("wilcoxon", "bootstrap_t", "bayes_t", "rankprod"),
   alpha = 0.05,
   fdr_method = "BH",
+  bf_threshold = 3,
   ...
 )
 }
@@ -34,13 +35,17 @@ compare(data, ...)
 
 \item{test}{For pairwise method: "wilcoxon", "bootstrap_t", "bayes_t", or "rankprod"}
 
-\item{alpha}{Significance threshold (default 0.05)}
+\item{alpha}{Significance threshold (default 0.05). Used for p-value based tests.}
 
-\item{fdr_method}{FDR correction method (default "BH")}
+\item{fdr_method}{FDR correction method (default "BH"). Not applied for bayes_t.}
+
+\item{bf_threshold}{Bayes factor threshold for significance (default 3).
+Only used when test = "bayes_t". BF > threshold marks peptide as significant.}
 }
 \value{
 A pepdiff_results object containing:
-  \item{results}{Tibble with peptide, gene_id, comparison, fold_change, log2_fc, p_value, fdr, significant}
+  \item{results}{Tibble with peptide, gene_id, comparison, fold_change, log2_fc,
+    p_value, fdr, significant. For bayes_t: p_value/fdr are NA, includes bf and evidence columns.}
   \item{comparisons}{Tibble defining the comparisons made}
   \item{method}{Statistical method used}
   \item{diagnostics}{Model convergence information (for GLM/ART)}
@@ -63,5 +68,9 @@ results <- compare(data, compare = "treatment", ref = "ctrl", within = "timepoin
 # Pairwise test
 results <- compare(data, compare = "treatment", ref = "ctrl",
                    method = "pairwise", test = "wilcoxon")
+
+# Bayes factor test (uses bf_threshold instead of alpha/FDR)
+results <- compare(data, compare = "treatment", ref = "ctrl",
+                   method = "pairwise", test = "bayes_t", bf_threshold = 10)
 }
 }

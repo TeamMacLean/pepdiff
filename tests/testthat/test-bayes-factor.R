@@ -56,11 +56,11 @@ test_that("test_bayes_t returns BF < 1 for similar groups", {
 
 test_that("classify_bf_evidence returns correct categories", {
   # Test all five evidence categories
-  expect_equal(classify_bf_evidence(0.05), "strong_null")
-  expect_equal(classify_bf_evidence(0.2), "moderate_null")
-  expect_equal(classify_bf_evidence(1.0), "inconclusive")
-  expect_equal(classify_bf_evidence(5.0), "moderate_alt")
-  expect_equal(classify_bf_evidence(20.0), "strong_alt")
+  expect_equal(as.character(classify_bf_evidence(0.05)), "strong_null")
+  expect_equal(as.character(classify_bf_evidence(0.2)), "moderate_null")
+  expect_equal(as.character(classify_bf_evidence(1.0)), "inconclusive")
+  expect_equal(as.character(classify_bf_evidence(5.0)), "moderate_alt")
+  expect_equal(as.character(classify_bf_evidence(20.0)), "strong_alt")
 })
 
 
@@ -78,11 +78,15 @@ test_that("classify_bf_evidence returns ordered factor", {
 
 
 test_that("classify_bf_evidence handles boundary values", {
-  # At boundaries
-  expect_equal(as.character(classify_bf_evidence(0.1)), "moderate_null")  # BF = 0.1 is boundary
-  expect_equal(as.character(classify_bf_evidence(0.33)), "inconclusive")  # BF = 0.33 is boundary
-  expect_equal(as.character(classify_bf_evidence(3)), "moderate_alt")     # BF = 3 is boundary
-  expect_equal(as.character(classify_bf_evidence(10)), "strong_alt")      # BF = 10 is boundary
+ # At boundaries (using exact thresholds from spec)
+  # BF < 0.1 is strong_null, so 0.1 is moderate_null
+  expect_equal(as.character(classify_bf_evidence(0.1)), "moderate_null")
+  # BF < 1/3 is moderate_null, so 1/3 is inconclusive
+  expect_equal(as.character(classify_bf_evidence(1/3)), "inconclusive")
+  # BF < 3 is inconclusive, so 3 is moderate_alt
+  expect_equal(as.character(classify_bf_evidence(3)), "moderate_alt")
+  # BF < 10 is moderate_alt, so 10 is strong_alt
+  expect_equal(as.character(classify_bf_evidence(10)), "strong_alt")
 })
 
 

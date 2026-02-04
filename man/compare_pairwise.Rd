@@ -4,7 +4,16 @@
 \alias{compare_pairwise}
 \title{Compare using pairwise tests}
 \usage{
-compare_pairwise(data, compare, ref, within, test, alpha, fdr_method)
+compare_pairwise(
+  data,
+  compare,
+  ref,
+  within,
+  test,
+  alpha,
+  fdr_method,
+  bf_threshold = 3
+)
 }
 \description{
 Compare using pairwise tests

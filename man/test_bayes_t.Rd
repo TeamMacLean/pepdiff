@@ -16,7 +16,6 @@ test_bayes_t(control, treatment, r_scale = 0.707)
 \value{
 A list with components:
   \item{bf}{Bayes factor (BF10) - evidence for alternative vs null}
-  \item{p_value}{Approximate p-value derived from BF}
   \item{effect_size}{Cohen's d effect size}
   \item{method}{"bayes_t"}
 }
@@ -27,10 +26,14 @@ prior. Uses an analytical approximation for computational efficiency.
 }
 \details{
 The Bayes factor is interpreted as:
-- BF10 > 3: Moderate evidence for difference
 - BF10 > 10: Strong evidence for difference
-- BF10 < 1/3: Moderate evidence for no difference
-- BF10 < 1/10: Strong evidence for no difference
+- BF10 > 3: Moderate evidence for difference
+- BF10 0.33-3: Inconclusive
+- BF10 < 0.33: Moderate evidence for no difference
+- BF10 < 0.1: Strong evidence for no difference
+
+Unlike p-values, Bayes factors are NOT converted to pseudo-p-values.
+Use [classify_bf_evidence()] to interpret BF values categorically.
 }
 \examples{
 ctrl <- c(100, 120, 110, 105)

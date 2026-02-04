@@ -112,7 +112,7 @@ test_that("test_bootstrap_t returns NA for insufficient data", {
 # Test Bayes Factor t-test
 # =============================================================================
 
-test_that("test_bayes_t returns BF and p-value for different groups", {
+test_that("test_bayes_t returns BF for different groups", {
   ctrl <- c(100, 110, 105, 108, 103)
   trt <- c(200, 210, 205, 208, 203)
 
@@ -120,13 +120,11 @@ test_that("test_bayes_t returns BF and p-value for different groups", {
 
   expect_type(result, "list")
   expect_true("bf" %in% names(result))
-  expect_true("p_value" %in% names(result))
   expect_true("effect_size" %in% names(result))
   expect_equal(result$method, "bayes_t")
 
   # BF should favor alternative for clearly different groups
   expect_true(result$bf > 1)
-  expect_true(result$p_value < 0.05)
 })
 
 
@@ -148,7 +146,7 @@ test_that("test_bayes_t handles NA values", {
   result <- test_bayes_t(ctrl, trt)
 
   expect_false(is.na(result$bf))
-  expect_false(is.na(result$p_value))
+  expect_false(is.na(result$effect_size))
 })
 
 
