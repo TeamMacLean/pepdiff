@@ -45,3 +45,6 @@ Depends:
     R (>= 4.1.0)
 VignetteBuilder: knitr
 Config/testthat/edition: 3
+Remotes:
+    bioc::RankProd,
+    bioc::ComplexHeatmap
