@@ -25,11 +25,19 @@ A list with components:
   \item{method}{"rankprod"}
 }
 \description{
-Performs the rank products test for detecting differentially abundant
-peptides. This is a non-parametric method that is robust to outliers.
+`r lifecycle::badge("deprecated")`
+
+This function is deprecated because Rank Products requires ranking across
+ALL peptides, not within single peptides. The per-peptide permutation
+approach produces unreliable p-values.
+
+Use `compare()` with `test = "rankprod"` instead, which properly uses the
+RankProd package to rank across all peptides.
 }
 \examples{
 ctrl <- c(100, 120, 110, 105)
 trt <- c(200, 220, 180, 210)
-test_rankprod(ctrl, trt, n_perm = 100)
+\dontrun{
+test_rankprod(ctrl, trt, n_perm = 100)  # Deprecated
+}
 }

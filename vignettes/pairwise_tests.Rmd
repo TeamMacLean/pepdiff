@@ -190,6 +190,41 @@ Rank products were designed specifically for high-throughput experiments. For ea
 
 **When to use:** When you expect effects to be consistent in direction across replicates. The method is particularly sensitive to consistent small effects.
 
+## How Rank Products differs from other tests
+
+The other pairwise tests (wilcoxon, bootstrap_t, bayes_t) analyze each peptide
+independently - they ask "is this peptide different between groups?"
+
+Rank Products works differently. It ranks **all peptides** by their fold change,
+then asks "does this peptide consistently rank near the top/bottom?" A peptide
+with FC=2 might be significant if most peptides have FC≈1, but not significant
+if many peptides have FC>2.
+
+This means:
+
+- Rank Products requires the RankProd Bioconductor package
+- Results depend on what other peptides are in your dataset
+- It's particularly good at finding consistent small effects across replicates
+
+**Installation:**
+
+```{r install-rankprod, eval = FALSE}
+BiocManager::install("RankProd")
+```
+
+### When to choose Rank Products
+
+| Scenario | Recommended test |
+|----------|------------------|
+| Small samples (3-4 reps), unknown distribution | wilcoxon |
+| Larger samples (5+ reps), want p-values | bootstrap_t |
+| Want to quantify evidence for/against effect | bayes_t |
+| Looking for consistent effects across many peptides | rankprod |
+
+Rank Products excels when you have many peptides and expect a subset to show
+consistent (even if small) effects. It's less appropriate when you only have
+a few peptides or when effects vary in direction across replicates.
+
 ## Comparing results across tests
 
 With 10 truly differential peptides, we want tests that detect most of them (high sensitivity) while not calling too many of the 20 true nulls significant (low false positive rate). Let's see how the tests compare:

@@ -69,27 +69,34 @@ test_that("rankprod returns significant p-values for differential peptides",
 {
   skip_if_not_installed("RankProd")
 
-  # Simpler test: one clearly differential peptide
+  # RankProd needs multiple peptides to rank - with only 2 peptides,
+
+  # ranks are trivially 1 and 2. Use 10 peptides for meaningful ranking.
   set.seed(123)
   n_reps <- 5
+  n_null_peptides <- 9
 
-  # Create data with one peptide that's 5-fold up
-  sim_data <- data.frame(
-    peptide = rep(c("PEP_DIFF", "PEP_NULL"), each = 2 * n_reps),
-    gene_id = rep(c("GENE_A", "GENE_B"), each = 2 * n_reps),
-    treatment = rep(c(rep("ctrl", n_reps), rep("trt", n_reps)), 2),
-    bio_rep = rep(1:n_reps, 4),
+  peptides <- c("PEP_DIFF", paste0("PEP_NULL_", 1:n_null_peptides))
+  genes <- paste0("GENE_", LETTERS[1:length(peptides)])
+
+  # Create data with one differential peptide and multiple null peptides
+  sim_data <- expand.grid(
+    peptide = peptides,
+    treatment = c("ctrl", "trt"),
+    bio_rep = 1:n_reps,
     stringsAsFactors = FALSE
   )
+  sim_data$gene_id <- genes[match(sim_data$peptide, peptides)]
 
   # PEP_DIFF: ctrl ~ 100, trt ~ 500 (5-fold up)
-  # PEP_NULL: ctrl ~ 100, trt ~ 100 (no change)
-  sim_data$value <- c(
-    rnorm(n_reps, 100, 10),  # PEP_DIFF ctrl
-    rnorm(n_reps, 500, 50),  # PEP_DIFF trt
-    rnorm(n_reps, 100, 10),  # PEP_NULL ctrl
-    rnorm(n_reps, 100, 10)   # PEP_NULL trt
-  )
+  # All null peptides: ctrl ~ 100, trt ~ 100 (no change)
+  sim_data$value <- mapply(function(pep, trt) {
+    if (pep == "PEP_DIFF" && trt == "trt") {
+      rnorm(1, 500, 50)
+    } else {
+      rnorm(1, 100, 10)
+    }
+  }, sim_data$peptide, sim_data$treatment)
 
   temp_file <- tempfile(fileext = ".csv")
   on.exit(unlink(temp_file))
@@ -109,14 +116,14 @@ test_that("rankprod returns significant p-values for differential peptides",
 
   # The differential peptide should have a low p-value
   diff_pval <- result$results$p_value[result$results$peptide == "PEP_DIFF"]
-  null_pval <- result$results$p_value[result$results$peptide == "PEP_NULL"]
+  null_pvals <- result$results$p_value[grepl("^PEP_NULL", result$results$peptide)]
 
   expect_lt(diff_pval, 0.1,
             label = paste("differential peptide p-value:", diff_pval))
 
-  # The null peptide should have a higher p-value
-  expect_gt(null_pval, diff_pval,
-            label = "null peptide p-value vs differential")
+  # The null peptides should have higher p-values on average
+  expect_gt(mean(null_pvals), diff_pval,
+            label = "mean null peptide p-value vs differential")
 })
 
 

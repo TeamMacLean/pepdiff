@@ -220,6 +220,11 @@ compare_pairwise <- function(data, compare, ref, within, test, alpha, fdr_method
   peptides <- data$peptides
   is_bayes <- test == "bayes_t"
 
+  # Handle rankprod specially - needs all peptides together
+  if (test == "rankprod") {
+    return(compare_pairwise_rankprod(data, compare, ref, alpha, fdr_method))
+  }
+
   # Get treatment level(s)
   all_levels <- unique(data$data[[compare]])
   treatment_levels <- setdiff(all_levels, ref)
@@ -233,7 +238,6 @@ compare_pairwise <- function(data, compare, ref, within, test, alpha, fdr_method
     "wilcoxon" = test_wilcoxon,
     "bootstrap_t" = test_bootstrap_t,
     "bayes_t" = test_bayes_t,
-    "rankprod" = test_rankprod,
     stop("Unknown test: ", test, call. = FALSE)
   )
 
@@ -341,6 +345,164 @@ compare_pairwise <- function(data, compare, ref, within, test, alpha, fdr_method
   }
 
   list(results = results, diagnostics = diagnostics)
+}
+
+
+#' Compare using Rank Products (full matrix approach)
+#'
+#' Rank Products requires ranking across ALL peptides simultaneously,
+#' not within single peptides. This function handles the matrix-based
+#' approach using the RankProd package.
+#'
+#' @param data pepdiff_data object
+#' @param compare Factor to compare
+#' @param ref Reference level
+#' @param alpha Significance threshold
+#' @param fdr_method FDR correction method
+#' @return List with results and diagnostics tibbles
+#' @keywords internal
+compare_pairwise_rankprod <- function(data, compare, ref, alpha, fdr_method) {
+  peptides <- data$peptides
+
+  # Check for RankProd package
+  has_rankprod <- requireNamespace("RankProd", quietly = TRUE)
+  if (!has_rankprod) {
+    warning("RankProd package required for rankprod test. Install with BiocManager::install('RankProd'). Returning NA p-values.",
+            call. = FALSE)
+  }
+
+  # Get treatment level(s)
+  all_levels <- unique(data$data[[compare]])
+  treatment_levels <- setdiff(all_levels, ref)
+
+  if (length(treatment_levels) > 1) {
+    message("Note: pairwise method compares each treatment level to reference separately")
+  }
+
+  all_results <- list()
+
+  for (trt_level in treatment_levels) {
+    comparison_name <- paste(trt_level, "vs", ref)
+
+    if (!has_rankprod) {
+      # Return NA results when package not available
+      results_df <- tibble::tibble(
+        peptide = peptides,
+        gene_id = vapply(peptides, function(pep) {
+          unique(data$data$gene_id[data$data$peptide == pep])[1]
+        }, character(1)),
+        comparison = comparison_name,
+        fold_change = NA_real_,
+        log2_fc = NA_real_,
+        test = "rankprod",
+        p_value = NA_real_,
+        fdr = NA_real_,
+        significant = NA
+      )
+      all_results[[comparison_name]] <- results_df
+      next
+    }
+
+    # Build matrices (peptides × replicates)
+    ctrl_mat <- build_replicate_matrix(data, compare, ref)
+    trt_mat <- build_replicate_matrix(data, compare, trt_level)
+
+    # Ensure consistent peptide order
+    ctrl_mat <- ctrl_mat[peptides, , drop = FALSE]
+    trt_mat <- trt_mat[peptides, , drop = FALSE]
+
+    # RankProd expects: combined matrix with class labels
+    # cl: 1 = treatment, 0 = control
+    cl <- c(rep(1, ncol(trt_mat)), rep(0, ncol(ctrl_mat)))
+    combined <- cbind(trt_mat, ctrl_mat)
+
+    # Call RankProd (suppress its plot output)
+    rp_result <- RankProd::RankProducts(
+      combined, cl,
+      logged = FALSE,
+      plot = FALSE,
+      na.rm = TRUE
+    )
+
+    # Extract p-values
+    # Column 1: p-value for up-regulation (class 1 > class 0, i.e., treatment > control)
+    # Column 2: p-value for down-regulation (class 1 < class 0)
+    p_up <- rp_result$pval[, 1]
+    p_down <- rp_result$pval[, 2]
+
+    # Two-sided p-value: minimum of up/down
+    p_value <- pmin(p_up, p_down)
+
+    # Calculate fold changes
+    ctrl_means <- rowMeans(ctrl_mat, na.rm = TRUE)
+    trt_means <- rowMeans(trt_mat, na.rm = TRUE)
+    fold_change <- ifelse(ctrl_means > 0, trt_means / ctrl_means, NA_real_)
+    log2_fc <- ifelse(!is.na(fold_change) & fold_change > 0, log2(fold_change), NA_real_)
+
+    results_df <- tibble::tibble(
+      peptide = peptides,
+      gene_id = vapply(peptides, function(pep) {
+        unique(data$data$gene_id[data$data$peptide == pep])[1]
+      }, character(1)),
+      comparison = comparison_name,
+      fold_change = fold_change,
+      log2_fc = log2_fc,
+      test = "rankprod",
+      p_value = p_value
+    )
+
+    all_results[[comparison_name]] <- results_df
+  }
+
+  # Combine all comparisons
+  results <- dplyr::bind_rows(all_results)
+
+  # Apply FDR correction within each comparison
+  results <- results %>%
+    dplyr::group_by(.data$comparison) %>%
+    dplyr::mutate(
+      fdr = stats::p.adjust(.data$p_value, method = fdr_method)
+    ) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(
+      significant = .data$fdr < alpha
+    )
+
+  # Diagnostics
+  diagnostics <- tibble::tibble(
+    peptide = peptides,
+    converged = !is.na(results$p_value[match(peptides, results$peptide)])
+  )
+
+  list(results = results, diagnostics = diagnostics)
+}
+
+
+#' Build replicate matrix from pepdiff_data
+#'
+#' Pivots data to matrix format (peptides × replicates) for a given factor level.
+#'
+#' @param data pepdiff_data object
+#' @param compare Factor column name
+#' @param level Level of the factor to extract
+#' @return Matrix with peptides as rows and replicates as columns
+#' @keywords internal
+build_replicate_matrix <- function(data, compare, level) {
+  # Subset to the specified factor level
+  subset_data <- data$data[data$data[[compare]] == level, ]
+
+  # Pivot to wide format
+  wide <- tidyr::pivot_wider(
+    subset_data,
+    id_cols = "peptide",
+    names_from = "bio_rep",
+    values_from = "value"
+  )
+
+  # Convert to matrix with peptide rownames
+  mat <- as.matrix(wide[, -1, drop = FALSE])
+  rownames(mat) <- wide$peptide
+  mat
 }
 
 

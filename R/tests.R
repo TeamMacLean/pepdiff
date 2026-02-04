@@ -343,8 +343,16 @@ classify_bf_evidence <- function(bf) {
 
 #' Rank products test for two groups
 #'
-#' Performs the rank products test for detecting differentially abundant
-#' peptides. This is a non-parametric method that is robust to outliers.
+#' @description
+#' `r lifecycle::badge("deprecated")`
+#'
+#' This function is deprecated because Rank Products requires ranking across
+#' ALL peptides, not within single peptides. The per-peptide permutation
+#' approach produces unreliable p-values.
+#'
+#' Use `compare()` with `test = "rankprod"` instead, which properly uses the
+
+#' RankProd package to rank across all peptides.
 #'
 #' @param control Numeric vector of control group values
 #' @param treatment Numeric vector of treatment group values
@@ -363,8 +371,13 @@ classify_bf_evidence <- function(bf) {
 #' @examples
 #' ctrl <- c(100, 120, 110, 105)
 #' trt <- c(200, 220, 180, 210)
-#' test_rankprod(ctrl, trt, n_perm = 100)
+#' \dontrun{
+#' test_rankprod(ctrl, trt, n_perm = 100)  # Deprecated
+#' }
 test_rankprod <- function(control, treatment, n_perm = 1000, seed = NULL) {
+  .Deprecated(
+    msg = "test_rankprod() is deprecated. Use compare() with test='rankprod' instead, which properly uses the RankProd package to rank across all peptides."
+  )
   # Remove NAs
   control <- control[!is.na(control)]
   treatment <- treatment[!is.na(treatment)]
