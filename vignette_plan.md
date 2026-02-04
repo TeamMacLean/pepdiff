@@ -323,10 +323,21 @@ set.seed(123)
 - Keep code chunks short and commented
 
 ### Tone
-- Direct and practical
-- "Here's what to do" not "Here's the theory"
+- Direct and practical: "Here's what to do"
+- But also pedagogical: "Here's why it works"
+- Not formal theory, but intuition that helps users understand and adapt
 - Acknowledge uncertainty: "if this doesn't look right, investigate"
 - No false precision: methods are tools, not truth machines
+
+### Pedagogical notes to weave in
+- **Gamma GLM**: Why right-skewed? Multiplicative processes, can't go negative, variance scales with mean. Log link → fold changes.
+- **FDR**: If you call 100 things significant at 5% FDR, expect ~5 false positives. That's the deal you're making.
+- **P-value histogram**: Uniform = null is true (no signal). Spike near 0 = true positives pulling p-values down. U-shape = something's wrong.
+- **Wilcoxon**: Compares ranks, not values. Robust because outliers can only affect rank by 1.
+- **Bootstrap**: Resamples your actual data to build a null distribution. Doesn't assume normality because it uses *your* distribution.
+- **Bayes factor**: Quantifies evidence (how much more likely is H1 than H0?) rather than just reject/don't reject.
+- **ART**: Aligns data to remove main effects, then ranks. Lets you test interactions non-parametrically.
+- **Interactions**: Main effect = average across levels. If effect flips direction, the average is meaningless.
 
 ### Testing vignettes
 - Build with `devtools::build_vignettes()`

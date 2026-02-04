@@ -1,0 +1,270 @@
+---
+title: "Factorial Designs with GLM"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Factorial Designs with GLM}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5
+)
+```
+
+```{r setup, message = FALSE}
+library(pepdiff)
+library(dplyr)
+```
+
+## When you need GLM
+
+Pairwise tests work well for simple two-group comparisons. But real experiments often have multiple factors:
+
+- Treatment × Timepoint (does treatment effect change over time?)
+- Genotype × Treatment (does treatment work differently in wildtype vs knockout?)
+- Condition × Dose × Timepoint (complex factorial)
+
+GLM (Generalised Linear Model) handles these designs naturally. It models all factors simultaneously, accounting for their individual and combined effects.
+
+## Why Gamma GLM?
+
+Proteomics abundances have particular properties:
+
+1. **Always positive**: You can't have negative abundance
+2. **Right-skewed**: Many low values, few high values
+3. **Variance scales with mean**: More abundant peptides have more variable measurements
+
+The Gamma distribution models data with exactly these properties. The log link function means model coefficients are interpretable as fold changes - which is what you want.
+
+**Important:** Zeros cause Gamma GLM to fail. This is correct behaviour - a zero abundance is either a missing value (below detection limit) or a data error. pepdiff treats zeros as missing data.
+
+## Example: 2×2 factorial design
+
+Let's create data with treatment (ctrl/trt) and timepoint (0h/24h). We use 5 replicates per cell (20 total per peptide) and 3-fold effects to ensure good power for detecting both main effects and interactions.
+
+```{r generate-data}
+set.seed(456)
+
+n_peptides <- 40
+n_reps <- 5  # 5 reps per cell = 20 observations per peptide
+
+peptides <- paste0("PEP_", sprintf("%03d", 1:n_peptides))
+genes <- paste0("GENE_", LETTERS[((1:n_peptides - 1) %% 26) + 1])
+
+# Different effect patterns:
+# Group 1 (1-10): Treatment effect only (same at both timepoints)
+# Group 2 (11-20): Timepoint effect only (same for both treatments)
+# Group 3 (21-30): Interaction (treatment works at 24h but not 0h)
+# Group 4 (31-40): No effect
+
+sim_data <- expand.grid(
+  peptide = peptides,
+  treatment = c("ctrl", "trt"),
+  timepoint = c("0h", "24h"),
+  bio_rep = 1:n_reps,
+  stringsAsFactors = FALSE
+) %>%
+  mutate(
+    gene_id = genes[match(peptide, peptides)],
+    pep_num = as.numeric(gsub("PEP_", "", peptide)),
+    base = rep(rgamma(n_peptides, shape = 6, rate = 0.6), each = 4 * n_reps),
+
+    # Treatment effect (peptides 1-10): 3-fold
+    trt_effect = ifelse(pep_num <= 10 & treatment == "trt", 3, 1),
+
+    # Timepoint effect (peptides 11-20): 3-fold
+    time_effect = ifelse(pep_num > 10 & pep_num <= 20 & timepoint == "24h", 3, 1),
+
+    # Interaction (peptides 21-30): treatment only works at 24h (4-fold then)
+    int_effect = case_when(
+      pep_num > 20 & pep_num <= 30 & treatment == "trt" & timepoint == "24h" ~ 4,
+      TRUE ~ 1
+    ),
+
+    value = rgamma(n(), shape = 15, rate = 15 / (base * trt_effect * time_effect * int_effect))
+  ) %>%
+  select(peptide, gene_id, treatment, timepoint, bio_rep, value)
+
+# Import
+temp_file <- tempfile(fileext = ".csv")
+write.csv(sim_data, temp_file, row.names = FALSE)
+
+dat <- read_pepdiff(
+  temp_file,
+  id = "peptide",
+  gene = "gene_id",
+  value = "value",
+  factors = c("treatment", "timepoint"),
+  replicate = "bio_rep"
+)
+
+dat
+```
+
+## Basic GLM analysis
+
+```{r basic-glm}
+results <- compare(
+  dat,
+  compare = "treatment",
+  ref = "ctrl",
+  method = "glm"
+)
+
+results
+```
+
+This fits a Gamma GLM for each peptide with both treatment and timepoint as predictors, then extracts the treatment contrast (trt vs ctrl) averaged across timepoints.
+
+## Understanding the output
+
+```{r view-results}
+head(results$results)
+```
+
+The fold change represents the treatment effect **averaged across timepoints**. This is called a "marginal" or "main" effect.
+
+```{r plot-glm-results, fig.height = 6}
+plot(results)
+```
+
+## Stratified comparisons with `within`
+
+Sometimes you want the treatment effect **within each level** of another factor. Use the `within` argument:
+
+```{r stratified}
+results_stratified <- compare(
+  dat,
+  compare = "treatment",
+  ref = "ctrl",
+  within = "timepoint",
+  method = "glm"
+)
+
+results_stratified
+```
+
+Now you get separate comparisons: treatment effect at 0h, and treatment effect at 24h.
+
+```{r view-stratified}
+# View results for a peptide with interaction (effect only at 24h)
+results_stratified$results %>%
+  filter(peptide == "PEP_025") %>%
+  select(peptide, comparison, fold_change, p_value, fdr, significant)
+```
+
+For peptide 25 (which we designed to have an interaction), the treatment effect differs between timepoints: minimal at 0h, substantial at 24h.
+
+## Handling interactions
+
+When you have multiple factors, interactions can occur - the effect of one factor depends on the level of another.
+
+**The emmeans warning:** If you see "Results may be misleading due to involvement in interactions", it means:
+
+- The main effect estimate is averaged across levels of other factors
+- If the effect differs across those levels, the average may not represent any real biological condition
+
+**Example:** Suppose treatment increases abundance at 0h but decreases it at 24h. The "average" treatment effect might be near zero - but that average doesn't describe either timepoint accurately.
+
+**When to worry about interactions:**
+
+```{r check-interaction}
+# Compare main effect vs stratified for peptide with interaction
+main_effect <- results$results %>%
+  filter(peptide == "PEP_025") %>%
+  select(peptide, fold_change, p_value)
+
+stratified_effects <- results_stratified$results %>%
+  filter(peptide == "PEP_025") %>%
+  select(peptide, comparison, fold_change, p_value)
+
+main_effect
+stratified_effects
+```
+
+If the stratified effects go in **opposite directions**, or have very different magnitudes, the main effect is misleading.
+
+**What to do:**
+1. Use `within` to get conditional effects (treatment within each timepoint)
+2. Report the conditional effects, not the main effect
+3. Note the interaction in your interpretation
+
+**When it's OK to ignore:**
+- Effect is consistent in direction across all levels
+- Magnitude differences are small
+- You specifically want the averaged effect
+
+## Checking convergence
+
+Not every peptide's model will converge. This happens when:
+- Too few observations for that peptide
+- Extreme values or near-zero variance
+- Data patterns that the model can't fit
+
+```{r check-diagnostics}
+# Check diagnostics
+n_converged <- sum(results$diagnostics$converged)
+n_failed <- sum(!results$diagnostics$converged)
+
+cat("Converged:", n_converged, "\n")
+cat("Failed:", n_failed, "\n")
+```
+
+Failed peptides are excluded from results. This is correct behaviour - if the model can't fit, you shouldn't trust its estimates.
+
+```{r view-failed, eval = FALSE}
+# View failed peptides (if any)
+results$diagnostics %>%
+  filter(!converged) %>%
+  select(peptide, converged)
+```
+
+**Common causes of convergence failure:**
+- Peptide measured in too few samples
+- All values identical (zero variance)
+- Extreme outliers
+- Too many missing values
+
+**What to do:**
+- Check if failed peptides have data quality issues
+- Consider whether they have enough observations for the model complexity
+- Don't force convergence - if it fails, you need more data or a simpler model
+- See peppwR for power analysis and sample size planning
+
+## Model checking
+
+The diagnostics slot contains model information:
+
+```{r model-diag}
+# Deviance: lower is better fit (relative to other peptides)
+results$diagnostics %>%
+  arrange(desc(deviance)) %>%
+  head()
+```
+
+High deviance relative to other peptides may indicate poor fit. Investigate these peptides if they're in your significant results.
+
+## Practical recommendations
+
+1. **Start simple**: Run without `within` first to get main effects
+2. **Check for interactions**: If effects differ across factor levels, use `within`
+3. **Inspect convergence**: Many failures suggest the model is too complex for your data
+4. **Look at diagnostics**: Volcano and p-value histogram should look reasonable
+5. **Don't over-interpret**: These are statistical estimates, not ground truth
+
+## When GLM struggles
+
+- Very small sample sizes (< 3 per cell)
+- Heavy-tailed or highly non-normal data
+- Many zeros (consider whether these are true zeros or missing)
+
+If GLM diagnostics look poor, try the ART method - see `vignette("art_analysis")`.
+
+```{r cleanup, include = FALSE}
+unlink(temp_file)
+```

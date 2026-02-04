@@ -1,0 +1,240 @@
+---
+title: "Getting Started with pepdiff"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting Started with pepdiff}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5
+)
+```
+
+## What is pepdiff?
+
+pepdiff performs differential abundance analysis for PRM (Parallel Reaction Monitoring) proteomics data. Given peptide abundance measurements across experimental conditions, it identifies which peptides show significant changes between groups.
+
+pepdiff is the analysis companion to [peppwR](https://github.com/macleand/peppwR), which handles power analysis and experimental planning. The workflow is:
+
+- **peppwR**: "How many samples do I need?" (before the experiment)
+- **pepdiff**: "What's differentially abundant?" (after the experiment)
+
+## Installation
+
+```{r eval = FALSE}
+# Install from GitHub
+devtools::install_github("macleand/pepdiff")
+```
+
+Some features require Bioconductor packages:
+
+```{r eval = FALSE}
+# For heatmaps
+BiocManager::install("ComplexHeatmap")
+
+# For rank products test
+BiocManager::install("RankProd")
+```
+
+## Setup
+
+```{r setup, message = FALSE}
+library(pepdiff)
+library(dplyr)
+```
+
+## Creating example data
+
+We'll generate synthetic data to demonstrate the workflow. This represents a well-powered experiment: control vs treatment, with 10 biological replicates per group and 50 peptides measured. We use 3-fold changes for differential peptides - large enough to detect reliably with this sample size.
+
+```{r generate-data}
+set.seed(123)
+
+# Experimental design
+# 10 reps and 3-fold changes give us good power to detect true effects
+n_peptides <- 50
+n_reps <- 10
+conditions <- c("ctrl", "trt")
+
+# Generate peptide names and gene IDs
+peptides <- paste0("PEP_", sprintf("%03d", 1:n_peptides))
+genes <- paste0("GENE_", LETTERS[((1:n_peptides - 1) %% 26) + 1])
+
+# 30% of peptides (15 out of 50) will be truly differentially abundant
+n_diff <- round(n_peptides * 0.3)
+diff_peptides <- sample(peptides, n_diff)
+cat("Truly differential peptides:", n_diff, "\n")
+
+# Generate abundance data
+# Proteomics abundances are typically right-skewed (can't go below zero,
+# multiplicative processes). We use a Gamma distribution to reflect this.
+sim_data <- expand.grid(
+  peptide = peptides,
+  treatment = conditions,
+  bio_rep = 1:n_reps,
+  stringsAsFactors = FALSE
+) %>%
+  mutate(
+    gene_id = genes[match(peptide, peptides)],
+    # Base abundance varies by peptide (some peptides more abundant than others)
+    base_abundance = rep(rgamma(n_peptides, shape = 5, rate = 0.5), each = length(conditions) * n_reps),
+    # Treatment effect for differential peptides (~3-fold change up or down)
+    fc = ifelse(peptide %in% diff_peptides & treatment == "trt",
+                sample(c(0.33, 3), n_diff * n_reps, replace = TRUE, prob = c(0.3, 0.7)),
+                1),
+    # Final value with biological noise
+    value = rgamma(n(), shape = 10, rate = 10 / (base_abundance * fc))
+  ) %>%
+  select(peptide, gene_id, treatment, bio_rep, value)
+
+head(sim_data)
+```
+
+To use `read_pepdiff()`, we need data in a CSV file. Let's write our simulated data to a temporary file:
+
+```{r write-temp-csv}
+temp_file <- tempfile(fileext = ".csv")
+write.csv(sim_data, temp_file, row.names = FALSE)
+```
+
+## Importing data
+
+The `read_pepdiff()` function imports your data and creates a structured object for analysis. You tell it which columns contain what:
+
+```{r import-data}
+dat <- read_pepdiff(
+  file = temp_file,
+  id = "peptide",           # peptide identifiers
+  gene = "gene_id",         # gene identifiers
+  value = "value",          # abundance values
+  factors = "treatment",    # experimental factors
+  replicate = "bio_rep"     # biological replicate IDs
+)
+
+dat
+```
+
+The print output shows you what you've got: number of peptides, experimental design, and data quality summary. The `pepdiff_data` object contains:
+
+- **data**: Your measurements in long format
+- **factors**: The experimental factors you specified
+- **design**: Summary of your experimental structure
+- **missingness**: Per-peptide missing data statistics
+
+For more detail:
+
+```{r summary-data}
+summary(dat)
+```
+
+## Quick look at your data
+
+Before running any analysis, visualise your data. The `plot()` method gives you a multi-panel diagnostic view:
+
+```{r plot-data, fig.height = 6}
+plot(dat)
+```
+
+What to look for:
+
+- **PCA**: Replicates from the same condition should cluster together. If samples scatter randomly, you may have a quality issue.
+- **Distributions**: Abundance distributions should be similar across samples. Large shifts suggest normalisation problems.
+- **Missingness**: Random scatter is fine. Systematic patterns (whole peptides missing in one condition) suggest MNAR (missing not at random) - those peptides may not be analysable.
+
+## Running a comparison
+
+Now for the analysis. The `compare()` function tests for differential abundance:
+
+```{r compare}
+results <- compare(
+  dat,
+  compare = "treatment",  # which factor to test
+  ref = "ctrl"            # reference level (what to compare against)
+)
+
+results
+```
+
+The "Marked significant" count in the output is the number of peptides *detected* as significant by the statistical test - not the number we know to be truly differential. With 15 truly differential peptides in our simulation, we hope to detect most of them while minimising false positives.
+
+By default, `compare()` uses a Gamma GLM (generalised linear model). Why Gamma? Proteomics abundances are positive and right-skewed - they arise from multiplicative processes and can't go below zero. The Gamma distribution models this naturally, and the log link means coefficients are interpretable as fold changes.
+
+## Understanding results
+
+The results object contains everything you need:
+
+```{r results-structure}
+# The main results table
+head(results$results)
+```
+
+Key columns:
+
+- **fold_change**: Ratio of treatment to control (>1 means higher in treatment)
+- **log2_fc**: Log2 of fold change (easier to interpret: 1 = doubled, -1 = halved)
+- **p_value**: Statistical significance
+- **fdr**: False discovery rate-adjusted p-value (use this for significance calls)
+- **significant**: TRUE if fdr < alpha (default 0.05)
+
+### Getting significant hits
+
+The `significant()` function extracts peptides that passed the significance threshold:
+
+```{r significant}
+sig_peptides <- significant(results)
+sig_peptides
+```
+
+### Visualising results
+
+The `plot()` method for results shows you the key diagnostic plots:
+
+```{r plot-results, fig.height = 6}
+plot(results)
+```
+
+What to look for:
+
+- **Volcano plot**: Points at the edges (large fold change + low p-value) are your confident hits. Symmetric spread is typical; all hits in one direction might indicate a global shift.
+- **P-value histogram**: Under the null hypothesis (no true signal), p-values are uniformly distributed. A spike near zero indicates true positives. A U-shape suggests p-value inflation (something's wrong).
+- **Fold change distribution**: Should be centered near zero on log2 scale. A systematic shift suggests normalisation issues.
+
+## Comparing with our simulation
+
+Since we generated this data, we know which peptides were truly differential. Let's check how well we did:
+
+```{r check-results}
+# True positives: correctly identified as significant
+true_pos <- sig_peptides$peptide[sig_peptides$peptide %in% diff_peptides]
+
+# False positives: called significant but not truly differential
+false_pos <- sig_peptides$peptide[!sig_peptides$peptide %in% diff_peptides]
+
+# False negatives: truly differential but not called significant
+false_neg <- diff_peptides[!diff_peptides %in% sig_peptides$peptide]
+
+cat("True positives:", length(true_pos), "\n")
+cat("False positives:", length(false_pos), "\n")
+cat("False negatives:", length(false_neg), "\n")
+```
+
+With 10 replicates and 3-fold effect sizes, we have good power to detect most true positives. FDR control at 5% means that among peptides called significant, we expect roughly 5% to be false positives - that's the trade-off you're making. With smaller sample sizes or weaker effects, you'd see more false negatives (missed true positives).
+
+## Next steps
+
+This vignette covered the basic workflow. For more detail, see:
+
+- `vignette("pairwise_tests")`: Two-group comparisons with different statistical tests
+- `vignette("diagnostic_plots")`: Visual quality control and interpretation
+- `vignette("glm_analysis")`: Factorial designs with multiple factors
+- `vignette("art_analysis")`: Non-parametric analysis when GLM assumptions fail
+
+```{r cleanup, include = FALSE}
+unlink(temp_file)
+```

@@ -1,0 +1,250 @@
+---
+title: "Non-parametric Factorial Analysis with ART"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Non-parametric Factorial Analysis with ART}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5
+)
+
+# Check if ARTool is available
+has_artool <- requireNamespace("ARTool", quietly = TRUE)
+```
+
+```{r setup, message = FALSE}
+library(pepdiff)
+library(dplyr)
+```
+
+## What is ART?
+
+ART (Aligned Rank Transform) is a non-parametric method for factorial designs. It lets you analyse multi-factor experiments without assuming your data follows a particular distribution.
+
+**The problem it solves:** Wilcoxon and other rank tests work great for two groups, but can't handle interactions. Parametric ANOVA handles interactions but assumes normality. ART gives you both: non-parametric robustness with factorial capability.
+
+**How it works:**
+1. **Align**: Subtract out all effects except the one you're testing, so residuals reflect only that effect
+2. **Rank**: Convert aligned values to ranks
+3. **ANOVA**: Run standard ANOVA on the ranks
+
+The alignment step is crucial - it allows the test to isolate each effect (main effects, interactions) correctly.
+
+## When to consider ART
+
+- GLM residuals look non-normal
+- Heavy-tailed data with extreme values
+- You're uncomfortable with distributional assumptions
+- Ordinal data that doesn't meet interval scale assumptions
+
+**Requirements:**
+- ARTool package (installed separately)
+- Balanced-ish designs work best
+- Complete cases for each peptide
+```{r check-artool, echo = FALSE, results = 'asis'}
+if (!has_artool) {
+  cat("\n\n**Note:** ARTool is not installed. Code chunks in this vignette will not be evaluated. Install with `install.packages('ARTool')` to run the examples.\n\n")
+}
+```
+
+## Example data
+
+We'll use data with some non-normality to show where ART helps. We use 5 replicates per cell and 3-fold effects for good power.
+
+```{r generate-data}
+set.seed(789)
+
+n_peptides <- 30
+n_reps <- 5  # 5 reps per cell for good power
+
+peptides <- paste0("PEP_", sprintf("%03d", 1:n_peptides))
+genes <- paste0("GENE_", LETTERS[((1:n_peptides - 1) %% 26) + 1])
+
+# Generate data with heavier tails (more extreme values)
+sim_data <- expand.grid(
+  peptide = peptides,
+  treatment = c("ctrl", "trt"),
+  timepoint = c("early", "late"),
+  bio_rep = 1:n_reps,
+  stringsAsFactors = FALSE
+) %>%
+  mutate(
+    gene_id = genes[match(peptide, peptides)],
+    pep_num = as.numeric(gsub("PEP_", "", peptide)),
+    base = rep(rgamma(n_peptides, shape = 3, rate = 0.3), each = 4 * n_reps),
+
+    # Treatment effect for peptides 1-10: 3-fold
+    trt_effect = ifelse(pep_num <= 10 & treatment == "trt", 3, 1),
+
+    # Timepoint effect for peptides 11-15: 3-fold
+    time_effect = ifelse(pep_num > 10 & pep_num <= 15 & timepoint == "late", 3, 1),
+
+    # Add some extreme values (heavy tails)
+    noise = rgamma(n(), shape = 3, rate = 3),
+    extreme = ifelse(runif(n()) < 0.05, runif(n(), 2, 5), 1),
+
+    value = base * trt_effect * time_effect * noise * extreme
+  ) %>%
+  select(peptide, gene_id, treatment, timepoint, bio_rep, value)
+
+# Import
+temp_file <- tempfile(fileext = ".csv")
+write.csv(sim_data, temp_file, row.names = FALSE)
+
+dat <- read_pepdiff(
+  temp_file,
+  id = "peptide",
+  gene = "gene_id",
+  value = "value",
+  factors = c("treatment", "timepoint"),
+  replicate = "bio_rep"
+)
+```
+
+## Running ART analysis
+
+```{r run-art, message = FALSE, eval = has_artool}
+results_art <- compare(
+  dat,
+  compare = "treatment",
+  ref = "ctrl",
+  method = "art"
+)
+
+results_art
+```
+
+The interface is identical to GLM - just change `method = "art"`.
+
+## ART vs GLM comparison
+
+Let's compare both methods on the same data:
+
+```{r compare-methods, message = FALSE, eval = has_artool}
+results_glm <- compare(dat, compare = "treatment", ref = "ctrl", method = "glm")
+results_art <- compare(dat, compare = "treatment", ref = "ctrl", method = "art")
+```
+
+```{r compare-significant, eval = has_artool}
+# Compare significant calls
+comparison <- tibble(
+  peptide = results_glm$results$peptide,
+  glm_sig = results_glm$results$significant,
+  art_sig = results_art$results$significant,
+  glm_pval = results_glm$results$p_value,
+  art_pval = results_art$results$p_value
+)
+
+# Agreement
+cat("Both significant:", sum(comparison$glm_sig & comparison$art_sig), "\n")
+cat("GLM only:", sum(comparison$glm_sig & !comparison$art_sig), "\n")
+cat("ART only:", sum(!comparison$glm_sig & comparison$art_sig), "\n")
+cat("Neither:", sum(!comparison$glm_sig & !comparison$art_sig), "\n")
+```
+
+When both methods agree, you can be confident in the result. When they disagree, investigate the peptide:
+
+```{r disagreements, eval = has_artool}
+# Peptides where methods disagree
+disagreements <- comparison %>%
+  filter(glm_sig != art_sig) %>%
+  arrange(pmin(glm_pval, art_pval))
+
+if (nrow(disagreements) > 0) {
+  print(disagreements)
+} else {
+  cat("No disagreements between methods\n")
+}
+```
+
+## Interpreting ART results
+
+ART results include fold changes and p-values like GLM, but with a caveat:
+
+```{r view-art-results, eval = has_artool}
+head(results_art$results)
+```
+
+**Fold changes from ART:** These are estimated from the ranked data, so they're more robust to outliers but may differ from arithmetic fold changes. They indicate direction and relative magnitude, but don't interpret them as precise multiplicative effects.
+
+**P-values:** Non-parametric p-values testing whether ranks differ systematically between groups.
+
+## Stratified comparisons
+
+Just like GLM, you can use `within`:
+
+```{r art-stratified, message = FALSE, eval = has_artool}
+results_strat <- compare(
+  dat,
+  compare = "treatment",
+  ref = "ctrl",
+  within = "timepoint",
+  method = "art"
+)
+
+results_strat$results %>%
+  filter(peptide == "PEP_001") %>%
+  select(peptide, comparison, fold_change, p_value)
+```
+
+## Diagnostics
+
+```{r art-diagnostics, fig.height = 6, eval = has_artool}
+plot(results_art)
+```
+
+The same diagnostic plots apply:
+- Volcano should be symmetric
+- P-value histogram should show uniform + spike pattern
+- Fold change distribution should centre near zero
+
+## Limitations of ART
+
+**Speed:** ART is slower than GLM because it fits multiple aligned models per peptide. For large datasets, this matters.
+
+**Interpretation:** Rank-based effects are less intuitive than fold changes. "Treatment increases ranks" is harder to communicate than "treatment doubles abundance".
+
+**Balance:** ART works best with balanced designs (equal n per cell). Unbalanced designs can give unreliable interaction tests.
+
+**Not a magic fix:** If your data has fundamental problems (outlier samples, batch effects), ART won't save you. Fix the problems first.
+
+## Practical recommendations
+
+1. **Start with GLM** - it's the default for good reason
+2. **Check GLM diagnostics** - p-value histogram, volcano plot
+3. **If diagnostics look poor**, try ART on the same data
+4. **Compare results** - where do methods agree and disagree?
+5. **For publication**, report which method you used and why
+
+**Decision tree:**
+```
+GLM diagnostics OK?
+  → Yes: Use GLM
+  → No: Try ART
+         ↓
+       ART diagnostics OK?
+         → Yes: Use ART
+         → No: You may need more data, or the effect isn't there
+```
+
+## When both methods fail
+
+If neither GLM nor ART gives sensible results:
+
+1. **Check data quality**: Outlier samples, batch effects, normalisation issues
+2. **Consider sample size**: May not have power to detect effects
+3. **Simplify the model**: Too many factors for the data?
+4. **Accept the null**: Sometimes there's no effect to find
+
+See peppwR for power analysis to understand what effect sizes your experiment can detect.
+
+```{r cleanup, include = FALSE}
+unlink(temp_file)
+```
