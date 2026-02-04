@@ -137,17 +137,46 @@ This way, the null distribution comes from your data's actual shape, not a theor
 res_bayes
 ```
 
-**Note:** Bayes factors are fundamentally different from p-values - they quantify evidence rather than surprise. The current implementation converts BF to approximate p-values for compatibility, but this is a simplification. Interpret BF results with care.
+Notice the output is different from the other tests. Instead of "Significant (FDR < 0.05)", you see an **evidence breakdown** and "Significant (BF > 3)". This reflects a fundamental difference in how Bayes factors work.
 
-The Bayes factor approach asks a different question. Classical tests ask: "If there's no effect, how surprising is this data?" (p-value). Bayes factors ask: "How much more likely is the data under the hypothesis of an effect vs no effect?"
+**Why Bayes factors are different from p-values:**
+
+P-values and Bayes factors answer different questions:
+
+| Approach | Question |
+|----------|----------|
+| P-value | "If there's no effect, how surprising is this data?" |
+| Bayes factor | "How much more likely is the data under effect vs no effect?" |
+
+Because they're fundamentally different, pepdiff handles `bayes_t` results separately:
+
+- `p_value` and `fdr` columns are `NA` (FDR correction doesn't apply to BF)
+- `bf` column contains the raw Bayes factor (BF10)
+- `evidence` column categorizes the strength of evidence
+- `significant` uses `bf > bf_threshold` (default 3)
 
 **Interpreting BF:**
-- BF = 1: Data equally consistent with effect or no effect
-- BF = 3: Data 3× more likely under effect hypothesis (moderate evidence)
-- BF = 10: Strong evidence for effect
-- BF = 0.1: Strong evidence for *no* effect (this is informative - p-values can't tell you this)
+
+| BF Range | Evidence | Meaning |
+|----------|----------|---------|
+| < 0.1 | Strong null | Strong evidence for *no* effect |
+| 0.1 - 0.33 | Moderate null | Moderate evidence for no effect |
+| 0.33 - 3 | Inconclusive | Data don't distinguish hypotheses |
+| 3 - 10 | Moderate alt | Moderate evidence for effect |
+| > 10 | Strong alt | Strong evidence for effect |
+
+**The key advantage:** BF can provide evidence *for* the null hypothesis, not just fail to reject it. A BF of 0.1 says "the data are 10× more likely if there's no effect" - something p-values can never tell you.
 
 **When to use:** When you want to quantify evidence strength, not just reject/don't reject. Particularly useful when you want to conclude "no effect" rather than just "failed to detect effect".
+
+You can adjust the threshold for significance:
+
+```{r bayes-strict, eval = FALSE}
+# Require strong evidence (BF > 10)
+res_bayes_strict <- compare(dat, compare = "treatment", ref = "ctrl",
+                             method = "pairwise", test = "bayes_t",
+                             bf_threshold = 10)
+```
 
 ### Rank products
 
@@ -195,9 +224,9 @@ comparison %>%
 
 The tests often agree on strong effects but may differ on borderline cases. When they disagree, it's worth investigating that peptide more closely.
 
-## FDR correction
+## FDR correction (p-value tests only)
 
-All tests report both raw p-values and FDR-adjusted values. **Always use the `fdr` column for significance decisions.**
+For wilcoxon, bootstrap_t, and rankprod, pepdiff reports both raw p-values and FDR-adjusted values. **Always use the `fdr` column for significance decisions.**
 
 **What is FDR?** If you test 30 peptides at α = 0.05, you expect 1-2 false positives by chance alone. FDR (false discovery rate) correction accounts for this multiple testing. At 5% FDR, among all peptides you call significant, you expect about 5% to be false positives.
 
@@ -213,7 +242,11 @@ res_wilcox$results %>%
 
 Notice how the FDR values are always >= the p-values. The adjustment is stronger for peptides ranking lower in significance.
 
+**Note:** `bayes_t` does not use FDR correction. Bayes factors already account for prior probabilities, and traditional multiple testing corrections don't apply. Instead, use the `bf` column directly with an appropriate threshold (default: BF > 3).
+
 ## Visualising results
+
+For p-value based tests, the multi-panel plot shows a volcano plot, p-value histogram, and fold change distribution:
 
 ```{r plot-results, fig.height = 6}
 plot(res_wilcox)
@@ -224,6 +257,18 @@ plot(res_wilcox)
 - **Uniform distribution**: No signal. All peptides behave as expected under null.
 - **Spike near 0 + uniform elsewhere**: True positives exist. The spike represents peptides with real effects.
 - **U-shape** (spikes at both 0 and 1): Something's wrong - possibly violated assumptions or technical artifacts.
+
+### Bayes factor plots
+
+For `bayes_t` results, pepdiff shows BF-specific visualizations:
+
+```{r plot-bayes, fig.height = 6}
+plot(res_bayes)
+```
+
+**BF volcano plot:** The y-axis shows log10(BF) instead of -log10(p). Points above 0 favor the alternative (effect exists); points below 0 favor the null (no effect). Reference lines at BF = 3 and BF = 0.33 mark conventional thresholds.
+
+**BF distribution:** Shows the distribution of log10(BF) values. A good experiment with real effects will show a right tail (high BF for true positives). Unlike p-value histograms, BF distributions can pile up on *either* side - left tail means evidence for null, right tail means evidence for effect.
 
 ## When pairwise isn't enough
 
