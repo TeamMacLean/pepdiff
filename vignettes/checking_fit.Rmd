@@ -1,0 +1,284 @@
+---
+title: "Checking GLM Model Fit"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Checking GLM Model Fit}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 8,
+  fig.height = 6
+)
+```
+
+```{r setup, message = FALSE}
+library(pepdiff)
+library(dplyr)
+```
+
+## Why Check Model Fit?
+
+pepdiff uses a **Gamma GLM with log link** for differential abundance analysis. This model assumes:
+
+- Abundances are positive (no zeros)
+- Variance increases with the mean (common in proteomics)
+- The relationship between predictors and response is multiplicative (log-linear)
+
+When these assumptions hold, GLM gives reliable p-values and accurate fold change estimates. When they don't, results may be misleading.
+
+**The good news:** You don't need a statistics degree to check model fit. `plot_fit_diagnostics()` gives you visual checks that tell you whether to trust your GLM results or try ART instead.
+
+## Quick Check with plot_fit_diagnostics()
+
+Let's start with simulated data that fits the GLM assumptions well.
+
+```{r generate-good-data}
+set.seed(123)
+
+n_peptides <- 40
+n_reps <- 5
+
+peptides <- paste0("PEP_", sprintf("%03d", 1:n_peptides))
+genes <- paste0("GENE_", LETTERS[((1:n_peptides - 1) %% 26) + 1])
+
+# Simulate well-behaved Gamma data
+design <- expand.grid(
+  peptide = peptides,
+  treatment = c("ctrl", "trt"),
+  bio_rep = 1:n_reps,
+  stringsAsFactors = FALSE
+)
+
+sim_data <- design %>%
+  mutate(
+    gene_id = genes[match(peptide, peptides)],
+    pep_num = as.numeric(gsub("PEP_", "", peptide)),
+    base = 10 + pep_num * 0.5,
+    # First 20 peptides have 2-fold treatment effect
+    effect = ifelse(pep_num <= 20 & treatment == "trt", 2, 1),
+    # Gamma noise (well-behaved)
+    value = rgamma(n(), shape = 15, rate = 15 / (base * effect))
+  ) %>%
+  select(peptide, gene_id, treatment, bio_rep, value)
+
+# Import
+temp_file <- tempfile(fileext = ".csv")
+write.csv(sim_data, temp_file, row.names = FALSE)
+
+dat <- read_pepdiff(
+  temp_file,
+  id = "peptide",
+  gene = "gene_id",
+  value = "value",
+  factors = "treatment",
+  replicate = "bio_rep"
+)
+
+unlink(temp_file)
+```
+
+Run GLM analysis and check diagnostics:
+
+```{r run-glm-good, message = FALSE}
+results <- compare(dat, compare = "treatment", ref = "ctrl", method = "glm")
+
+# Check fit diagnostics
+diag <- plot_fit_diagnostics(results)
+```
+
+```{r show-good-plot, fig.height = 8}
+diag$plot
+```
+
+## Reading the Diagnostic Plots
+
+### Panel A: Deviance Distribution
+
+This histogram shows how well each peptide's GLM model fits its data. **Lower deviance = better fit.**
+
+**What to look for:**
+- Most peptides should cluster at low deviance values
+- A few peptides above the red threshold line is normal (by default, 5%)
+- A long right tail means some peptides fit poorly
+
+**In our example:** The distribution is compact with only a few peptides above the threshold. This looks healthy.
+
+### Panel B: Deviance vs Effect Size
+
+This scatter plot reveals whether poorly-fitting peptides cluster at certain effect sizes.
+
+**What to look for:**
+- Random scatter = no systematic problem
+- High deviance at extreme fold changes = outlier-driven "significant" results (red flag)
+- Curved pattern = systematic misfit
+
+**In our example:** Points are scattered without clear pattern. No obvious relationship between fold change and fit quality.
+
+### Panel C: Sample Residual Plots
+
+These show residuals (observed - predicted) vs fitted values for individual peptides. The function selects peptides with high, median, and low deviance to give you a representative sample.
+
+**What good fit looks like:**
+- Points scattered randomly around zero (the dashed line)
+- No funnel shape (variance shouldn't change with fitted value)
+- Flat red loess line (no trend)
+
+**What poor fit looks like:**
+- Curved pattern in points
+- Funnel shape (variance increasing or decreasing)
+- Curved red loess line
+
+**In our example:** The residual plots show random scatter around zero with mostly flat loess lines.
+
+### Panel D: Pooled QQ Plot
+
+This combines residuals from all peptides to check if they follow the expected distribution.
+
+**What good fit looks like:**
+- Points fall along the diagonal line
+- Minor wiggles at the tails are OK
+
+**What poor fit looks like:**
+- S-shaped curve = heavy tails (consider ART)
+- Systematic bow = wrong distributional assumption
+- Points far from line = outliers
+
+**In our example:** Points follow the line reasonably well, suggesting the Gamma distribution is appropriate.
+
+## Investigating Flagged Peptides
+
+The function identifies peptides with potential fit issues:
+
+```{r view-flagged}
+diag$flagged
+```
+
+```{r summary-stats}
+# Summary statistics
+diag$summary
+```
+
+If peptides are flagged, investigate them:
+
+1. **Check the data** - Do these peptides have outliers, zeros, or unusual patterns?
+2. **Look at sample size** - Low replication can cause fitting issues
+3. **Consider biology** - Are these peptides biologically different?
+
+## Example: Data with Poor Fit
+
+Let's simulate data that violates GLM assumptions - heavy tails with outliers:
+
+```{r generate-bad-data}
+set.seed(456)
+
+# Same design but with outliers and heavy tails
+sim_bad <- design %>%
+  mutate(
+    gene_id = genes[match(peptide, peptides)],
+    pep_num = as.numeric(gsub("PEP_", "", peptide)),
+    base = 10 + pep_num * 0.5,
+    effect = ifelse(pep_num <= 20 & treatment == "trt", 2, 1),
+    # Add outliers (10% of observations)
+    outlier = ifelse(runif(n()) < 0.1, runif(n(), 3, 8), 1),
+    # Heavier-tailed noise
+    value = rgamma(n(), shape = 3, rate = 3 / (base * effect)) * outlier
+  ) %>%
+  select(peptide, gene_id, treatment, bio_rep, value)
+
+temp_file <- tempfile(fileext = ".csv")
+write.csv(sim_bad, temp_file, row.names = FALSE)
+
+dat_bad <- read_pepdiff(
+  temp_file,
+  id = "peptide",
+  gene = "gene_id",
+  value = "value",
+  factors = "treatment",
+  replicate = "bio_rep"
+)
+
+unlink(temp_file)
+```
+
+```{r run-glm-bad, message = FALSE}
+results_bad <- compare(dat_bad, compare = "treatment", ref = "ctrl", method = "glm")
+diag_bad <- plot_fit_diagnostics(results_bad)
+```
+
+```{r show-bad-plot, fig.height = 8}
+diag_bad$plot
+```
+
+**Notice the differences:**
+
+- **Deviance distribution** has a longer right tail with more flagged peptides
+- **Residual plots** may show non-random patterns
+- **QQ plot** deviates from the line, especially in the tails
+
+When diagnostics look like this, ART may be more appropriate.
+
+## Decision: GLM or ART?
+
+### Use GLM when:
+
+- Deviance distribution looks reasonable (few flagged, <10-15%)
+- No systematic patterns in residual plots
+- QQ plot is reasonably linear
+- You want interpretable fold changes
+
+### Consider ART when:
+
+- Many peptides (>15%) have high deviance
+- Residual plots show systematic curves or funnels
+- QQ plot shows heavy tails (S-curve)
+- You have known outliers or heavy-tailed data
+- You're uncomfortable with distributional assumptions
+
+### Try ART on the problematic data:
+
+```{r try-art, message = FALSE}
+results_art <- compare(dat_bad, compare = "treatment", ref = "ctrl", method = "art")
+
+# Compare significant calls
+comparison <- tibble(
+  peptide = results_bad$results$peptide,
+  glm_sig = results_bad$results$significant,
+  art_sig = results_art$results$significant
+)
+
+cat("Both significant:", sum(comparison$glm_sig & comparison$art_sig), "\n")
+cat("GLM only:", sum(comparison$glm_sig & !comparison$art_sig), "\n")
+cat("ART only:", sum(!comparison$glm_sig & comparison$art_sig), "\n")
+```
+
+## The full_qq Option
+
+By default, the QQ plot uses an approximation for speed. For a more accurate (but slower) assessment:
+
+```{r full-qq, eval = FALSE}
+# More accurate QQ plot - refits all models
+diag_full <- plot_fit_diagnostics(results, full_qq = TRUE)
+```
+
+Use `full_qq = TRUE` when:
+
+- The approximate QQ plot looks borderline
+- You want to be extra sure about your conclusion
+- You have time (it refits all peptide models)
+
+## Summary
+
+1. **Always run `plot_fit_diagnostics()` after GLM analysis** - it only takes seconds
+2. **Check all four panels** for warning signs
+3. **Investigate flagged peptides** if needed - check for data quality issues
+4. **Switch to ART only if diagnostics suggest systematic problems** - ART trades power for robustness
+5. **When in doubt, run both methods** and compare results
+
+GLM is the default because it's more powerful when assumptions hold. Use diagnostics to verify those assumptions, and switch to ART when they don't.
+
+See `vignette("art_analysis")` for details on using the ART method.

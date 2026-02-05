@@ -36,7 +36,7 @@ The alignment step is crucial - it allows the test to isolate each effect (main 
 
 ## When to consider ART
 
-- GLM residuals look non-normal
+- GLM fit diagnostics show problems (see `vignette("checking_fit")`)
 - Heavy-tailed data with extreme values
 - You're uncomfortable with distributional assumptions
 - Ordinal data that doesn't meet interval scale assumptions
@@ -377,7 +377,7 @@ write.csv(results_strat$results, "art_stratified.csv", row.names = FALSE)
 ## Practical recommendations
 
 1. **Start with GLM** - it's the default for good reason
-2. **Check GLM diagnostics** - p-value histogram, volcano plot
+2. **Check GLM fit** - run `plot_fit_diagnostics(results)` (see `vignette("checking_fit")`)
 3. **If diagnostics look poor**, try ART on the same data
 4. **Compare results** - where do methods agree and disagree?
 5. **For publication**, report which method you used and why
