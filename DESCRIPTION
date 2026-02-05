@@ -1,11 +1,10 @@
 Package: pepdiff
 Type: Package
-Title: Differential Abundance Analysis for PRM Proteomics Data
+Title: Differential Abundance Analysis for Phosphoproteomics Data
 Version: 1.0.0
 Author: Dan MacLean
 Maintainer: Dan MacLean <dan.maclean@tsl.ac.uk>
-Description: Provides tools for analyzing differential abundance in PRM
-    (Parallel Reaction Monitoring) proteomics experiments. Implements S3
+Description: Provides tools for analyzing differential abundance in proteomics experiments. Implements S3
     classes for data management and supports GLM, ART, and pairwise test
     methods for statistical analysis. Includes visualization functions for
     PCA, volcano plots, and heatmaps.

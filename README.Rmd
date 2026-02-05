@@ -25,7 +25,7 @@ knitr::opts_chunk$set(
 [![GitHub stars](https://img.shields.io/github/stars/TeamMacLean/pepdiff)](https://github.com/TeamMacLean/pepdiff/stargazers)
 <!-- badges: end -->
 
-**Differential abundance analysis for PRM proteomics data.**
+**Differential abundance analysis for proteomics data.**
 
 pepdiff helps proteomics researchers answer: "What's differentially abundant?"
 
@@ -113,7 +113,7 @@ flowchart LR
 If you use pepdiff in your research, please cite:
 
 ```
-MacLean, D. (2026). pepdiff: Differential Abundance Analysis for PRM
+MacLean, D. (2026). pepdiff: Differential Abundance Analysis for
 Proteomics Data. R package version 1.0.0.
 https://github.com/TeamMacLean/pepdiff
 ```
