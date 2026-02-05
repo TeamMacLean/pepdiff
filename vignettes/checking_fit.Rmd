@@ -256,21 +256,6 @@ cat("GLM only:", sum(comparison$glm_sig & !comparison$art_sig), "\n")
 cat("ART only:", sum(!comparison$glm_sig & comparison$art_sig), "\n")
 ```
 
-## The full_qq Option
-
-By default, the QQ plot uses an approximation for speed. For a more accurate (but slower) assessment:
-
-```{r full-qq, eval = FALSE}
-# More accurate QQ plot - refits all models
-diag_full <- plot_fit_diagnostics(results, full_qq = TRUE)
-```
-
-Use `full_qq = TRUE` when:
-
-- The approximate QQ plot looks borderline
-- You want to be extra sure about your conclusion
-- You have time (it refits all peptide models)
-
 ## Summary
 
 1. **Always run `plot_fit_diagnostics()` after GLM analysis** - it only takes seconds

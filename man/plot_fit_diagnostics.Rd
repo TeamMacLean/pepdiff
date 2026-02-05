@@ -19,9 +19,8 @@ plot_fit_diagnostics(
 \item{deviance_threshold}{Optional threshold for flagging high-deviance peptides.
 If NULL (default), uses the 95th percentile of deviance values.}
 
-\item{full_qq}{Logical. If TRUE, refit all models to compute proper standardized
-residuals for the QQ plot (slower but more accurate). If FALSE (default),
-use an approximation based on stored deviance values.}
+\item{full_qq}{Deprecated. Residuals are now stored during `compare()` so
+accurate QQ plots are always available without refitting.}
 }
 \value{
 Invisibly returns a list with:

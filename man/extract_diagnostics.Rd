@@ -10,7 +10,7 @@ extract_diagnostics(model_results)
 \item{model_results}{List of model results from run_models()}
 }
 \value{
-A tibble with diagnostic information
+A tibble with diagnostic information including residuals and fitted values (list columns)
 }
 \description{
 Creates a summary tibble of model convergence and quality metrics.

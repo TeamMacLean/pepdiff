@@ -11,9 +11,8 @@
 #' @param n_sample Number of peptides to show in sample residual plots (default 6)
 #' @param deviance_threshold Optional threshold for flagging high-deviance peptides.
 #'   If NULL (default), uses the 95th percentile of deviance values.
-#' @param full_qq Logical. If TRUE, refit all models to compute proper standardized
-#'   residuals for the QQ plot (slower but more accurate). If FALSE (default),
-#'   use an approximation based on stored deviance values.
+#' @param full_qq Deprecated. Residuals are now stored during `compare()` so
+#'   accurate QQ plots are always available without refitting.
 #'
 #' @return Invisibly returns a list with:
 #'   \item{plot}{The diagnostic plot (ggplot/cowplot grid)}
@@ -252,8 +251,9 @@ build_sample_residual_plots <- function(results, plot_data, n_sample) {
 
   selected_peps <- unique(c(high_peps, mid_peps, low_peps))
 
-  # Refit models for selected peptides and extract residuals
-  resid_data <- refit_and_extract_residuals(results, selected_peps)
+  # Extract stored residuals and fitted values
+  diag <- results$diagnostics
+  resid_data <- extract_stored_residuals(diag, selected_peps)
 
   if (nrow(resid_data) == 0) {
     return(
@@ -301,41 +301,23 @@ build_sample_residual_plots <- function(results, plot_data, n_sample) {
 }
 
 
-#' Refit GLM models and extract residuals for selected peptides
+#' Extract stored residuals and fitted values for selected peptides
 #' @keywords internal
-refit_and_extract_residuals <- function(results, peptides) {
-  data <- results$data
-  factors <- data$factors
-  compare <- results$params$compare %||% factors[1]
-
-  # Build formula
-  formula <- build_formula("value", factors, interaction = length(factors) > 1)
-
+extract_stored_residuals <- function(diagnostics, peptides) {
   resid_list <- lapply(peptides, function(pep) {
-    pep_data <- data$data[data$data$peptide == pep, ]
-    pep_data <- pep_data[!is.na(pep_data$value), ]
+    idx <- which(diagnostics$peptide == pep)
+    if (length(idx) == 0) return(NULL)
 
-    if (nrow(pep_data) < 3) return(NULL)
+    resid <- diagnostics$residuals[[idx]]
+    fitted <- diagnostics$fitted[[idx]]
 
-    # Check for positive values
-    if (any(pep_data$value <= 0)) return(NULL)
+    if (is.null(resid) || is.null(fitted)) return(NULL)
 
-    # Fit model
-    tryCatch({
-      model <- stats::glm(
-        formula,
-        data = pep_data,
-        family = stats::Gamma(link = "log")
-      )
-
-      if (!model$converged) return(NULL)
-
-      data.frame(
-        peptide = pep,
-        fitted = stats::fitted(model),
-        residual = stats::residuals(model, type = "deviance")
-      )
-    }, error = function(e) NULL)
+    data.frame(
+      peptide = pep,
+      fitted = fitted,
+      residual = resid
+    )
   })
 
   dplyr::bind_rows(resid_list)
@@ -348,14 +330,18 @@ refit_and_extract_residuals <- function(results, peptides) {
 
 #' @keywords internal
 build_pooled_qq <- function(results, plot_data, full_qq) {
-  if (full_qq) {
-    # Full refit: get standardized residuals from all models
-    pooled_resid <- get_all_residuals(results)
+  # Use stored standardized residuals from diagnostics (for QQ plot)
+  diag <- results$diagnostics
+
+  if ("std_residuals" %in% names(diag)) {
+    # Use stored standardized residuals (preferred for QQ plot)
+    pooled_resid <- unlist(diag$std_residuals[diag$converged])
+  } else if ("residuals" %in% names(diag)) {
+    # Fallback to raw residuals (older results objects)
+    pooled_resid <- unlist(diag$residuals[diag$converged])
   } else {
-    # Approximation: use deviance values directly
-    # Deviance residuals should be approximately standard normal if model fits well
-    # This is a rough approximation but avoids refitting all models
-    pooled_resid <- sqrt(plot_data$deviance) * sign(stats::rnorm(nrow(plot_data)))
+    # Last resort: refit models
+    pooled_resid <- get_all_residuals(results)
   }
 
   if (length(pooled_resid) == 0) {
@@ -373,7 +359,7 @@ build_pooled_qq <- function(results, plot_data, full_qq) {
     ggplot2::stat_qq_line(color = "red", linewidth = 1) +
     ggplot2::labs(
       title = "Pooled Residuals QQ Plot",
-      subtitle = if (full_qq) "Standardized residuals (full refit)" else "Approximate (use full_qq=TRUE for accuracy)",
+      subtitle = "Standardized deviance residuals from all peptides",
       x = "Theoretical Quantiles",
       y = "Sample Quantiles"
     ) +

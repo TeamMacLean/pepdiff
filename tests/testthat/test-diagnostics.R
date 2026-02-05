@@ -210,17 +210,23 @@ test_that("plot_fit_diagnostics handles results with some non-converged peptides
   expect_type(diag, "list")
 })
 
-test_that("plot_fit_diagnostics handles full_qq parameter", {
+test_that("residuals are stored in diagnostics and used for QQ plot", {
   results <- create_glm_results_for_diagnostics()
 
-  # Default is FALSE (approximate)
-  diag_approx <- plot_fit_diagnostics(results, full_qq = FALSE)
-  expect_type(diag_approx, "list")
+  # Check residuals are stored
+  expect_true("residuals" %in% names(results$diagnostics))
 
-  # Full QQ requires refitting (may be slower but should work)
-  # Skip if takes too long in tests
-  diag_full <- plot_fit_diagnostics(results, full_qq = TRUE)
-  expect_type(diag_full, "list")
+  # Check residuals are lists of numeric vectors
+  resid_list <- results$diagnostics$residuals
+  expect_type(resid_list, "list")
+
+  # Converged peptides should have residuals
+  converged_resid <- resid_list[results$diagnostics$converged]
+  expect_true(all(sapply(converged_resid, is.numeric)))
+
+  # Diagnostics should work and use stored residuals
+  diag <- plot_fit_diagnostics(results)
+  expect_type(diag, "list")
 })
 
 # =============================================================================

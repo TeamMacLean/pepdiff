@@ -413,7 +413,7 @@ run_models <- function(data, compare, ref = NULL, method = "glm") {
 #'
 #' @param model_results List of model results from run_models()
 #'
-#' @return A tibble with diagnostic information
+#' @return A tibble with diagnostic information including residuals and fitted values (list columns)
 #' @keywords internal
 extract_diagnostics <- function(model_results) {
   tibble::tibble(
@@ -426,7 +426,36 @@ extract_diagnostics <- function(model_results) {
     deviance = vapply(model_results, function(x) {
       dev <- x$diagnostics$deviance
       if (is.null(dev)) NA_real_ else dev
-    }, numeric(1))
+    }, numeric(1)),
+    residuals = lapply(model_results, function(x) {
+      # Raw deviance residuals (for residuals vs fitted plots)
+      if (!x$converged || is.null(x$diagnostics$model)) {
+        return(NULL)
+      }
+      tryCatch(
+        stats::residuals(x$diagnostics$model, type = "deviance"),
+        error = function(e) NULL
+      )
+    }),
+    std_residuals = lapply(model_results, function(x) {
+      # Standardized deviance residuals (for QQ plots - should be ~N(0,1))
+      if (!x$converged || is.null(x$diagnostics$model)) {
+        return(NULL)
+      }
+      tryCatch(
+        stats::rstandard(x$diagnostics$model, type = "deviance"),
+        error = function(e) NULL
+      )
+    }),
+    fitted = lapply(model_results, function(x) {
+      if (!x$converged || is.null(x$diagnostics$model)) {
+        return(NULL)
+      }
+      tryCatch(
+        stats::fitted(x$diagnostics$model),
+        error = function(e) NULL
+      )
+    })
   )
 }
 
