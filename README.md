@@ -102,7 +102,21 @@ design planning.
 
 ## Workflow
 
-    CSV --> read_pepdiff() --> pepdiff_data --> compare() --> pepdiff_results --> plot()
+``` mermaid
+flowchart LR
+    A[CSV] --> B[read_pepdiff]
+    B --> C[pepdiff_data]
+    C --> D[compare]
+    D --> E[pepdiff_results]
+    E --> F[plot]
+
+    style A fill:#FFFFCC,stroke:#BD0026
+    style B fill:#FD8D3C,stroke:#BD0026,color:#fff
+    style C fill:#FFFFCC,stroke:#BD0026
+    style D fill:#FD8D3C,stroke:#BD0026,color:#fff
+    style E fill:#FFFFCC,stroke:#BD0026
+    style F fill:#FD8D3C,stroke:#BD0026,color:#fff
+```
 
 ## Citation
 
