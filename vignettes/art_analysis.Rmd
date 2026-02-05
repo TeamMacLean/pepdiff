@@ -43,7 +43,6 @@ The alignment step is crucial - it allows the test to isolate each effect (main 
 
 **Requirements:**
 
-- ARTool package (installed separately)
 - Balanced-ish designs work best
 - Complete cases for each peptide
 
