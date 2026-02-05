@@ -45,7 +45,16 @@ The Gamma distribution models data with exactly these properties. The log link f
 
 ## Example: 2×2 factorial design
 
-Let's create data with treatment (ctrl/trt) and timepoint (0h/24h). We use 5 replicates per condition (20 total per peptide) and 3-fold effects to ensure good power for detecting both main effects and interactions.
+A **2×2 factorial design** means two factors, each with two levels. Here: treatment (ctrl, trt) × timepoint (0h, 24h). This gives four experimental conditions:
+
+|           | 0h  | 24h |
+|-----------|-----|-----|
+| **ctrl**  | ✓   | ✓   |
+| **trt**   | ✓   | ✓   |
+
+Each peptide is measured in all four conditions (with replicates), letting us ask: does treatment have an effect? Does that effect depend on timepoint?
+
+We'll use 5 replicates per condition (20 total observations per peptide) and simulate different effect patterns to see how GLM handles them.
 
 ### The simulated peptide groups
 
@@ -57,6 +66,19 @@ To illustrate how GLM handles different effect patterns, we simulate 40 peptides
 | **B** | PEP_011–020 | Timepoint effect only | No treatment effect (treatment comparison) |
 | **C** | PEP_021–030 | Interaction | Treatment works at 24h but not 0h |
 | **D** | PEP_031–040 | No effect | Nothing significant |
+
+### What these patterns look like in raw data
+
+Here's what the mean abundances look like for each group across the four conditions (using a baseline of ~10 for illustration):
+
+| Group | ctrl @ 0h | ctrl @ 24h | trt @ 0h | trt @ 24h | Pattern |
+|-------|-----------|------------|----------|-----------|---------|
+| **A** | 10 | 10 | **30** | **30** | trt 3× higher at both timepoints |
+| **B** | 10 | **30** | 10 | **30** | 24h 3× higher, same for ctrl and trt |
+| **C** | 10 | 10 | 10 | **40** | trt effect only at 24h (interaction) |
+| **D** | 10 | 10 | 10 | 10 | no differences |
+
+Notice how Group C is the tricky one: treatment has no effect at 0h (10 vs 10) but a 4-fold effect at 24h (10 vs 40). The main effect would average these, giving ~2-fold - which doesn't represent either timepoint accurately.
 
 We'll refer back to these groups as we analyse the results.
 
@@ -330,12 +352,20 @@ results$diagnostics %>%
   head()
 ```
 
-High deviance relative to other peptides may indicate poor fit. Investigate these peptides if they're in your significant results.
+The `error` column contains diagnostic messages only when models fail to converge - `NA` means no error occurred (success). The `deviance` column measures model fit: high deviance relative to other peptides may indicate poor fit. Investigate these peptides if they're in your significant results.
 
 ## Practical recommendations
 
 1. **Start simple**: Run without `within` first to get main effects
-2. **Check for interactions**: If effects differ across factor levels, use `within`
+2. **Check for interactions**: If effects differ across factor levels, use `within`. Quick check for your own data:
+    ```r
+    # Compare fold changes across strata
+    compare(dat, compare = "treatment", ref = "ctrl",
+            within = "timepoint", method = "glm")$results %>%
+      group_by(timepoint) %>%
+      summarise(median_fc = median(fold_change), .groups = "drop")
+    # If these differ substantially (e.g., 1 vs 4), you have an interaction
+    ```
 3. **Inspect convergence**: Many failures suggest the model is too complex for your data
 4. **Look at diagnostics**: Volcano and p-value histogram should look reasonable
 5. **Don't over-interpret**: These are statistical estimates, not ground truth
