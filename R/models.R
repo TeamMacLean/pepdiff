@@ -304,6 +304,12 @@ extract_contrasts_art <- function(model, specs, adjust = "none") {
 #' @return A list with model fit results and contrasts
 #' @keywords internal
 fit_and_extract_art <- function(data, response, factors, compare, peptide_id) {
+  # ARTool requires factor columns, not characters
+
+  for (f in factors) {
+    data[[f]] <- as.factor(data[[f]])
+  }
+
   # Build formula (ART uses Error term for subject/replicate)
   if (length(factors) > 1) {
     formula <- stats::as.formula(paste(

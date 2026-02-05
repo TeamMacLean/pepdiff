@@ -23,13 +23,13 @@ Imports:
     ggplot2,
     cowplot,
     emmeans,
+    ARTool,
     stats,
     magrittr,
     stringr,
     forcats,
     grid
 Suggests:
-    ARTool,
     ComplexHeatmap,
     UpSetR,
     RColorBrewer,

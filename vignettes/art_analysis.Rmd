@@ -14,9 +14,6 @@ knitr::opts_chunk$set(
   fig.width = 7,
   fig.height = 5
 )
-
-# Check if ARTool is available
-has_artool <- requireNamespace("ARTool", quietly = TRUE)
 ```
 
 ```{r setup, message = FALSE}
@@ -45,52 +42,106 @@ The alignment step is crucial - it allows the test to isolate each effect (main 
 - Ordinal data that doesn't meet interval scale assumptions
 
 **Requirements:**
+
 - ARTool package (installed separately)
 - Balanced-ish designs work best
 - Complete cases for each peptide
-```{r check-artool, echo = FALSE, results = 'asis'}
-if (!has_artool) {
-  cat("\n\n**Note:** ARTool is not installed. Code chunks in this vignette will not be evaluated. Install with `install.packages('ARTool')` to run the examples.\n\n")
-}
-```
 
-## Example data
+## Example: 2×2 factorial design
 
-We'll use data with some non-normality to show where ART helps. We use 5 replicates per cell and 3-fold effects for good power.
+A **2×2 factorial design** means two factors, each with two levels. Here: treatment (ctrl, trt) × timepoint (early, late). This gives four experimental conditions:
+
+|           | early | late |
+|-----------|-------|------|
+| **ctrl**  | ✓     | ✓    |
+| **trt**   | ✓     | ✓    |
+
+Each peptide is measured in all four conditions (with replicates), letting us ask: does treatment have an effect? Does that effect depend on timepoint?
+
+We'll use 5 replicates per condition and simulate data with heavy tails (extreme values) - exactly the scenario where ART shines.
+
+### The simulated peptide groups
+
+To illustrate how ART handles different effect patterns, we simulate 40 peptides in four groups:
+
+| Group | Peptides | Effect Pattern | What ART should find |
+|-------|----------|----------------|----------------------|
+| **A** | PEP_001–010 | Treatment effect only | Main effect significant, same at both timepoints |
+| **B** | PEP_011–020 | Timepoint effect only | No treatment effect (treatment comparison) |
+| **C** | PEP_021–030 | Interaction | Treatment works at late but not early |
+| **D** | PEP_031–040 | No effect | Nothing significant |
+
+### What these patterns look like in raw data
+
+Here's what the mean abundances look like for each group across the four conditions (using a baseline of ~10 for illustration):
+
+| Group | ctrl @ early | ctrl @ late | trt @ early | trt @ late | Pattern |
+|-------|--------------|-------------|-------------|------------|---------|
+| **A** | 10 | 10 | **30** | **30** | trt 3× higher at both timepoints |
+| **B** | 10 | **30** | 10 | **30** | late 3× higher, same for ctrl and trt |
+| **C** | 10 | 10 | 10 | **40** | trt effect only at late (interaction) |
+| **D** | 10 | 10 | 10 | 10 | no differences |
+
+Notice how Group C is the tricky one: treatment has no effect at early (10 vs 10) but a 4-fold effect at late (10 vs 40). The main effect would average these, giving ~2-fold - which doesn't represent either timepoint accurately.
+
+We'll refer back to these groups as we analyse the results.
 
 ```{r generate-data}
 set.seed(789)
 
-n_peptides <- 30
-n_reps <- 5  # 5 reps per cell for good power
+n_peptides <- 40
+n_reps <- 5  # 5 reps per condition = 20 observations per peptide
 
 peptides <- paste0("PEP_", sprintf("%03d", 1:n_peptides))
 genes <- paste0("GENE_", LETTERS[((1:n_peptides - 1) %% 26) + 1])
 
-# Generate data with heavier tails (more extreme values)
-sim_data <- expand.grid(
+# Step 1: Create base abundance for each peptide
+peptide_info <- tibble(
+
+  peptide = peptides,
+  gene_id = genes,
+  pep_num = 1:n_peptides,
+  base = rgamma(n_peptides, shape = 6, rate = 0.6)
+)
+
+# Step 2: Create the experimental design
+design <- expand.grid(
   peptide = peptides,
   treatment = c("ctrl", "trt"),
   timepoint = c("early", "late"),
   bio_rep = 1:n_reps,
   stringsAsFactors = FALSE
-) %>%
-  mutate(
-    gene_id = genes[match(peptide, peptides)],
-    pep_num = as.numeric(gsub("PEP_", "", peptide)),
-    base = rep(rgamma(n_peptides, shape = 3, rate = 0.3), each = 4 * n_reps),
+)
 
-    # Treatment effect for peptides 1-10: 3-fold
+# Step 3: Join design with peptide info and apply effects
+# Using heavier-tailed noise to justify ART
+sim_data <- design %>%
+  left_join(peptide_info, by = "peptide") %>%
+  mutate(
+    # Group A (peptides 1-10): Treatment effect only
+    # trt is 3-fold higher than ctrl, same at both timepoints
     trt_effect = ifelse(pep_num <= 10 & treatment == "trt", 3, 1),
 
-    # Timepoint effect for peptides 11-15: 3-fold
-    time_effect = ifelse(pep_num > 10 & pep_num <= 15 & timepoint == "late", 3, 1),
+    # Group B (peptides 11-20): Timepoint effect only
+    # late is 3-fold higher than early, same for both treatments
+    time_effect = ifelse(pep_num > 10 & pep_num <= 20 & timepoint == "late", 3, 1),
 
-    # Add some extreme values (heavy tails)
-    noise = rgamma(n(), shape = 3, rate = 3),
-    extreme = ifelse(runif(n()) < 0.05, runif(n(), 2, 5), 1),
+    # Group C (peptides 21-30): Interaction
+    # Treatment works at late (4-fold) but NOT at early
+    int_effect = case_when(
+      pep_num > 20 & pep_num <= 30 & treatment == "trt" & timepoint == "late" ~ 4,
+      TRUE ~ 1
+    ),
 
-    value = base * trt_effect * time_effect * noise * extreme
+    # Group D (peptides 31-40): No effect
+    # All effect multipliers are 1
+
+    # Add heavy-tailed noise (occasional extreme values)
+    # This is why we might prefer ART over GLM
+    extreme = ifelse(runif(n()) < 0.05, runif(n(), 2, 4), 1),
+
+    # Final abundance with Gamma noise and occasional extremes
+    value = rgamma(n(), shape = 10, rate = 10 / (base * trt_effect * time_effect * int_effect)) * extreme
   ) %>%
   select(peptide, gene_id, treatment, timepoint, bio_rep, value)
 
@@ -106,11 +157,13 @@ dat <- read_pepdiff(
   factors = c("treatment", "timepoint"),
   replicate = "bio_rep"
 )
+
+dat
 ```
 
 ## Running ART analysis
 
-```{r run-art, message = FALSE, eval = has_artool}
+```{r run-art, message = FALSE}
 results_art <- compare(
   dat,
   compare = "treatment",
@@ -123,23 +176,119 @@ results_art
 
 The interface is identical to GLM - just change `method = "art"`.
 
+### Did ART find the treatment effects?
+
+Since we simulated this data, we know the truth:
+
+- **Group A**: 3-fold treatment effect at both timepoints
+- **Group B**: No treatment effect (the timepoint change affects ctrl and trt equally)
+- **Group C**: 4-fold treatment effect at late, but no effect at early
+- **Group D**: No effect
+
+Let's see what ART finds:
+
+```{r view-results}
+results_art$results %>%
+  mutate(
+    pep_num = as.numeric(gsub("PEP_", "", peptide)),
+    group = case_when(
+      pep_num <= 10 ~ "A: Treatment only",
+      pep_num <= 20 ~ "B: Timepoint only",
+      pep_num <= 30 ~ "C: Interaction",
+      TRUE ~ "D: No effect"
+    )
+  ) %>%
+  group_by(group) %>%
+  summarise(
+    n_significant = sum(significant),
+    n_peptides = n(),
+    median_fc = round(median(fold_change, na.rm = TRUE), 2)
+  )
+```
+
+- **Group A**: Treatment effect detected ✓
+- **Group B**: Correctly negative (no treatment effect) ✓
+- **Group C**: Detected, but note the diluted fold change (~2 instead of 4) - the main effect averages across timepoints
+- **Group D**: Correctly negative ✓
+
+```{r plot-art-results, fig.height = 6}
+plot(results_art)
+```
+
+## Stratified comparisons with `within`
+
+Just like GLM, use `within` to get treatment effects at each timepoint separately:
+
+```{r art-stratified, message = FALSE}
+results_strat <- compare(
+  dat,
+  compare = "treatment",
+  ref = "ctrl",
+  within = "timepoint",
+  method = "art"
+)
+
+results_strat
+```
+
+### Stratified results by group
+
+Let's see how each group looks when we analyse timepoints separately:
+
+```{r view-stratified}
+results_strat$results %>%
+  mutate(
+    pep_num = as.numeric(gsub("PEP_", "", peptide)),
+    group = case_when(
+      pep_num <= 10 ~ "A: Treatment only",
+      pep_num <= 20 ~ "B: Timepoint only",
+      pep_num <= 30 ~ "C: Interaction",
+      TRUE ~ "D: No effect"
+    )
+  ) %>%
+  group_by(group, timepoint) %>%
+  summarise(
+    n_significant = sum(significant),
+    median_fc = round(median(fold_change, na.rm = TRUE), 2),
+    .groups = "drop"
+  ) %>%
+  tidyr::pivot_wider(
+    names_from = timepoint,
+    values_from = c(n_significant, median_fc)
+  )
+```
+
+**What stratified analysis reveals:**
+
+- **Group A**: FC ≈ 3 at both timepoints — the main effect was accurate
+- **Group B**: FC ≈ 1 at both timepoints, 0 significant — correctly negative at both
+- **Group C**: FC ≈ 1 at early, FC ≈ 4 at late — now we see the true effect!
+- **Group D**: FC ≈ 1 at both, ~0 significant — correctly negative
+
+For Group C, stratified analysis recovers the true 4-fold effect at late that was diluted in the main effect.
+
+## Handling interactions
+
+Group C illustrates an **interaction**: the treatment effect depends on timepoint. ART handles this the same way as GLM - use `within` to get conditional effects at each level.
+
+For more details on interpreting interactions, see `vignette("glm_analysis")`.
+
 ## ART vs GLM comparison
 
 Let's compare both methods on the same data:
 
-```{r compare-methods, message = FALSE, eval = has_artool}
+```{r compare-methods, message = FALSE}
 results_glm <- compare(dat, compare = "treatment", ref = "ctrl", method = "glm")
-results_art <- compare(dat, compare = "treatment", ref = "ctrl", method = "art")
 ```
 
-```{r compare-significant, eval = has_artool}
+```{r compare-significant}
 # Compare significant calls
 comparison <- tibble(
   peptide = results_glm$results$peptide,
   glm_sig = results_glm$results$significant,
   art_sig = results_art$results$significant,
-  glm_pval = results_glm$results$p_value,
-  art_pval = results_art$results$p_value
+  glm_pval = round(results_glm$results$p_value, 4),
+  art_pval = round(results_art$results$p_value, 4)
 )
 
 # Agreement
@@ -151,7 +300,7 @@ cat("Neither:", sum(!comparison$glm_sig & !comparison$art_sig), "\n")
 
 When both methods agree, you can be confident in the result. When they disagree, investigate the peptide:
 
-```{r disagreements, eval = has_artool}
+```{r disagreements}
 # Peptides where methods disagree
 disagreements <- comparison %>%
   filter(glm_sig != art_sig) %>%
@@ -164,46 +313,57 @@ if (nrow(disagreements) > 0) {
 }
 ```
 
-## Interpreting ART results
-
-ART results include fold changes and p-values like GLM, but with a caveat:
-
-```{r view-art-results, eval = has_artool}
-head(results_art$results)
-```
-
-**Fold changes from ART:** These are estimated from the ranked data, so they're more robust to outliers but may differ from arithmetic fold changes. They indicate direction and relative magnitude, but don't interpret them as precise multiplicative effects.
-
-**P-values:** Non-parametric p-values testing whether ranks differ systematically between groups.
-
-## Stratified comparisons
-
-Just like GLM, you can use `within`:
-
-```{r art-stratified, message = FALSE, eval = has_artool}
-results_strat <- compare(
-  dat,
-  compare = "treatment",
-  ref = "ctrl",
-  within = "timepoint",
-  method = "art"
-)
-
-results_strat$results %>%
-  filter(peptide == "PEP_001") %>%
-  select(peptide, comparison, fold_change, p_value)
-```
-
 ## Diagnostics
 
-```{r art-diagnostics, fig.height = 6, eval = has_artool}
-plot(results_art)
+```{r art-diagnostics}
+results_art$diagnostics %>%
+  head()
+```
+
+The `error` column contains diagnostic messages only when models fail - `NA` means success. Check convergence:
+
+```{r check-convergence}
+n_converged <- sum(results_art$diagnostics$converged)
+n_failed <- sum(!results_art$diagnostics$converged)
+
+cat("Converged:", n_converged, "\n")
+cat("Failed:", n_failed, "\n")
 ```
 
 The same diagnostic plots apply:
+
 - Volcano should be symmetric
 - P-value histogram should show uniform + spike pattern
 - Fold change distribution should centre near zero
+
+## Exporting results
+
+The results are stored in a tidy tibble:
+
+```{r results-structure}
+glimpse(results_art$results)
+```
+
+Stratified results include the timepoint column:
+
+```{r stratified-structure}
+glimpse(results_strat$results)
+```
+
+Save to CSV for downstream analysis:
+
+```{r export-results, eval = FALSE}
+# All results
+write.csv(results_art$results, "art_results.csv", row.names = FALSE)
+
+# Significant hits only
+results_art$results %>%
+  filter(significant) %>%
+  write.csv("art_significant.csv", row.names = FALSE)
+
+# Stratified results
+write.csv(results_strat$results, "art_stratified.csv", row.names = FALSE)
+```
 
 ## Limitations of ART
 

@@ -370,6 +370,10 @@ get_comparison.pepdiff_results <- function(x, comparison) {
 #' @keywords internal
 #' @importFrom rlang .data
 build_results_tibble <- function(model_results, data, compare, method, alpha, fdr_method) {
+  # Get reference level (first level alphabetically, or use data)
+  all_levels <- sort(unique(data$data[[compare]]))
+  ref_level <- all_levels[1]
+
   # Extract contrasts from each peptide
   results_list <- lapply(names(model_results), function(pep) {
     res <- model_results[[pep]]
@@ -383,12 +387,25 @@ build_results_tibble <- function(model_results, data, compare, method, alpha, fd
     # Get gene_id for this peptide
     gene_id <- unique(data$data$gene_id[data$data$peptide == pep])[1]
 
+    # Calculate fold change from raw data if not in contrasts (e.g., for ART)
+    if ("fold_change" %in% names(contrasts)) {
+      fc <- contrasts$fold_change
+    } else {
+      # Calculate from raw data
+      pep_data <- data$data[data$data$peptide == pep, ]
+      ref_mean <- mean(pep_data$value[pep_data[[compare]] == ref_level], na.rm = TRUE)
+      trt_levels <- setdiff(all_levels, ref_level)
+      # Use first treatment level for fold change calculation
+      trt_mean <- mean(pep_data$value[pep_data[[compare]] == trt_levels[1]], na.rm = TRUE)
+      fc <- if (ref_mean > 0) trt_mean / ref_mean else NA_real_
+    }
+
     tibble::tibble(
       peptide = pep,
       gene_id = gene_id,
       comparison = contrasts$contrast,
-      fold_change = if ("fold_change" %in% names(contrasts)) contrasts$fold_change else NA_real_,
-      log2_fc = if ("fold_change" %in% names(contrasts)) log2(contrasts$fold_change) else NA_real_,
+      fold_change = fc,
+      log2_fc = if (!is.na(fc) && fc > 0) log2(fc) else NA_real_,
       estimate = if ("estimate" %in% names(contrasts)) contrasts$estimate else NA_real_,
       se = if ("se" %in% names(contrasts)) contrasts$se else NA_real_,
       test = method,
