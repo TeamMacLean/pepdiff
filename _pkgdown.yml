@@ -35,7 +35,10 @@ reference:
   contents:
   - read_pepdiff
   - combine_tech_reps
-  - pepdiff_data
+  - new_pepdiff_data
+  - print.pepdiff_data
+  - summary.pepdiff_data
+  - plot.pepdiff_data
 
 - title: Analysis
   desc: Run differential abundance analysis
@@ -44,6 +47,10 @@ reference:
   - significant
   - get_peptide
   - get_comparison
+  - new_pepdiff_results
+  - print.pepdiff_results
+  - summary.pepdiff_results
+  - plot.pepdiff_results
 
 - title: Diagnostics
   desc: Check model fit and convergence
@@ -54,12 +61,6 @@ reference:
   desc: Plot functions for data and results
   contents:
   - starts_with("plot_")
-
-- title: Classes
-  desc: S3 class documentation
-  contents:
-  - pepdiff_data
-  - pepdiff_results
 
 home:
   links:
