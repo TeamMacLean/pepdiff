@@ -35,32 +35,141 @@ reference:
   contents:
   - read_pepdiff
   - combine_tech_reps
+  - import_data
   - new_pepdiff_data
+  - validate_pepdiff_data
   - print.pepdiff_data
   - summary.pepdiff_data
+  - subset.pepdiff_data
   - plot.pepdiff_data
 
 - title: Analysis
   desc: Run differential abundance analysis
   contents:
   - compare
+  - compare_glm
+  - compare_art
+  - compare_pairwise
+  - compare_pairwise_rankprod
+  - compare_within_strata
   - significant
   - get_peptide
   - get_comparison
+
+- title: Results
+
+  desc: Results class and methods
+  contents:
   - new_pepdiff_results
+  - validate_pepdiff_results
   - print.pepdiff_results
   - summary.pepdiff_results
   - plot.pepdiff_results
+  - long_results
+  - build_results_tibble
+  - build_pairwise_results
 
 - title: Diagnostics
   desc: Check model fit and convergence
   contents:
   - plot_fit_diagnostics
+  - extract_diagnostics
+  - extract_stored_residuals
+  - get_all_residuals
+  - print_diagnostic_summary
 
 - title: Visualization
   desc: Plot functions for data and results
   contents:
-  - starts_with("plot_")
+  - plot_pca
+  - plot_pca_simple
+  - plot_heatmap
+  - plot_volcano_new
+  - plot_volcano_bf
+  - plot_pvalue_histogram
+  - plot_fc_distribution_new
+  - plot_bf_distribution
+  - plot_distributions_simple
+  - plot_missingness_simple
+  - plot_quant_distributions
+  - plot_fc
+  - plot_kmeans
+  - plot_result
+  - volcano_plot
+  - p_value_hist
+  - fc_qqplot
+  - norm_qqplot
+  - missing_peptides_plot
+  - times_measured_plot
+
+- title: Statistical Tests
+  desc: Individual test implementations
+  contents:
+  - test_wilcoxon
+  - test_bootstrap_t
+  - test_bayes_t
+  - test_rankprod
+  - jzs_bf_approx
+  - classify_bf_evidence
+  - calc_t_statistic
+  - calc_rank_product
+  - build_replicate_matrix
+
+- title: Model Fitting
+  desc: GLM and ART model fitting internals
+  contents:
+  - fit_glm
+  - fit_art
+  - fit_and_extract_glm
+  - fit_and_extract_art
+  - extract_contrasts_glm
+  - extract_contrasts_art
+  - run_models
+  - has_sufficient_variation
+  - build_formula
+
+- title: Data Utilities
+  desc: Helper functions for data manipulation
+  contents:
+  - assess_missing
+  - compute_missingness
+  - compute_design_summary
+  - times_measured
+  - fold_change_matrix
+  - matrix_data
+  - list2mat
+  - mean_fold_change
+  - log2_fc
+  - apply_fdr_by_comparison
+
+- title: Legacy Functions
+  desc: Deprecated functions from earlier versions
+  contents:
+  - compare.data.frame
+  - compare_legacy
+  - compare_many
+  - compare_calls
+  - get_sig_rows
+  - estimate_result_clusters
+  - kmeans_by_selected_cols
+  - get_bootstrap_percentile
+  - get_wilcoxon_percentile
+  - get_kruskal_percentile
+  - get_rp_percentile
+  - get_percentile_lowest_observed_value_iterative
+  - select_columns_for_contrast
+  - min_peptide_values
+  - replace_vals
+  - metrics
+
+- title: Internal Utilities
+  desc: Internal helper functions
+  contents:
+  - validate_factors
+  - validate_positive
+  - check_zeros
+  - is_useable
+  - pipe
 
 home:
   links:
