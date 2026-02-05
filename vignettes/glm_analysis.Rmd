@@ -221,14 +221,14 @@ results_stratified$results %>%
       TRUE ~ "D: No effect"
     )
   ) %>%
-  group_by(group, comparison) %>%
+  group_by(group, timepoint) %>%
   summarise(
     n_significant = sum(significant),
     median_fc = round(median(fold_change, na.rm = TRUE), 2),
     .groups = "drop"
   ) %>%
   tidyr::pivot_wider(
-    names_from = comparison,
+    names_from = timepoint,
     values_from = c(n_significant, median_fc)
   )
 ```
@@ -271,9 +271,9 @@ strat_summary <- results_stratified$results %>%
       pep_num <= 30 ~ "C", TRUE ~ "D"
     )
   ) %>%
-  group_by(group, comparison) %>%
+  group_by(group, timepoint) %>%
   summarise(fc = round(median(fold_change, na.rm = TRUE), 2), .groups = "drop") %>%
-  tidyr::pivot_wider(names_from = comparison, values_from = fc)
+  tidyr::pivot_wider(names_from = timepoint, values_from = fc)
 
 left_join(main_summary, strat_summary, by = "group")
 ```
