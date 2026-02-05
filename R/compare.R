@@ -104,7 +104,10 @@ compare.pepdiff_data <- function(data, compare, ref,
   }
 
   # Dispatch to appropriate method
-  if (method == "pairwise") {
+  # If 'within' is specified, run stratified analysis for all methods
+  if (!is.null(within)) {
+    results <- compare_within_strata(data, compare, ref, within, method, test, alpha, fdr_method, bf_threshold)
+  } else if (method == "pairwise") {
     results <- compare_pairwise(data, compare, ref, within, test, alpha, fdr_method, bf_threshold)
   } else if (method == "glm") {
     results <- compare_glm(data, compare, ref, within, alpha, fdr_method)
@@ -525,7 +528,7 @@ build_replicate_matrix <- function(data, compare, level) {
 #'
 #' @return Combined results across strata
 #' @keywords internal
-compare_within_strata <- function(data, compare, ref, within, method, test, alpha, fdr_method) {
+compare_within_strata <- function(data, compare, ref, within, method, test, alpha, fdr_method, bf_threshold = 3) {
   # Get all unique combinations of within factors
   within_data <- unique(data$data[, within, drop = FALSE])
 
@@ -544,10 +547,12 @@ compare_within_strata <- function(data, compare, ref, within, method, test, alph
     }
     subset_data$data <- data$data[subset_idx, ]
     subset_data$peptides <- unique(subset_data$data$peptide)
+    # Exclude 'within' factors from model (they're constant within stratum)
+    subset_data$factors <- setdiff(data$factors, within)
 
     # Run analysis on subset
     if (method == "pairwise") {
-      stratum_results <- compare_pairwise(subset_data, compare, ref, NULL, test, alpha, fdr_method)
+      stratum_results <- compare_pairwise(subset_data, compare, ref, NULL, test, alpha, fdr_method, bf_threshold)
     } else if (method == "glm") {
       stratum_results <- compare_glm(subset_data, compare, ref, NULL, alpha, fdr_method)
     } else {
