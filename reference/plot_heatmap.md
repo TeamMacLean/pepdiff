@@ -1,0 +1,74 @@
+# makes heatmap from all experiments, filter on a single metric and sig value
+
+reduces dataframes and makes long list, makes a basic heatmap. Use
+\`fold_change_matrix()\` to extract data in a heatmappable format
+
+## Usage
+
+``` r
+plot_heatmap(
+  l,
+  sig_level = 0.05,
+  metric = "bootstrap_t_fdr",
+  log = TRUE,
+  base = 2,
+  col_order = NULL,
+  sig_only = TRUE,
+  pal = "RdBu",
+  lgd_x = 1.7,
+  lgd_y = 1,
+  padding = c(0, 0, 0, 3)
+)
+```
+
+## Arguments
+
+- l:
+
+  list of results, usually from \`compare_many()\`
+
+- sig_level:
+
+  significance level cutoff
+
+- metric:
+
+  the test metric used to determine significance one of:
+  \`bootstrap_t_p_val\`, \`bootstrap_t_fdr\` \`wilcoxon_p_val\`,
+  \`wilcoxon_fdr\` \`kruskal_p_val\`, \`kruskal_fdr\`
+  \`rank_prod_p1_p_val\`, \`rank_prod_p2_p_val\`, \`rank_prod_p1_fdr\`,
+  \`rank_prod_p2_fdr\`.
+
+- log:
+
+  whether to log the data
+
+- base:
+
+  base used in logging (default = 2)
+
+- col_order:
+
+  specify a column order for the plot, default is names(l)
+
+- sig_only:
+
+  return only rows with 1 or more values significant at \`sig_level\` of
+  \`metric\`
+
+- pal:
+
+  cbrewer palette to use "RdBu", needs minimum 11 colours
+
+- lgd_x:
+
+  x offset of legend placement in \`in\` units
+
+- lgd_y:
+
+  y offset of legend placement in \`in\` units
+
+- padding:
+
+  vector of padding values to pass to ComplexHeatmap::draw for padding
+  of heatmap sections

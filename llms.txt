@@ -1,0 +1,397 @@
+# pepdiff
+
+**Differential abundance analysis for proteomics data.**
+
+pepdiff helps proteomics researchers answer: “What’s differentially
+abundant?”
+
+## Features
+
+- **GLM analysis** – Gamma GLM with emmeans for factorial designs
+- **ART analysis** – Non-parametric alternative for heavy-tailed data
+- **Pairwise tests** – Wilcoxon, bootstrap-t, Bayes factor, rank
+  products
+- **Stratified comparisons** – Analyse effects within factor levels
+- **Fit diagnostics** – Visual checks for GLM model assumptions
+- **Rich visualizations** – Volcano plots, heatmaps, PCA, p-value
+  histograms
+
+## Installation
+
+Install from GitHub:
+
+``` r
+# install.packages("pak")
+pak::pak("TeamMacLean/pepdiff")
+```
+
+## Quick Start
+
+``` r
+library(pepdiff)
+
+# Import data
+dat <- read_pepdiff(
+  "data.csv",
+  id = "peptide",
+  gene = "gene_id",
+  value = "abundance",
+  factors = c("treatment", "timepoint"),
+  replicate = "bio_rep"
+)
+
+# Run differential analysis
+results <- compare(
+  dat,
+  compare = "treatment",
+  ref = "ctrl",
+  method = "glm"
+)
+
+# Visualize results
+plot(results)
+```
+
+## Documentation
+
+- **[Getting
+  Started](https://teammaclean.github.io/pepdiff/articles/basic_workflow.html)**
+  – Basic workflow
+- **[GLM
+  Analysis](https://teammaclean.github.io/pepdiff/articles/glm_analysis.html)**
+  – Factorial designs with GLM
+- **[ART
+  Analysis](https://teammaclean.github.io/pepdiff/articles/art_analysis.html)**
+  – Non-parametric alternative
+- **[Checking Model
+  Fit](https://teammaclean.github.io/pepdiff/articles/checking_fit.html)**
+  – Diagnostic plots
+- **[Pairwise
+  Tests](https://teammaclean.github.io/pepdiff/articles/pairwise_tests.html)**
+  – Direct two-group comparisons
+- **[Function
+  Reference](https://teammaclean.github.io/pepdiff/reference/index.html)**
+  – Full API
+
+## Companion Package
+
+**peppwR** answers “How many samples do I need?” (power analysis)
+**pepdiff** answers “What’s differentially abundant?” (analysis)
+
+See [peppwR](https://github.com/TeamMacLean/peppwR) for experimental
+design planning.
+
+## Workflow
+
+``` mermaid
+flowchart LR
+    A[CSV] --> B[read_pepdiff]
+    B --> C[pepdiff_data]
+    C --> D[compare]
+    D --> E[pepdiff_results]
+    E --> F[plot]
+
+    style A fill:#FFFFCC,stroke:#BD0026
+    style B fill:#FD8D3C,stroke:#BD0026,color:#fff
+    style C fill:#FFFFCC,stroke:#BD0026
+    style D fill:#FD8D3C,stroke:#BD0026,color:#fff
+    style E fill:#FFFFCC,stroke:#BD0026
+    style F fill:#FD8D3C,stroke:#BD0026,color:#fff
+```
+
+## Citation
+
+If you use pepdiff in your research, please cite:
+
+``` R
+MacLean, D. (2026). pepdiff: Differential Abundance Analysis for
+Proteomics Data. R package version 1.0.0.
+https://github.com/TeamMacLean/pepdiff
+```
+
+## Contributing
+
+Contributions welcome! Please open an
+[issue](https://github.com/TeamMacLean/pepdiff/issues) or submit a pull
+request.
+
+## License
+
+MIT
+
+# Package index
+
+## Import & Data
+
+Import data and create pepdiff_data objects
+
+- [`read_pepdiff()`](https://teammaclean.github.io/pepdiff/reference/read_pepdiff.md)
+  : Read proteomics data into a pepdiff_data object
+- [`combine_tech_reps()`](https://teammaclean.github.io/pepdiff/reference/combine_tech_reps.md)
+  : Combine technical replicates
+- [`import_data()`](https://teammaclean.github.io/pepdiff/reference/import_data.md)
+  : read data from a file
+- [`new_pepdiff_data()`](https://teammaclean.github.io/pepdiff/reference/new_pepdiff_data.md)
+  : Create a new pepdiff_data object
+- [`validate_pepdiff_data()`](https://teammaclean.github.io/pepdiff/reference/validate_pepdiff_data.md)
+  : Validate a pepdiff_data object
+- [`print(`*`<pepdiff_data>`*`)`](https://teammaclean.github.io/pepdiff/reference/print.pepdiff_data.md)
+  : Print method for pepdiff_data
+- [`summary(`*`<pepdiff_data>`*`)`](https://teammaclean.github.io/pepdiff/reference/summary.pepdiff_data.md)
+  : Summary method for pepdiff_data
+- [`subset(`*`<pepdiff_data>`*`)`](https://teammaclean.github.io/pepdiff/reference/subset.pepdiff_data.md)
+  : Subset a pepdiff_data object
+- [`plot(`*`<pepdiff_data>`*`)`](https://teammaclean.github.io/pepdiff/reference/plot.pepdiff_data.md)
+  : Plot method for pepdiff_data
+
+## Analysis
+
+Run differential abundance analysis
+
+- [`compare()`](https://teammaclean.github.io/pepdiff/reference/compare.md)
+  : Compare peptide abundances between conditions
+- [`compare_glm()`](https://teammaclean.github.io/pepdiff/reference/compare_glm.md)
+  : Compare using GLM
+- [`compare_art()`](https://teammaclean.github.io/pepdiff/reference/compare_art.md)
+  : Compare using ART
+- [`compare_pairwise()`](https://teammaclean.github.io/pepdiff/reference/compare_pairwise.md)
+  : Compare using pairwise tests
+- [`compare_pairwise_rankprod()`](https://teammaclean.github.io/pepdiff/reference/compare_pairwise_rankprod.md)
+  : Compare using Rank Products (full matrix approach)
+- [`compare_within_strata()`](https://teammaclean.github.io/pepdiff/reference/compare_within_strata.md)
+  : Compare within strata
+- [`significant()`](https://teammaclean.github.io/pepdiff/reference/significant.md)
+  : Extract significant results
+- [`get_peptide()`](https://teammaclean.github.io/pepdiff/reference/get_peptide.md)
+  : Get results for a specific peptide
+- [`get_comparison()`](https://teammaclean.github.io/pepdiff/reference/get_comparison.md)
+  : Get results for a specific comparison
+
+## Results
+
+Results class and methods
+
+- [`new_pepdiff_results()`](https://teammaclean.github.io/pepdiff/reference/new_pepdiff_results.md)
+  : Create a new pepdiff_results object
+- [`validate_pepdiff_results()`](https://teammaclean.github.io/pepdiff/reference/validate_pepdiff_results.md)
+  : Validate a pepdiff_results object
+- [`print(`*`<pepdiff_results>`*`)`](https://teammaclean.github.io/pepdiff/reference/print.pepdiff_results.md)
+  : Print method for pepdiff_results
+- [`summary(`*`<pepdiff_results>`*`)`](https://teammaclean.github.io/pepdiff/reference/summary.pepdiff_results.md)
+  : Summary method for pepdiff_results
+- [`plot(`*`<pepdiff_results>`*`)`](https://teammaclean.github.io/pepdiff/reference/plot.pepdiff_results.md)
+  : Plot method for pepdiff_results
+- [`long_results()`](https://teammaclean.github.io/pepdiff/reference/long_results.md)
+  : Convert wide format results table to long format
+- [`build_results_tibble()`](https://teammaclean.github.io/pepdiff/reference/build_results_tibble.md)
+  : Build results tibble from model output
+- [`build_pairwise_results()`](https://teammaclean.github.io/pepdiff/reference/build_pairwise_results.md)
+  : Build results tibble from pairwise tests
+
+## Diagnostics
+
+Check model fit and convergence
+
+- [`plot_fit_diagnostics()`](https://teammaclean.github.io/pepdiff/reference/plot_fit_diagnostics.md)
+  : Plot GLM fit diagnostics
+- [`extract_diagnostics()`](https://teammaclean.github.io/pepdiff/reference/extract_diagnostics.md)
+  : Extract model diagnostics
+- [`extract_stored_residuals()`](https://teammaclean.github.io/pepdiff/reference/extract_stored_residuals.md)
+  : Extract stored residuals and fitted values for selected peptides
+- [`get_all_residuals()`](https://teammaclean.github.io/pepdiff/reference/get_all_residuals.md)
+  : Get standardized residuals from all peptide models
+- [`print_diagnostic_summary()`](https://teammaclean.github.io/pepdiff/reference/print_diagnostic_summary.md)
+  : Print diagnostic summary to console
+
+## Visualization
+
+Plot functions for data and results
+
+- [`plot_pca()`](https://teammaclean.github.io/pepdiff/reference/plot_pca.md)
+  : plots a pca on the treatment, seconds, bio-rep
+- [`plot_pca_simple()`](https://teammaclean.github.io/pepdiff/reference/plot_pca_simple.md)
+  : Simple PCA plot for pepdiff_data
+- [`plot_heatmap()`](https://teammaclean.github.io/pepdiff/reference/plot_heatmap.md)
+  : makes heatmap from all experiments, filter on a single metric and
+  sig value
+- [`plot_volcano_new()`](https://teammaclean.github.io/pepdiff/reference/plot_volcano_new.md)
+  : Volcano plot for pepdiff_results
+- [`plot_volcano_bf()`](https://teammaclean.github.io/pepdiff/reference/plot_volcano_bf.md)
+  : Volcano plot for Bayes factor results
+- [`plot_pvalue_histogram()`](https://teammaclean.github.io/pepdiff/reference/plot_pvalue_histogram.md)
+  : P-value histogram for pepdiff_results
+- [`plot_fc_distribution_new()`](https://teammaclean.github.io/pepdiff/reference/plot_fc_distribution_new.md)
+  : Fold change distribution for pepdiff_results
+- [`plot_bf_distribution()`](https://teammaclean.github.io/pepdiff/reference/plot_bf_distribution.md)
+  : Bayes factor distribution plot
+- [`plot_distributions_simple()`](https://teammaclean.github.io/pepdiff/reference/plot_distributions_simple.md)
+  : Simple distribution plot for pepdiff_data
+- [`plot_missingness_simple()`](https://teammaclean.github.io/pepdiff/reference/plot_missingness_simple.md)
+  : Simple missingness plot for pepdiff_data
+- [`plot_quant_distributions()`](https://teammaclean.github.io/pepdiff/reference/plot_quant_distributions.md)
+  : draw density plots for data
+- [`plot_fc()`](https://teammaclean.github.io/pepdiff/reference/plot_fc.md)
+  : plot histogram of fold change distribution for a comparison
+- [`plot_kmeans()`](https://teammaclean.github.io/pepdiff/reference/plot_kmeans.md)
+  : K-means cluster the data on the samples
+- [`plot_result()`](https://teammaclean.github.io/pepdiff/reference/plot_result.md)
+  : plot the p-values against fold change for the tests used in
+  \`compare()\`
+- [`volcano_plot()`](https://teammaclean.github.io/pepdiff/reference/volcano_plot.md)
+  : volcano plot the data
+- [`p_value_hist()`](https://teammaclean.github.io/pepdiff/reference/p_value_hist.md)
+  : plot histograms of p-values for each test used
+- [`fc_qqplot()`](https://teammaclean.github.io/pepdiff/reference/fc_qqplot.md)
+  : plot qqplot of fold changes from a comparison
+- [`norm_qqplot()`](https://teammaclean.github.io/pepdiff/reference/norm_qqplot.md)
+  : draw qqplots for data
+- [`missing_peptides_plot()`](https://teammaclean.github.io/pepdiff/reference/missing_peptides_plot.md)
+  : plot the representation of peptides in each group.
+- [`times_measured_plot()`](https://teammaclean.github.io/pepdiff/reference/times_measured_plot.md)
+  : plot the count of the number of times peptides were measured.
+
+## Statistical Tests
+
+Individual test implementations
+
+- [`test_wilcoxon()`](https://teammaclean.github.io/pepdiff/reference/test_wilcoxon.md)
+  : Wilcoxon rank-sum test for two groups
+- [`test_bootstrap_t()`](https://teammaclean.github.io/pepdiff/reference/test_bootstrap_t.md)
+  : Bootstrap t-test for two groups
+- [`test_bayes_t()`](https://teammaclean.github.io/pepdiff/reference/test_bayes_t.md)
+  : Bayes factor t-test for two groups
+- [`test_rankprod()`](https://teammaclean.github.io/pepdiff/reference/test_rankprod.md)
+  : Rank products test for two groups
+- [`jzs_bf_approx()`](https://teammaclean.github.io/pepdiff/reference/jzs_bf_approx.md)
+  : JZS Bayes factor approximation
+- [`classify_bf_evidence()`](https://teammaclean.github.io/pepdiff/reference/classify_bf_evidence.md)
+  : Classify Bayes factor into evidence categories
+- [`calc_t_statistic()`](https://teammaclean.github.io/pepdiff/reference/calc_t_statistic.md)
+  : Calculate t-statistic for two groups
+- [`calc_rank_product()`](https://teammaclean.github.io/pepdiff/reference/calc_rank_product.md)
+  : Calculate rank products for two groups
+- [`build_replicate_matrix()`](https://teammaclean.github.io/pepdiff/reference/build_replicate_matrix.md)
+  : Build replicate matrix from pepdiff_data
+
+## Model Fitting
+
+GLM and ART model fitting internals
+
+- [`fit_glm()`](https://teammaclean.github.io/pepdiff/reference/fit_glm.md)
+  : Fit a Gamma GLM for a single peptide
+- [`fit_art()`](https://teammaclean.github.io/pepdiff/reference/fit_art.md)
+  : Fit an Aligned Rank Transform model for a single peptide
+- [`fit_and_extract_glm()`](https://teammaclean.github.io/pepdiff/reference/fit_and_extract_glm.md)
+  : Fit GLM and extract contrasts for one peptide
+- [`fit_and_extract_art()`](https://teammaclean.github.io/pepdiff/reference/fit_and_extract_art.md)
+  : Fit ART and extract contrasts for one peptide
+- [`extract_contrasts_glm()`](https://teammaclean.github.io/pepdiff/reference/extract_contrasts_glm.md)
+  : Extract contrasts from a fitted GLM using emmeans
+- [`extract_contrasts_art()`](https://teammaclean.github.io/pepdiff/reference/extract_contrasts_art.md)
+  : Extract contrasts from a fitted ART model
+- [`run_models()`](https://teammaclean.github.io/pepdiff/reference/run_models.md)
+  : Run statistical model for all peptides
+- [`has_sufficient_variation()`](https://teammaclean.github.io/pepdiff/reference/has_sufficient_variation.md)
+  : Check if a model has enough variation to fit
+- [`build_formula()`](https://teammaclean.github.io/pepdiff/reference/build_formula.md)
+  : Build formula from factor names
+
+## Data Utilities
+
+Helper functions for data manipulation
+
+- [`assess_missing()`](https://teammaclean.github.io/pepdiff/reference/assess_missing.md)
+  : calculate the proportion of peptides with missing values per group
+  in a data set.
+- [`compute_missingness()`](https://teammaclean.github.io/pepdiff/reference/compute_missingness.md)
+  : Compute missingness statistics per peptide
+- [`compute_design_summary()`](https://teammaclean.github.io/pepdiff/reference/compute_design_summary.md)
+  : Compute design summary from data
+- [`times_measured()`](https://teammaclean.github.io/pepdiff/reference/times_measured.md)
+  : calculate number of measurements of each peptide in each treatment
+  and time
+- [`fold_change_matrix()`](https://teammaclean.github.io/pepdiff/reference/fold_change_matrix.md)
+  : returns a matrix of fold change values
+- [`matrix_data()`](https://teammaclean.github.io/pepdiff/reference/matrix_data.md)
+  : Convert data frame to matrix format (legacy)
+- [`list2mat()`](https://teammaclean.github.io/pepdiff/reference/list2mat.md)
+  : converts a results object to a matrix as if for direct use in
+  external heatmap functions
+- [`mean_fold_change()`](https://teammaclean.github.io/pepdiff/reference/mean_fold_change.md)
+  : Calculate mean fold change for peptide
+- [`log2_fc()`](https://teammaclean.github.io/pepdiff/reference/log2_fc.md)
+  : Calculate log2 fold change
+- [`apply_fdr_by_comparison()`](https://teammaclean.github.io/pepdiff/reference/apply_fdr_by_comparison.md)
+  : Apply FDR correction within groups
+
+## Legacy Functions
+
+Deprecated functions from earlier versions
+
+- [`compare(`*`<data.frame>`*`)`](https://teammaclean.github.io/pepdiff/reference/compare.data.frame.md)
+  : Default compare method for legacy data frames
+- [`compare_legacy()`](https://teammaclean.github.io/pepdiff/reference/compare_legacy.md)
+  : Legacy compare function (deprecated)
+- [`compare_many()`](https://teammaclean.github.io/pepdiff/reference/compare_many.md)
+  : compare many combinations of treatment and control
+- [`compare_calls()`](https://teammaclean.github.io/pepdiff/reference/compare_calls.md)
+  : compare sets of significant peptides called by the used data
+- [`get_sig_rows()`](https://teammaclean.github.io/pepdiff/reference/get_sig_rows.md)
+  : works out if a peptide has at least one significant value across the
+  experiment Composes a matrix of the \`metric\` significance values
+  with peptides in rows, experiments in columns and works out if each
+  peptide row has a value below the stated cut off
+- [`estimate_result_clusters()`](https://teammaclean.github.io/pepdiff/reference/estimate_result_clusters.md)
+  : plots a Figure of Merit curve to help estimate the number of
+  clusters in the results
+- [`kmeans_by_selected_cols()`](https://teammaclean.github.io/pepdiff/reference/kmeans_by_selected_cols.md)
+  : Perform kmeans of a dataset using just data in selected columns,
+  then return matrices of all columns
+- [`get_bootstrap_percentile()`](https://teammaclean.github.io/pepdiff/reference/get_bootstrap_percentile.md)
+  : get p values for contrast using boostrap t test
+- [`get_wilcoxon_percentile()`](https://teammaclean.github.io/pepdiff/reference/get_wilcoxon_percentile.md)
+  : get p values for contrast using Wilcoxon test
+- [`get_kruskal_percentile()`](https://teammaclean.github.io/pepdiff/reference/get_kruskal_percentile.md)
+  : get p values for contrast using Kruskal-Wallis test
+- [`get_rp_percentile()`](https://teammaclean.github.io/pepdiff/reference/get_rp_percentile.md)
+  : get p values for contrast using Rank Products test
+- [`get_percentile_lowest_observed_value_iterative()`](https://teammaclean.github.io/pepdiff/reference/get_percentile_lowest_observed_value_iterative.md)
+  : get p values for contrast using normal percentile
+- [`select_columns_for_contrast()`](https://teammaclean.github.io/pepdiff/reference/select_columns_for_contrast.md)
+  : Select columns for contrast (legacy)
+- [`min_peptide_values()`](https://teammaclean.github.io/pepdiff/reference/min_peptide_values.md)
+  : Find minimal values for a peptide across replicates (legacy)
+- [`replace_vals()`](https://teammaclean.github.io/pepdiff/reference/replace_vals.md)
+  : Replace missing values with replacements (legacy)
+- [`metrics()`](https://teammaclean.github.io/pepdiff/reference/metrics.md)
+  : reports metrics available for significance values
+
+## Internal Utilities
+
+Internal helper functions
+
+- [`validate_factors()`](https://teammaclean.github.io/pepdiff/reference/validate_factors.md)
+  : Validate factor columns exist in data
+- [`validate_positive()`](https://teammaclean.github.io/pepdiff/reference/validate_positive.md)
+  : Validate positive values for Gamma GLM
+- [`check_zeros()`](https://teammaclean.github.io/pepdiff/reference/check_zeros.md)
+  : Check for zeros in values (used before GLM fitting)
+- [`is_useable()`](https://teammaclean.github.io/pepdiff/reference/is_useable.md)
+  : Check if values are useable (non-NA and non-NaN)
+
+# Articles
+
+### All vignettes
+
+- [Non-parametric Factorial Analysis with
+  ART](https://teammaclean.github.io/pepdiff/articles/art_analysis.md):
+- [Getting Started with
+  pepdiff](https://teammaclean.github.io/pepdiff/articles/basic_workflow.md):
+- [Checking GLM Model
+  Fit](https://teammaclean.github.io/pepdiff/articles/checking_fit.md):
+- [Visual Quality Control and
+  Interpretation](https://teammaclean.github.io/pepdiff/articles/diagnostic_plots.md):
+- [Factorial Designs with
+  GLM](https://teammaclean.github.io/pepdiff/articles/glm_analysis.md):
+- [Two-Group Comparisons with Pairwise
+  Tests](https://teammaclean.github.io/pepdiff/articles/pairwise_tests.md):

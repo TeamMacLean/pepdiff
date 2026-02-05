@@ -1,0 +1,120 @@
+# pepdiff
+
+**Differential abundance analysis for proteomics data.**
+
+pepdiff helps proteomics researchers answer: “What’s differentially
+abundant?”
+
+## Features
+
+- **GLM analysis** – Gamma GLM with emmeans for factorial designs
+- **ART analysis** – Non-parametric alternative for heavy-tailed data
+- **Pairwise tests** – Wilcoxon, bootstrap-t, Bayes factor, rank
+  products
+- **Stratified comparisons** – Analyse effects within factor levels
+- **Fit diagnostics** – Visual checks for GLM model assumptions
+- **Rich visualizations** – Volcano plots, heatmaps, PCA, p-value
+  histograms
+
+## Installation
+
+Install from GitHub:
+
+``` r
+# install.packages("pak")
+pak::pak("TeamMacLean/pepdiff")
+```
+
+## Quick Start
+
+``` r
+library(pepdiff)
+
+# Import data
+dat <- read_pepdiff(
+  "data.csv",
+  id = "peptide",
+  gene = "gene_id",
+  value = "abundance",
+  factors = c("treatment", "timepoint"),
+  replicate = "bio_rep"
+)
+
+# Run differential analysis
+results <- compare(
+  dat,
+  compare = "treatment",
+  ref = "ctrl",
+  method = "glm"
+)
+
+# Visualize results
+plot(results)
+```
+
+## Documentation
+
+- **[Getting
+  Started](https://teammaclean.github.io/pepdiff/articles/basic_workflow.html)**
+  – Basic workflow
+- **[GLM
+  Analysis](https://teammaclean.github.io/pepdiff/articles/glm_analysis.html)**
+  – Factorial designs with GLM
+- **[ART
+  Analysis](https://teammaclean.github.io/pepdiff/articles/art_analysis.html)**
+  – Non-parametric alternative
+- **[Checking Model
+  Fit](https://teammaclean.github.io/pepdiff/articles/checking_fit.html)**
+  – Diagnostic plots
+- **[Pairwise
+  Tests](https://teammaclean.github.io/pepdiff/articles/pairwise_tests.html)**
+  – Direct two-group comparisons
+- **[Function
+  Reference](https://teammaclean.github.io/pepdiff/reference/index.html)**
+  – Full API
+
+## Companion Package
+
+**peppwR** answers “How many samples do I need?” (power analysis)
+**pepdiff** answers “What’s differentially abundant?” (analysis)
+
+See [peppwR](https://github.com/TeamMacLean/peppwR) for experimental
+design planning.
+
+## Workflow
+
+``` mermaid
+flowchart LR
+    A[CSV] --> B[read_pepdiff]
+    B --> C[pepdiff_data]
+    C --> D[compare]
+    D --> E[pepdiff_results]
+    E --> F[plot]
+
+    style A fill:#FFFFCC,stroke:#BD0026
+    style B fill:#FD8D3C,stroke:#BD0026,color:#fff
+    style C fill:#FFFFCC,stroke:#BD0026
+    style D fill:#FD8D3C,stroke:#BD0026,color:#fff
+    style E fill:#FFFFCC,stroke:#BD0026
+    style F fill:#FD8D3C,stroke:#BD0026,color:#fff
+```
+
+## Citation
+
+If you use pepdiff in your research, please cite:
+
+``` R
+MacLean, D. (2026). pepdiff: Differential Abundance Analysis for
+Proteomics Data. R package version 1.0.0.
+https://github.com/TeamMacLean/pepdiff
+```
+
+## Contributing
+
+Contributions welcome! Please open an
+[issue](https://github.com/TeamMacLean/pepdiff/issues) or submit a pull
+request.
+
+## License
+
+MIT
