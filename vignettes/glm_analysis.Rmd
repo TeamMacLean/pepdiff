@@ -354,21 +354,57 @@ results$diagnostics %>%
 
 The `error` column contains diagnostic messages only when models fail to converge - `NA` means no error occurred (success). The `deviance` column measures model fit: high deviance relative to other peptides may indicate poor fit. Investigate these peptides if they're in your significant results.
 
+## Exporting results
+
+The results are stored in a tidy tibble, ready for export:
+
+```{r results-structure}
+# Main effect results
+glimpse(results$results)
+```
+
+Stratified results include the `within` factor as an additional column:
+
+```{r stratified-structure}
+# Stratified results - note the timepoint column
+glimpse(results_stratified$results)
+```
+
+Save to CSV for downstream analysis:
+
+```{r export-results, eval = FALSE}
+# All results
+write.csv(results$results, "glm_results.csv", row.names = FALSE)
+
+# Significant hits only
+results$results %>%
+  filter(significant) %>%
+  write.csv("significant_hits.csv", row.names = FALSE)
+
+# Stratified results (one row per peptide per timepoint)
+write.csv(results_stratified$results, "stratified_results.csv", row.names = FALSE)
+```
+
 ## Practical recommendations
 
 1. **Start simple**: Run without `within` first to get main effects
-2. **Check for interactions**: If effects differ across factor levels, use `within`. Quick check for your own data:
-    ```r
-    # Compare fold changes across strata
-    compare(dat, compare = "treatment", ref = "ctrl",
-            within = "timepoint", method = "glm")$results %>%
-      group_by(timepoint) %>%
-      summarise(median_fc = median(fold_change), .groups = "drop")
-    # If these differ substantially (e.g., 1 vs 4), you have an interaction
-    ```
+2. **Check for interactions**: If effects differ across factor levels, use `within` (see below)
 3. **Inspect convergence**: Many failures suggest the model is too complex for your data
 4. **Look at diagnostics**: Volcano and p-value histogram should look reasonable
 5. **Don't over-interpret**: These are statistical estimates, not ground truth
+
+### Quick interaction check
+
+To check for interactions in your own data, compare fold changes across strata:
+
+```r
+compare(dat, compare = "treatment", ref = "ctrl",
+        within = "timepoint", method = "glm")$results %>%
+  group_by(timepoint) %>%
+  summarise(median_fc = median(fold_change), .groups = "drop")
+```
+
+If these FCs differ substantially (e.g., 1 vs 4), you have an interaction - use stratified results.
 
 ## When GLM struggles
 
