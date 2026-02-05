@@ -1,0 +1,67 @@
+url: https://teammaclean.github.io/pepdiff/
+
+template:
+  bootstrap: 5
+  bootswatch: flatly
+
+navbar:
+  structure:
+    left: [intro, reference, articles]
+    right: [search, github]
+  components:
+    articles:
+      text: Articles
+      menu:
+      - text: Getting Started
+        href: articles/basic_workflow.html
+      - text: "---"
+      - text: Analysis Methods
+      - text: GLM Analysis
+        href: articles/glm_analysis.html
+      - text: ART Analysis
+        href: articles/art_analysis.html
+      - text: Pairwise Tests
+        href: articles/pairwise_tests.html
+      - text: "---"
+      - text: Diagnostics
+      - text: Checking Model Fit
+        href: articles/checking_fit.html
+      - text: Diagnostic Plots
+        href: articles/diagnostic_plots.html
+
+reference:
+- title: Import & Data
+  desc: Import data and create pepdiff_data objects
+  contents:
+  - read_pepdiff
+  - combine_tech_reps
+  - pepdiff_data
+
+- title: Analysis
+  desc: Run differential abundance analysis
+  contents:
+  - compare
+  - significant
+  - get_peptide
+  - get_comparison
+
+- title: Diagnostics
+  desc: Check model fit and convergence
+  contents:
+  - plot_fit_diagnostics
+
+- title: Visualization
+  desc: Plot functions for data and results
+  contents:
+  - starts_with("plot_")
+
+- title: Classes
+  desc: S3 class documentation
+  contents:
+  - pepdiff_data
+  - pepdiff_results
+
+home:
+  links:
+  - text: peppwR (companion package)
+    href: https://github.com/TeamMacLean/peppwR
