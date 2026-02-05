@@ -12,7 +12,8 @@ compare_within_strata(
   method,
   test,
   alpha,
-  fdr_method
+  fdr_method,
+  bf_threshold = 3
 )
 }
 \arguments{
