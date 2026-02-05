@@ -169,7 +169,6 @@ reference:
   - validate_positive
   - check_zeros
   - is_useable
-  - pipe
 
 home:
   links:
