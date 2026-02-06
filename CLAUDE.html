@@ -44,20 +44,41 @@
 
 <div id="pepdiff" class="section level1">
 
-<p>Differential abundance analysis for PRM proteomics data.</p>
+<p>Differential abundance analysis for phosphoproteomics data.</p>
 <div class="section level2">
 <h2 id="purpose">Purpose<a class="anchor" aria-label="anchor" href="#purpose"></a></h2>
 <p>Identify peptides with significant abundance changes between experimental conditions. Answers: “What’s differentially abundant?”</p>
 </div>
 <div class="section level2">
 <h2 id="project-status">Project Status<a class="anchor" aria-label="anchor" href="#project-status"></a></h2>
-<p><strong>v2 implementation complete</strong> (Feb 2026). The package includes: - S3 classes: <code>pepdiff_data</code> and <code>pepdiff_results</code> - Three analysis methods: GLM (Gamma + emmeans), ART, pairwise - Four pairwise tests: wilcoxon, bootstrap_t, bayes_t, rankprod - Plot methods for both classes - 257 passing tests, <code>devtools::check()</code> passes with 0 errors/warnings - Legacy functions preserved with deprecation warnings</p>
-<p><strong>Next:</strong> Vignettes (see <code>vignette_plan.md</code> and <code>vignette_prompt.md</code>)</p>
+<p><strong>v1.0.0 released</strong> (Feb 2026). The package is feature-complete with: - S3 classes: <code>pepdiff_data</code> and <code>pepdiff_results</code> - Three analysis methods: GLM (Gamma + emmeans), ART, pairwise - Four pairwise tests: wilcoxon, bootstrap_t, bayes_t, rankprod - GLM fit diagnostics with <code><a href="reference/plot_fit_diagnostics.html">plot_fit_diagnostics()</a></code> - Plot methods for both classes - Six vignettes covering all workflows - pkgdown documentation site: <a href="https://teammaclean.github.io/pepdiff/" class="uri">https://teammaclean.github.io/pepdiff/</a> - <code>devtools::check()</code> passes with 0 errors/warnings</p>
 <p><strong>Companion to peppwR:</strong> - peppwR: “How many samples do I need?” (power analysis, planning) - pepdiff: “What’s differentially abundant?” (analysis, results)</p>
 </div>
 <div class="section level2">
 <h2 id="core-workflow">Core Workflow<a class="anchor" aria-label="anchor" href="#core-workflow"></a></h2>
 <pre><code>CSV → read_pepdiff() → pepdiff_data → compare() → pepdiff_results → plots</code></pre>
+</div>
+<div class="section level2">
+<h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a></h2>
+<ul><li>
+<strong>Getting Started</strong>: <code>vignettes/basic_workflow.Rmd</code>
+</li>
+<li>
+<strong>GLM Analysis</strong>: <code>vignettes/glm_analysis.Rmd</code>
+</li>
+<li>
+<strong>ART Analysis</strong>: <code>vignettes/art_analysis.Rmd</code>
+</li>
+<li>
+<strong>Pairwise Tests</strong>: <code>vignettes/pairwise_tests.Rmd</code>
+</li>
+<li>
+<strong>Checking Model Fit</strong>: <code>vignettes/checking_fit.Rmd</code>
+</li>
+<li>
+<strong>Diagnostic Plots</strong>: <code>vignettes/diagnostic_plots.Rmd</code>
+</li>
+</ul><p>Online: <a href="https://teammaclean.github.io/pepdiff/" class="uri">https://teammaclean.github.io/pepdiff/</a></p>
 </div>
 <div class="section level2">
 <h2 id="design-constraints">Design Constraints<a class="anchor" aria-label="anchor" href="#design-constraints"></a></h2>
@@ -84,7 +105,7 @@
 <div class="section level3">
 <h3 id="pepdiff_results"><code>pepdiff_results</code><a class="anchor" aria-label="anchor" href="#pepdiff_results"></a></h3>
 <p>Analysis results from <code><a href="reference/compare.html">compare()</a></code>. Results in <strong>long format</strong> (tidy).</p>
-<p><strong>Slots:</strong> - <code>results</code> - tibble (long): peptide, gene_id, comparison, [factor levels], fold_change, log2_fc, test, p_value, fdr, significant - <code>comparisons</code> - tibble: comparison definitions - <code>method</code> - “glm”, “art”, or “pairwise” - <code>diagnostics</code> - tibble (nested): peptide, converged, deviance, model, residuals - <code>params</code> - list: alpha, fdr_method, formula, etc. - <code>data</code> - the pepdiff_data object used - <code>call</code> - original function call</p>
+<p><strong>Slots:</strong> - <code>results</code> - tibble (long): peptide, gene_id, comparison, [factor levels], fold_change, log2_fc, test, p_value, fdr, significant - <code>comparisons</code> - tibble: comparison definitions - <code>method</code> - “glm”, “art”, or “pairwise” - <code>diagnostics</code> - tibble (nested): peptide, converged, deviance, residuals, std_residuals, fitted - <code>params</code> - list: alpha, fdr_method, formula, etc. - <code>data</code> - the pepdiff_data object used - <code>call</code> - original function call</p>
 <p><strong>Methods:</strong> - <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> - Summary: n comparisons, n significant - <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> - Per-comparison breakdown - <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> - Multi-panel: volcano + p-value histogram + FC distribution</p>
 </div>
 </div>
@@ -114,7 +135,7 @@
 <td>Non-parametric alternative</td>
 </tr><tr class="odd"><td><code>"pairwise"</code></td>
 <td>Direct two-group tests</td>
-<td>Legacy mode</td>
+<td>Simple comparisons</td>
 </tr></tbody></table><p><strong>Simple interface:</strong></p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/compare.html">compare</a></span><span class="op">(</span><span class="va">data</span>,</span>
@@ -130,9 +151,15 @@
 <p><strong>Pairwise tests</strong> (matching peppwR): - <code>"wilcoxon"</code> - Wilcoxon rank-sum - <code>"bootstrap_t"</code> - Bootstrap t-test - <code>"bayes_t"</code> - Bayes factor t-test - <code>"rankprod"</code> - Rank products</p>
 </div>
 <div class="section level3">
+<h3 id="diagnostics">Diagnostics<a class="anchor" aria-label="anchor" href="#diagnostics"></a></h3>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/plot_fit_diagnostics.html">plot_fit_diagnostics</a></span><span class="op">(</span><span class="va">results</span><span class="op">)</span></span>
+<span><span class="co"># Returns 4-panel diagnostic plot for GLM model fit assessment</span></span></code></pre></div>
+</div>
+<div class="section level3">
 <h3 id="plots">Plots<a class="anchor" aria-label="anchor" href="#plots"></a></h3>
 <p><strong>Class methods:</strong> - <code>plot(pepdiff_data)</code> - PCA + distributions + missingness - <code>plot(pepdiff_results)</code> - volcano + p-value hist + FC distribution</p>
-<p><strong>Individual functions:</strong> - <code><a href="reference/plot_pca.html">plot_pca()</a></code>, <code>plot_distributions()</code>, <code>plot_missingness()</code> - <code>plot_volcano()</code>, <code><a href="reference/plot_heatmap.html">plot_heatmap()</a></code>, <code>plot_upset()</code>, <code>plot_pvalue_hist()</code>, <code>plot_fc_distribution()</code></p>
+<p><strong>Individual functions:</strong> - <code><a href="reference/plot_pca.html">plot_pca()</a></code>, <code>plot_distributions()</code>, <code>plot_missingness()</code> - <code>plot_volcano()</code>, <code><a href="reference/plot_heatmap.html">plot_heatmap()</a></code>, <code>plot_pvalue_hist()</code>, <code>plot_fc_distribution()</code> - <code><a href="reference/plot_fit_diagnostics.html">plot_fit_diagnostics()</a></code> - GLM model fit assessment</p>
 </div>
 </div>
 <div class="section level2">
@@ -144,6 +171,7 @@
 <span>  <span class="va">tests.R</span>           <span class="co"># Pairwise statistical tests (wilcoxon, bootstrap_t, etc.)</span></span>
 <span>  <span class="va">results.R</span>         <span class="co"># pepdiff_results class, print/summary methods</span></span>
 <span>  <span class="va">plots.R</span>           <span class="co"># All plot functions and plot methods</span></span>
+<span>  <span class="va">diagnostics.R</span>     <span class="co"># plot_fit_diagnostics() and helpers</span></span>
 <span>  <span class="va">utils.R</span>           <span class="co"># Helpers, validation, internal utilities</span></span>
 <span>  <span class="va">legacy.R</span>          <span class="co"># Deprecated compare.data.frame method</span></span>
 <span>  <span class="va">legacy</span><span class="op">-</span><span class="va">pepdiff.R</span>  <span class="co"># Original v1 functions (preserved for compatibility)</span></span>
@@ -156,13 +184,22 @@
 <span>  <span class="va">test</span><span class="op">-</span><span class="va">tests.R</span>      <span class="co"># Statistical test implementations</span></span>
 <span>  <span class="va">test</span><span class="op">-</span><span class="va">results.R</span>    <span class="co"># Results class tests</span></span>
 <span>  <span class="va">test</span><span class="op">-</span><span class="va">plots.R</span>      <span class="co"># Plot output tests</span></span>
-<span>  <span class="va">test</span><span class="op">-</span><span class="va">legacy.R</span>     <span class="co"># Backwards compatibility tests</span></span></code></pre>
+<span>  <span class="va">test</span><span class="op">-</span><span class="va">diagnostics.R</span> <span class="co"># Diagnostics function tests</span></span>
+<span>  <span class="va">test</span><span class="op">-</span><span class="va">legacy.R</span>     <span class="co"># Backwards compatibility tests</span></span>
+<span></span>
+<span><span class="va">vignettes</span><span class="op">/</span></span>
+<span>  <span class="va">basic_workflow.Rmd</span>   <span class="co"># Getting started guide</span></span>
+<span>  <span class="va">glm_analysis.Rmd</span>     <span class="co"># GLM method deep dive</span></span>
+<span>  <span class="va">art_analysis.Rmd</span>     <span class="co"># ART method guide</span></span>
+<span>  <span class="va">pairwise_tests.Rmd</span>   <span class="co"># Pairwise comparison methods</span></span>
+<span>  <span class="va">checking_fit.Rmd</span>     <span class="co"># GLM diagnostics guide</span></span>
+<span>  <span class="va">diagnostic_plots.Rmd</span> <span class="co"># Visualization options</span></span></code></pre>
 </div>
 <div class="section level2">
 <h2 id="error-handling">Error Handling<a class="anchor" aria-label="anchor" href="#error-handling"></a></h2>
 <div class="section level3">
 <h3 id="model-convergence-failures">Model Convergence Failures<a class="anchor" aria-label="anchor" href="#model-convergence-failures"></a></h3>
-<p>If GLM/ART doesn’t converge for a peptide: - Peptide excluded from results - Tracked in <code>diagnostics</code> slot - Warning in <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code>: “⚠ X peptides excluded (model did not converge)”</p>
+<p>If GLM/ART doesn’t converge for a peptide: - Peptide excluded from results - Tracked in <code>diagnostics</code> slot - Warning in <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code>: “X peptides excluded (model did not converge)”</p>
 <p><strong>Philosophy:</strong> Fail is fail. User needs to know they may need a different design.</p>
 </div>
 <div class="section level3">
@@ -181,61 +218,15 @@
 <li>Keep test implementations in sync with peppwR (wilcoxon, bootstrap_t, bayes_t, rankprod)</li>
 </ul></div>
 <div class="section level3">
-<h3 id="development-workflow">Development Workflow<a class="anchor" aria-label="anchor" href="#development-workflow"></a></h3>
-<p>We use the <strong>Discuss → TDD → Ralph Loop</strong> workflow. See <code>semi-autonomous-feature-development.md</code> for details.</p>
-<p><strong>Summary:</strong> 1. <strong>Discuss</strong>: Reach shared understanding of the task/feature 2. <strong>TDD</strong>: Write failing test that captures the requirement, commit it 3. <strong>Clear Context</strong>: <code>/clear</code> or new session to maximize implementation context 4. <strong>Ralph Loop</strong>: Autonomous implementation with self-contained prompt 5. <strong>Smoke Test</strong>: Human final verification</p>
-</div>
-<div class="section level3">
-<h3 id="ralph-loop-prompt-template">Ralph Loop Prompt Template<a class="anchor" aria-label="anchor" href="#ralph-loop-prompt-template"></a></h3>
-<pre><code>/ralph-loop "Implement [feature] for pepdiff.
-
-## Failing Test
-tests/testthat/test-[feature].R
-
-## Relevant Files
-- R/[file].R
-- [other files]
-
-## Verification
-Rscript -e 'devtools::test(filter = "[feature]")'
-Must show: OK
-
-## Success Criteria
-All tests pass, devtools::check() has 0 errors." --completion-promise "FEATURE-COMPLETE" --max-iterations 20</code></pre>
-</div>
-<div class="section level3">
-<h3 id="key-principles">Key Principles<a class="anchor" aria-label="anchor" href="#key-principles"></a></h3>
-<ul><li>
-<strong>Tests are the contract</strong>: No ambiguity about completion</li>
-<li>
-<strong>Small tasks</strong>: Better speed and accuracy than large tasks</li>
-<li>
-<strong>Context in files</strong>: Specs live in test files, not conversation history</li>
-<li>
-<strong>Clear before execute</strong>: Maximize context for implementation work</li>
-</ul></div>
-</div>
-<div class="section level2">
-<h2 id="package-checks">Package Checks<a class="anchor" aria-label="anchor" href="#package-checks"></a></h2>
-<div class="section level3">
-<h3 id="routine-development-fast">Routine Development (fast)<a class="anchor" aria-label="anchor" href="#routine-development-fast"></a></h3>
-<p>Skip vignettes during routine checks:</p>
+<h3 id="package-checks">Package Checks<a class="anchor" aria-label="anchor" href="#package-checks"></a></h3>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">check</span><span class="op">(</span>vignettes <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
-<p>Or from command line:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">"devtools::check(vignettes = FALSE)"</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="run-tests-only">Run Tests Only<a class="anchor" aria-label="anchor" href="#run-tests-only"></a></h3>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">test</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co"># Or specific test file:</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">test</span><span class="op">(</span>filter <span class="op">=</span> <span class="st">"compare"</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="full-check-before-release">Full Check (before release)<a class="anchor" aria-label="anchor" href="#full-check-before-release"></a></h3>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">build_vignettes</span><span class="op">(</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># Fast check (skip vignettes)</span></span>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">check</span><span class="op">(</span>vignettes <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Run tests only</span></span>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">test</span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Full check</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">check</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
@@ -247,23 +238,19 @@ All tests pass, devtools::check() has 0 errors." --completion-promise "FEATURE-C
 <li>readr - CSV import</li>
 <li>ggplot2, cowplot - core plotting</li>
 <li>emmeans - GLM contrast extraction</li>
+<li>ARTool - ART method</li>
 <li>stringr, forcats - string/factor utilities</li>
 </ul></div>
 <div class="section level3">
 <h3 id="suggests">Suggests<a class="anchor" aria-label="anchor" href="#suggests"></a></h3>
-<ul><li>ARTool - ART method</li>
-<li>ComplexHeatmap - heatmaps (Bioconductor)</li>
+<ul><li>ComplexHeatmap - heatmaps (Bioconductor)</li>
 <li>RankProd - rank products (Bioconductor)</li>
 <li>UpSetR - upset plots</li>
 <li>MKinfer - bootstrap tests</li>
 <li>testthat - testing</li>
 <li>knitr, rmarkdown - vignettes</li>
 </ul><p>Note: bayes_t uses a native JZS approximation (no BayesFactor dependency)</p>
-<hr></div>
 </div>
-<div class="section level2">
-<h2 id="reference">Reference<a class="anchor" aria-label="anchor" href="#reference"></a></h2>
-<p>Full specification: <code>pepdiff_v2_spec.md</code></p>
 </div>
 </div>
 

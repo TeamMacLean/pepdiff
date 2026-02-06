@@ -1,6 +1,6 @@
 # pepdiff
 
-Differential abundance analysis for PRM proteomics data.
+Differential abundance analysis for phosphoproteomics data.
 
 ## Purpose
 
@@ -9,14 +9,14 @@ experimental conditions. Answers: “What’s differentially abundant?”
 
 ## Project Status
 
-**v2 implementation complete** (Feb 2026). The package includes: - S3
-classes: `pepdiff_data` and `pepdiff_results` - Three analysis methods:
-GLM (Gamma + emmeans), ART, pairwise - Four pairwise tests: wilcoxon,
-bootstrap_t, bayes_t, rankprod - Plot methods for both classes - 257
-passing tests, `devtools::check()` passes with 0 errors/warnings -
-Legacy functions preserved with deprecation warnings
-
-**Next:** Vignettes (see `vignette_plan.md` and `vignette_prompt.md`)
+**v1.0.0 released** (Feb 2026). The package is feature-complete with: -
+S3 classes: `pepdiff_data` and `pepdiff_results` - Three analysis
+methods: GLM (Gamma + emmeans), ART, pairwise - Four pairwise tests:
+wilcoxon, bootstrap_t, bayes_t, rankprod - GLM fit diagnostics with
+[`plot_fit_diagnostics()`](https://teammaclean.github.io/pepdiff/reference/plot_fit_diagnostics.md) -
+Plot methods for both classes - Six vignettes covering all workflows -
+pkgdown documentation site: <https://teammaclean.github.io/pepdiff/> -
+`devtools::check()` passes with 0 errors/warnings
 
 **Companion to peppwR:** - peppwR: “How many samples do I need?” (power
 analysis, planning) - pepdiff: “What’s differentially abundant?”
@@ -25,6 +25,17 @@ analysis, planning) - pepdiff: “What’s differentially abundant?”
 ## Core Workflow
 
     CSV → read_pepdiff() → pepdiff_data → compare() → pepdiff_results → plots
+
+## Documentation
+
+- **Getting Started**: `vignettes/basic_workflow.Rmd`
+- **GLM Analysis**: `vignettes/glm_analysis.Rmd`
+- **ART Analysis**: `vignettes/art_analysis.Rmd`
+- **Pairwise Tests**: `vignettes/pairwise_tests.Rmd`
+- **Checking Model Fit**: `vignettes/checking_fit.Rmd`
+- **Diagnostic Plots**: `vignettes/diagnostic_plots.Rmd`
+
+Online: <https://teammaclean.github.io/pepdiff/>
 
 ## Design Constraints
 
@@ -73,9 +84,9 @@ Results in **long format** (tidy).
 \[factor levels\], fold_change, log2_fc, test, p_value, fdr,
 significant - `comparisons` - tibble: comparison definitions -
 `method` - “glm”, “art”, or “pairwise” - `diagnostics` - tibble
-(nested): peptide, converged, deviance, model, residuals - `params` -
-list: alpha, fdr_method, formula, etc. - `data` - the pepdiff_data
-object used - `call` - original function call
+(nested): peptide, converged, deviance, residuals, std_residuals,
+fitted - `params` - list: alpha, fdr_method, formula, etc. - `data` -
+the pepdiff_data object used - `call` - original function call
 
 **Methods:** - [`print()`](https://rdrr.io/r/base/print.html) - Summary:
 n comparisons, n significant -
@@ -103,7 +114,7 @@ Three methods:
 |-------------------|------------------------|----------------------------|
 | `"glm"` (default) | Gamma GLM + emmeans    | Most proteomics data       |
 | `"art"`           | Aligned Rank Transform | Non-parametric alternative |
-| `"pairwise"`      | Direct two-group tests | Legacy mode                |
+| `"pairwise"`      | Direct two-group tests | Simple comparisons         |
 
 **Simple interface:**
 
@@ -127,6 +138,13 @@ compare(data,
 rank-sum - `"bootstrap_t"` - Bootstrap t-test - `"bayes_t"` - Bayes
 factor t-test - `"rankprod"` - Rank products
 
+### Diagnostics
+
+``` r
+plot_fit_diagnostics(results)
+# Returns 4-panel diagnostic plot for GLM model fit assessment
+```
+
 ### Plots
 
 **Class methods:** - `plot(pepdiff_data)` - PCA + distributions +
@@ -137,7 +155,9 @@ distribution
 [`plot_pca()`](https://teammaclean.github.io/pepdiff/reference/plot_pca.md),
 `plot_distributions()`, `plot_missingness()` - `plot_volcano()`,
 [`plot_heatmap()`](https://teammaclean.github.io/pepdiff/reference/plot_heatmap.md),
-`plot_upset()`, `plot_pvalue_hist()`, `plot_fc_distribution()`
+`plot_pvalue_hist()`, `plot_fc_distribution()` -
+[`plot_fit_diagnostics()`](https://teammaclean.github.io/pepdiff/reference/plot_fit_diagnostics.md) -
+GLM model fit assessment
 
 ## File Structure
 
@@ -148,6 +168,7 @@ distribution
       tests.R           # Pairwise statistical tests (wilcoxon, bootstrap_t, etc.)
       results.R         # pepdiff_results class, print/summary methods
       plots.R           # All plot functions and plot methods
+      diagnostics.R     # plot_fit_diagnostics() and helpers
       utils.R           # Helpers, validation, internal utilities
       legacy.R          # Deprecated compare.data.frame method
       legacy-pepdiff.R  # Original v1 functions (preserved for compatibility)
@@ -160,7 +181,16 @@ distribution
       test-tests.R      # Statistical test implementations
       test-results.R    # Results class tests
       test-plots.R      # Plot output tests
+      test-diagnostics.R # Diagnostics function tests
       test-legacy.R     # Backwards compatibility tests
+
+    vignettes/
+      basic_workflow.Rmd   # Getting started guide
+      glm_analysis.Rmd     # GLM method deep dive
+      art_analysis.Rmd     # ART method guide
+      pairwise_tests.Rmd   # Pairwise comparison methods
+      checking_fit.Rmd     # GLM diagnostics guide
+      diagnostic_plots.Rmd # Visualization options
 
 ## Error Handling
 
@@ -168,7 +198,7 @@ distribution
 
 If GLM/ART doesn’t converge for a peptide: - Peptide excluded from
 results - Tracked in `diagnostics` slot - Warning in
-[`print()`](https://rdrr.io/r/base/print.html): “⚠ X peptides excluded
+[`print()`](https://rdrr.io/r/base/print.html): “X peptides excluded
 (model did not converge)”
 
 **Philosophy:** Fail is fail. User needs to know they may need a
@@ -193,72 +223,16 @@ across all comparisons.
 - Keep test implementations in sync with peppwR (wilcoxon, bootstrap_t,
   bayes_t, rankprod)
 
-### Development Workflow
-
-We use the **Discuss → TDD → Ralph Loop** workflow. See
-`semi-autonomous-feature-development.md` for details.
-
-**Summary:** 1. **Discuss**: Reach shared understanding of the
-task/feature 2. **TDD**: Write failing test that captures the
-requirement, commit it 3. **Clear Context**: `/clear` or new session to
-maximize implementation context 4. **Ralph Loop**: Autonomous
-implementation with self-contained prompt 5. **Smoke Test**: Human final
-verification
-
-### Ralph Loop Prompt Template
-
-    /ralph-loop "Implement [feature] for pepdiff.
-
-    ## Failing Test
-    tests/testthat/test-[feature].R
-
-    ## Relevant Files
-    - R/[file].R
-    - [other files]
-
-    ## Verification
-    Rscript -e 'devtools::test(filter = "[feature]")'
-    Must show: OK
-
-    ## Success Criteria
-    All tests pass, devtools::check() has 0 errors." --completion-promise "FEATURE-COMPLETE" --max-iterations 20
-
-### Key Principles
-
-- **Tests are the contract**: No ambiguity about completion
-- **Small tasks**: Better speed and accuracy than large tasks
-- **Context in files**: Specs live in test files, not conversation
-  history
-- **Clear before execute**: Maximize context for implementation work
-
-## Package Checks
-
-### Routine Development (fast)
-
-Skip vignettes during routine checks:
+### Package Checks
 
 ``` r
+# Fast check (skip vignettes)
 devtools::check(vignettes = FALSE)
-```
 
-Or from command line:
-
-``` bash
-Rscript -e "devtools::check(vignettes = FALSE)"
-```
-
-### Run Tests Only
-
-``` r
+# Run tests only
 devtools::test()
-# Or specific test file:
-devtools::test(filter = "compare")
-```
 
-### Full Check (before release)
-
-``` r
-devtools::build_vignettes()
+# Full check
 devtools::check()
 ```
 
@@ -270,11 +244,11 @@ devtools::check()
 - readr - CSV import
 - ggplot2, cowplot - core plotting
 - emmeans - GLM contrast extraction
+- ARTool - ART method
 - stringr, forcats - string/factor utilities
 
 ### Suggests
 
-- ARTool - ART method
 - ComplexHeatmap - heatmaps (Bioconductor)
 - RankProd - rank products (Bioconductor)
 - UpSetR - upset plots
@@ -284,9 +258,3 @@ devtools::check()
 
 Note: bayes_t uses a native JZS approximation (no BayesFactor
 dependency)
-
-------------------------------------------------------------------------
-
-## Reference
-
-Full specification: `pepdiff_v2_spec.md`
