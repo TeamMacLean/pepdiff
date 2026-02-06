@@ -20,8 +20,9 @@ Bioinformatics Application Note describing the pepdiff package.
 | File | Purpose |
 |------|---------|
 | `outline.md` | Full paper outline with rendering pipeline |
-| `references.bib` | BibTeX references (to be created) |
+| `references.bib` | BibTeX references (17 citations) |
 | `example_application_spec.md` | Detailed spec for supplementary code |
+| `paper_prompt.md` | Prompt to kick off paper writing session |
 | `supplementary_example.Rmd` | Reproducible code (to be created) |
 | `paper.Rmd` | Main manuscript (to be created) |
 
