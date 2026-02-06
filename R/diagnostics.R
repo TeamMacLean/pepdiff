@@ -304,12 +304,14 @@ build_sample_residual_plots <- function(results, plot_data, n_sample) {
 #' Extract stored residuals and fitted values for selected peptides
 #' @keywords internal
 extract_stored_residuals <- function(diagnostics, peptides) {
+
   resid_list <- lapply(peptides, function(pep) {
     idx <- which(diagnostics$peptide == pep)
     if (length(idx) == 0) return(NULL)
 
-    resid <- diagnostics$residuals[[idx]]
-    fitted <- diagnostics$fitted[[idx]]
+    # Use single bracket indexing for tibble list columns, then extract element
+    resid <- diagnostics$residuals[idx][[1]]
+    fitted <- diagnostics$fitted[idx][[1]]
 
     if (is.null(resid) || is.null(fitted)) return(NULL)
 
