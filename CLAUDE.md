@@ -258,3 +258,31 @@ devtools::check()
 
 Note: bayes_t uses a native JZS approximation (no BayesFactor
 dependency)
+
+## Development Workflow for Future Changes
+
+See `semi-autonomous-feature-development.md` for detailed workflow.
+
+### Discuss → TDD → Ralph Loop
+
+1.  **Discuss** - Human describes feature/bug, Claude asks clarifying
+    questions, agree on scope
+2.  **TDD** - Write failing test first (the test IS the spec)
+3.  **Ralph Loop** - Claude iterates autonomously until tests pass
+
+### Key Principles
+
+- **Tests are the contract** - No ambiguity about completion
+- **No implementation until test fails** - Red → Green → Refactor
+- **Clear context before implementation** - Commit test, start fresh
+  session
+- **Self-contained prompts** - Reference files, not discussion history
+
+### For Bug Fixes / Features
+
+    1. Discuss requirements
+    2. Write failing test in tests/testthat/
+    3. Commit the test
+    4. /clear or new session
+    5. /ralph-loop with verification command: devtools::test(filter = "test-name")
+    6. Human smoke test
