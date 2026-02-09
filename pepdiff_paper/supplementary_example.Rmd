@@ -23,7 +23,7 @@ echo = TRUE,
 
 # Introduction
 
-This supplementary document provides fully reproducible R code for the analyses presented in the pepdiff paper. We demonstrate the package using a simulated phosphoproteomics dataset with known ground truth, enabling validation of sensitivity and false discovery rate.
+This supplementary document provides fully reproducible R code for the analyses presented in the pepdiff paper. We demonstrate the package using simulated phosphoproteomics datasets with known ground truth, enabling validation of sensitivity and false discovery rate.
 
 # Setup
 
@@ -35,7 +35,7 @@ library(cowplot)
 set.seed(2026)
 ```
 
-# Data Generation
+# Part 1: Factorial Design Example
 
 ## Experimental Design
 
@@ -48,7 +48,7 @@ We simulate a factorial phosphoproteomics experiment:
 
 ## Peptide Parameters
 
-Generate 500 peptides with heterogeneous Gamma-distributed abundances. The first 50 peptides have a true treatment effect (1.8-2.5 fold) that manifests only at the 24h timepoint.
+Generate 500 peptides with heterogeneous Gamma-distributed abundances. The first 50 peptides have a true treatment effect (3-5 fold) that manifests only at the 24h timepoint.
 
 ```{r peptide-params}
 n_peptides <- 500
@@ -152,7 +152,7 @@ dat <- read_pepdiff(
 print(dat)
 ```
 
-# Primary Analysis: GLM with Stratification
+# Analysis: Stratified GLM
 
 The primary analysis uses Gamma GLM with emmeans-based contrasts, stratified by timepoint.
 
@@ -193,7 +193,7 @@ tp_glm <- sum(res_24h_glm$significant & res_24h_glm$true_effect, na.rm = TRUE)
 fp_glm <- sum(res_24h_glm$significant & !res_24h_glm$true_effect, na.rm = TRUE)
 fn_glm <- sum(!res_24h_glm$significant & res_24h_glm$true_effect, na.rm = TRUE)
 
-cat("pepdiff GLM Results (24h timepoint):\n")
+cat("Stratified GLM Results (24h timepoint):\n")
 cat("  True Positives:", tp_glm, "\n")
 cat("  False Positives:", fp_glm, "\n")
 cat("  False Negatives:", fn_glm, "\n")
@@ -201,13 +201,15 @@ cat("  Sensitivity:", round(tp_glm / (tp_glm + fn_glm), 3), "\n")
 cat("  FDR:", round(fp_glm / (tp_glm + fp_glm), 3), "\n")
 ```
 
-# Conventional Workflow (Perseus-style)
+# Comparison: Log-Transform + Imputation + t-test
 
-Many proteomics tools use a conventional workflow:
+A conventional proteomics workflow:
 
 1. Log2-transform abundances
 2. Impute missing values (downshifted normal distribution)
-3. Apply t-test
+3. Apply t-test at the 24h timepoint
+
+Note: This approach requires knowing in advance which timepoint to analyse.
 
 ```{r conventional-workflow}
 # Step 1: Log2 transform
@@ -263,7 +265,7 @@ tp_conv <- sum(conv_with_truth$significant & conv_with_truth$true_effect, na.rm 
 fp_conv <- sum(conv_with_truth$significant & !conv_with_truth$true_effect, na.rm = TRUE)
 fn_conv <- sum(!conv_with_truth$significant & conv_with_truth$true_effect, na.rm = TRUE)
 
-cat("Conventional Workflow Results (24h timepoint):\n")
+cat("Log-transform + imputation + t-test Results (24h timepoint):\n")
 cat("  True Positives:", tp_conv, "\n")
 cat("  False Positives:", fp_conv, "\n")
 cat("  False Negatives:", fn_conv, "\n")
@@ -271,9 +273,9 @@ cat("  Sensitivity:", round(tp_conv / (tp_conv + fn_conv), 3), "\n")
 cat("  FDR:", round(fp_conv / (tp_conv + fp_conv), 3), "\n")
 ```
 
-# Complete Cases Analysis
+# Comparison: Complete Cases Only
 
-A conservative approach: analyse only peptides with complete data at 24h.
+A conservative approach: analyse only peptides with complete data at 24h, with no imputation.
 
 ```{r complete-cases}
 # Identify peptides with complete data at 24h
@@ -320,7 +322,7 @@ fn_complete <- sum(!complete_with_truth$significant & complete_with_truth$true_e
 tp_excluded <- sum(peptide_params$true_effect & !peptide_params$peptide %in% complete_peptides)
 fn_complete <- fn_complete + tp_excluded
 
-cat("Complete Cases Results (24h timepoint):\n")
+cat("Complete Cases Only Results (24h timepoint):\n")
 cat("  Peptides tested:", length(complete_peptides), "\n")
 cat("  True positives excluded by missingness:", tp_excluded, "\n")
 cat("  True Positives:", tp_complete, "\n")
@@ -332,9 +334,11 @@ if ((tp_complete + fp_complete) > 0) {
 }
 ```
 
-# Pairwise Analysis (Pooled)
+# Comparison: Pooled Pairwise (Ignoring Timepoint)
 
-Unstratified pairwise comparison ignoring timepoint structure.
+An unstratified pairwise comparison that pools across all timepoints, ignoring the factorial structure.
+
+**Important context:** Because this simulation includes treatment effects only at the 24h timepoint, pooling data across all timepoints (0h, 6h, 24h) dilutes the signal from 24h with the null results from 0h and 6h. This result illustrates the importance of matching analysis to experimental design. In experiments where effects are consistent across timepoints, pooled analysis would be appropriate.
 
 ```{r pairwise-pooled}
 results_pairwise <- compare(
@@ -356,12 +360,16 @@ tp_pairwise <- sum(pairwise_with_truth$significant & pairwise_with_truth$true_ef
 fp_pairwise <- sum(pairwise_with_truth$significant & !pairwise_with_truth$true_effect, na.rm = TRUE)
 fn_pairwise <- sum(!pairwise_with_truth$significant & pairwise_with_truth$true_effect, na.rm = TRUE)
 
-cat("Pairwise Pooled Results:\n")
+cat("Pooled Pairwise Results (ignoring timepoint):\n")
 cat("  True Positives:", tp_pairwise, "\n")
 cat("  False Positives:", fp_pairwise, "\n")
 cat("  False Negatives:", fn_pairwise, "\n")
 cat("  Sensitivity:", round(tp_pairwise / (tp_pairwise + fn_pairwise), 3), "\n")
-cat("  FDR:", round(fp_pairwise / (tp_pairwise + fp_pairwise), 3), "\n")
+if ((tp_pairwise + fp_pairwise) > 0) {
+  cat("  FDR:", round(fp_pairwise / (tp_pairwise + fp_pairwise), 3), "\n")
+} else {
+  cat("  FDR: undefined (no positives)\n")
+}
 ```
 
 # Method Comparison Summary
@@ -369,7 +377,8 @@ cat("  FDR:", round(fp_pairwise / (tp_pairwise + fp_pairwise), 3), "\n")
 ```{r method-comparison-table}
 # Compile all metrics
 comparison_metrics <- tibble(
-  Method = c("pepdiff GLM", "Conventional", "Complete cases", "Pairwise pooled"),
+  Method = c("Stratified GLM (pepdiff)", "Log2 + impute + t-test (Perseus)",
+             "Complete cases only", "Pooled across timepoints"),
   `True Positives` = c(tp_glm, tp_conv, tp_complete, tp_pairwise),
   `False Positives` = c(fp_glm, fp_conv, fp_complete, fp_pairwise),
   `False Negatives` = c(fn_glm, fn_conv, fn_complete, fn_pairwise),
@@ -379,20 +388,20 @@ comparison_metrics <- tibble(
     tp_complete / (tp_complete + fn_complete),
     tp_pairwise / (tp_pairwise + fn_pairwise)
   ),
-  FDR = c(
+  `FDR (observed)` = c(
     fp_glm / (tp_glm + fp_glm),
     fp_conv / (tp_conv + fp_conv),
     ifelse((tp_complete + fp_complete) > 0, fp_complete / (tp_complete + fp_complete), 0),
-    fp_pairwise / (tp_pairwise + fp_pairwise)
+    ifelse((tp_pairwise + fp_pairwise) > 0, fp_pairwise / (tp_pairwise + fp_pairwise), NA)
   )
 )
 
 comparison_metrics %>%
   mutate(
     Sensitivity = round(Sensitivity, 3),
-    FDR = round(FDR, 3)
+    `FDR (observed)` = round(`FDR (observed)`, 3)
   ) %>%
-  knitr::kable(caption = "Method comparison at 24h timepoint")
+  knitr::kable(caption = "Method comparison at 24h timepoint. Sensitivity = TP/(TP+FN); FDR (observed) = proportion of detected positives that were false (FP/(TP+FP)), calculated against simulation ground truth. All methods used FDR < 0.05 as significance threshold.")
 ```
 
 # Model Diagnostics
@@ -419,6 +428,8 @@ if (nrow(diag$flagged) > 0) {
 ```
 
 # ART Analysis for Comparison
+
+The Aligned Rank Transform provides a non-parametric alternative when GLM diagnostics indicate poor fit.
 
 ```{r art-analysis}
 results_art <- compare(
@@ -449,51 +460,238 @@ if (nrow(diag$flagged) > 0) {
 }
 ```
 
-# Figure 1: Multi-Panel Overview
+# Part 2: Pairwise Design Example
 
-## Panel A: Workflow Diagram
+pepdiff also supports simple two-group comparisons without factorial structure. This section demonstrates the pairwise analysis workflow.
 
-```{r panel-a, fig.height=2.5, fig.width=8}
-# Create workflow diagram with boxes
-workflow_data <- tibble(
-  step = c("Raw Data\n(CSV)", "pepdiff_data", "pepdiff_results", "Visualisation"),
-  func = c("", "read_pepdiff()", "compare()", "plot()"),
-  x = c(1, 2, 3, 4),
-  y = 1
+## Simulate Two-Group Data
+
+```{r pairwise-simulate}
+set.seed(2027)  # Different seed for independent simulation
+
+n_pep_pairwise <- 200
+n_tp_pairwise <- 30
+n_reps_pairwise <- 8
+
+# Generate peptide parameters
+pairwise_params <- tibble(
+  peptide = paste0("pw_", sprintf("%03d", 1:n_pep_pairwise)),
+  gene_id = paste0("gene_", sprintf("%02d", rep(1:40, each = 5))),
+
+  # Gamma distribution parameters
+  shape = runif(n_pep_pairwise, 4, 10),
+  rate = runif(n_pep_pairwise, 0.05, 0.12),
+
+  # True effect for first 30 peptides (2-4 fold change)
+  true_effect = c(rep(TRUE, n_tp_pairwise), rep(FALSE, n_pep_pairwise - n_tp_pairwise)),
+  effect_size = ifelse(true_effect, runif(n_pep_pairwise, 2.0, 4.0), 1.0),
+
+  # Missingness
+  mean_abundance = shape / rate,
+  miss_prob = pmax(0, 0.10 - 0.002 * mean_abundance)
 )
 
-panel_a <- ggplot() +
-  # Boxes for objects/data
-  geom_rect(data = workflow_data,
-            aes(xmin = x - 0.4, xmax = x + 0.4, ymin = 0.7, ymax = 1.3),
-            fill = c("#FFFFCC", "#FD8D3C", "#BD0026", "#2166AC"),
-            color = "grey30", linewidth = 0.5) +
-  # Labels inside boxes
-  geom_text(data = workflow_data,
-            aes(x = x, y = 1, label = step),
-            size = 3.5, fontface = "bold", color = c("black", "white", "white", "white")) +
-  # Arrows between boxes
-  geom_segment(aes(x = c(1.45, 2.45, 3.45), xend = c(1.55, 2.55, 3.55),
-                   y = 1, yend = 1),
-               arrow = arrow(length = unit(0.15, "cm"), type = "closed"),
-               linewidth = 1, color = "grey40") +
-  # Function labels above arrows
-  geom_text(aes(x = c(1.5, 2.5, 3.5), y = 1.45,
-                label = c("read_pepdiff()", "compare()", "plot()")),
-            size = 2.8, fontface = "italic", color = "grey30") +
-  scale_x_continuous(limits = c(0.3, 4.7)) +
-  scale_y_continuous(limits = c(0.4, 1.6)) +
-  theme_void() +
-  labs(title = "A. pepdiff Workflow") +
-  theme(plot.title = element_text(face = "bold", hjust = 0, size = 12))
+cat("Pairwise simulation parameters:\n")
+cat("  Total peptides:", n_pep_pairwise, "\n")
+cat("  Peptides with true effect:", n_tp_pairwise, "\n")
+cat("  Replicates per group:", n_reps_pairwise, "\n")
 
-print(panel_a)
+pairwise_params %>%
+  group_by(true_effect) %>%
+  summarise(
+    n = n(),
+    mean_effect_size = mean(effect_size),
+    mean_miss_prob = mean(miss_prob),
+    .groups = "drop"
+  )
 ```
 
-## Panel B: Volcano Plot
+## Generate Data
+
+```{r pairwise-generate}
+# Create design grid (simple two-group)
+pairwise_grid <- expand_grid(
+  treatment = c("ctrl", "treatment"),
+  bio_rep = 1:n_reps_pairwise
+)
+
+# Generate data
+generate_pairwise_sample <- function(shape, rate, effect_size, miss_prob, treatment) {
+  value <- rgamma(1, shape = shape, rate = rate)
+
+  if (treatment == "treatment") {
+    value <- value * effect_size
+  }
+
+  if (runif(1) < miss_prob) {
+    value <- NA
+  }
+
+  return(value)
+}
+
+pairwise_data <- pairwise_params %>%
+  crossing(pairwise_grid) %>%
+  rowwise() %>%
+  mutate(
+    abundance = generate_pairwise_sample(shape, rate, effect_size, miss_prob, treatment)
+  ) %>%
+  ungroup() %>%
+  select(peptide, gene_id, treatment, bio_rep, abundance)
+
+cat("Total observations:", nrow(pairwise_data), "\n")
+cat("Missing rate:", round(mean(is.na(pairwise_data$abundance)) * 100, 1), "%\n")
+
+# Save for reproducibility
+write_csv(pairwise_data, "simulated_pairwise.csv")
+```
+
+## Import and Analyse with pepdiff
+
+```{r pairwise-import}
+dat_pairwise <- read_pepdiff(
+  "simulated_pairwise.csv",
+  id = "peptide",
+  gene = "gene_id",
+  value = "abundance",
+  factors = "treatment",
+  replicate = "bio_rep"
+)
+
+print(dat_pairwise)
+```
+
+## Wilcoxon Rank-Sum Test
+
+```{r pairwise-wilcoxon}
+results_wilcox <- compare(
+  dat_pairwise,
+  compare = "treatment",
+  ref = "ctrl",
+  method = "pairwise",
+  test = "wilcoxon"
+)
+
+print(results_wilcox)
+
+# Validate against ground truth
+wilcox_with_truth <- results_wilcox$results %>%
+  left_join(pairwise_params %>% select(peptide, true_effect), by = "peptide")
+
+tp_wilcox <- sum(wilcox_with_truth$significant & wilcox_with_truth$true_effect, na.rm = TRUE)
+fp_wilcox <- sum(wilcox_with_truth$significant & !wilcox_with_truth$true_effect, na.rm = TRUE)
+fn_wilcox <- sum(!wilcox_with_truth$significant & wilcox_with_truth$true_effect, na.rm = TRUE)
+
+cat("Wilcoxon Rank-Sum Results:\n")
+cat("  True Positives:", tp_wilcox, "\n")
+cat("  False Positives:", fp_wilcox, "\n")
+cat("  False Negatives:", fn_wilcox, "\n")
+cat("  Sensitivity:", round(tp_wilcox / (tp_wilcox + fn_wilcox), 3), "\n")
+cat("  FDR:", round(fp_wilcox / (tp_wilcox + fp_wilcox), 3), "\n")
+```
+
+## Bootstrap-t Test
+
+```{r pairwise-bootstrap}
+results_boot <- compare(
+  dat_pairwise,
+  compare = "treatment",
+  ref = "ctrl",
+  method = "pairwise",
+  test = "bootstrap_t"
+)
+
+print(results_boot)
+
+# Validate against ground truth
+boot_with_truth <- results_boot$results %>%
+  left_join(pairwise_params %>% select(peptide, true_effect), by = "peptide")
+
+tp_boot <- sum(boot_with_truth$significant & boot_with_truth$true_effect, na.rm = TRUE)
+fp_boot <- sum(boot_with_truth$significant & !boot_with_truth$true_effect, na.rm = TRUE)
+fn_boot <- sum(!boot_with_truth$significant & boot_with_truth$true_effect, na.rm = TRUE)
+
+cat("Bootstrap-t Results:\n")
+cat("  True Positives:", tp_boot, "\n")
+cat("  False Positives:", fp_boot, "\n")
+cat("  False Negatives:", fn_boot, "\n")
+cat("  Sensitivity:", round(tp_boot / (tp_boot + fn_boot), 3), "\n")
+cat("  FDR:", round(fp_boot / (tp_boot + fp_boot), 3), "\n")
+```
+
+## Pairwise Methods Comparison
+
+```{r pairwise-comparison}
+pairwise_comparison <- tibble(
+  Method = c("Wilcoxon rank-sum", "Bootstrap-t"),
+  `True Positives` = c(tp_wilcox, tp_boot),
+  `False Positives` = c(fp_wilcox, fp_boot),
+  Sensitivity = c(
+    tp_wilcox / (tp_wilcox + fn_wilcox),
+    tp_boot / (tp_boot + fn_boot)
+  ),
+  `FDR (observed)` = c(
+    fp_wilcox / (tp_wilcox + fp_wilcox),
+    fp_boot / (tp_boot + fp_boot)
+  )
+)
+
+pairwise_comparison %>%
+  mutate(
+    Sensitivity = round(Sensitivity, 3),
+    `FDR (observed)` = round(`FDR (observed)`, 3)
+  ) %>%
+  knitr::kable(caption = "Pairwise test comparison (two-group design, 200 peptides, 30 with true effects). FDR (observed) = FP/(TP+FP) against ground truth; significance threshold FDR < 0.05.")
+```
+
+# Figure 1: Stratified Analysis Captures Timepoint-Specific Effects
+
+## Panel A: Volcano Plots by Timepoint
+
+```{r panel-a, fig.height=4, fig.width=10}
+# Prepare data for all timepoints
+all_timepoints_plot <- results_glm$results %>%
+  left_join(peptide_params %>% select(peptide, true_effect), by = "peptide") %>%
+  mutate(
+    timepoint = factor(timepoint, levels = c("0h", "6h", "24h"))
+  )
+
+# Count significant peptides per timepoint for labels
+sig_counts <- all_timepoints_plot %>%
+  group_by(timepoint) %>%
+  summarise(n_sig = sum(significant, na.rm = TRUE), .groups = "drop")
+
+panel_a <- ggplot(all_timepoints_plot, aes(x = log2_fc, y = -log10(fdr))) +
+  geom_point(aes(color = significant), alpha = 0.6, size = 1.5) +
+  scale_color_manual(
+    values = c("TRUE" = "#BD0026", "FALSE" = "grey70"),
+    labels = c("TRUE" = "Significant", "FALSE" = "Not significant"),
+    name = NULL
+  ) +
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "grey40") +
+  facet_wrap(~timepoint, ncol = 3) +
+  labs(
+    x = "log2 Fold Change (drug vs ctrl)",
+    y = "-log10 FDR",
+    title = "A. Treatment effects by timepoint"
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(
+    legend.position = "bottom",
+    plot.title = element_text(face = "bold", hjust = 0),
+    strip.text = element_text(face = "bold", size = 11)
+  )
+
+print(panel_a)
+
+cat("\nSignificant peptides by timepoint:\n")
+print(sig_counts)
+```
+
+## Panel B: 24h Volcano with Ground Truth Annotation
 
 ```{r panel-b, fig.height=5, fig.width=6}
-# Add ground truth to results
+# Add ground truth to 24h results
 res_24h_plot <- results_glm$results %>%
   filter(timepoint == "24h") %>%
   left_join(peptide_params %>% select(peptide, true_effect), by = "peptide") %>%
@@ -508,10 +706,9 @@ res_24h_plot <- results_glm$results %>%
                                                 "False negative", "True negative"))
   )
 
-# Check data
-cat("Rows in plot data:", nrow(res_24h_plot), "\n")
-cat("Non-NA log2_fc:", sum(!is.na(res_24h_plot$log2_fc)), "\n")
-cat("Non-NA fdr:", sum(!is.na(res_24h_plot$fdr)), "\n")
+# Count each category
+cat("\nClassification at 24h:\n")
+print(table(res_24h_plot$point_type))
 
 panel_b <- ggplot(res_24h_plot, aes(x = log2_fc, y = -log10(fdr))) +
   geom_point(aes(color = point_type), alpha = 0.7, size = 2) +
@@ -526,11 +723,10 @@ panel_b <- ggplot(res_24h_plot, aes(x = log2_fc, y = -log10(fdr))) +
     drop = FALSE
   ) +
   geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "grey40") +
-  geom_vline(xintercept = c(-1, 1), linetype = "dotted", color = "grey40") +
   labs(
     x = "log2 Fold Change (drug vs ctrl)",
     y = "-log10 FDR",
-    title = "B. Volcano plot (24h timepoint)"
+    title = "B. Validation at 24h timepoint"
   ) +
   theme_minimal(base_size = 11) +
   theme(
@@ -542,131 +738,22 @@ panel_b <- ggplot(res_24h_plot, aes(x = log2_fc, y = -log10(fdr))) +
 print(panel_b)
 ```
 
-## Panel C: Method Comparison
-
-```{r panel-c, fig.height=5, fig.width=6}
-# Reshape for plotting
-plot_data <- comparison_metrics %>%
-  select(Method, Sensitivity, FDR) %>%
-  pivot_longer(cols = c(Sensitivity, FDR), names_to = "Metric", values_to = "Value") %>%
-  mutate(
-    Method = factor(Method, levels = c("pepdiff GLM", "Conventional",
-                                        "Complete cases", "Pairwise pooled")),
-    Metric = factor(Metric, levels = c("Sensitivity", "FDR"))
-  )
-
-# Check data
-print(plot_data)
-
-panel_c <- ggplot(plot_data, aes(x = Method, y = Value, fill = Metric)) +
-  geom_col(position = position_dodge(width = 0.8), width = 0.7) +
-  geom_hline(yintercept = 0.05, linetype = "dashed", color = "grey40") +
-  scale_fill_manual(values = c("Sensitivity" = "#FD8D3C", "FDR" = "#BD0026")) +
-  scale_y_continuous(labels = scales::percent, limits = c(0, 1)) +
-  labs(
-    x = NULL,
-    y = "Proportion",
-    fill = NULL,
-    title = "C. Method comparison"
-  ) +
-  theme_minimal(base_size = 11) +
-  theme(
-    axis.text.x = element_text(angle = 45, hjust = 1, size = 9),
-    legend.position = "bottom",
-    plot.title = element_text(face = "bold", hjust = 0)
-  )
-
-print(panel_c)
-```
-
-## Panel D: Diagnostic QQ Plots (from pepdiff)
-
-```{r panel-d, fig.height=5, fig.width=6}
-# Get diagnostics data
-diagnostics_df <- results_glm$diagnostics %>%
-  filter(converged, !is.na(deviance))
-
-# Get one good-fit (low deviance) and one poor-fit (high deviance) peptide
-good_pep <- diagnostics_df %>%
-  arrange(deviance) %>%
-  slice(1) %>%
-  pull(peptide)
-
-poor_pep <- diagnostics_df %>%
-  arrange(desc(deviance)) %>%
-  slice(1) %>%
-  pull(peptide)
-
-cat("Good fit peptide:", good_pep, "- deviance:",
-    diagnostics_df$deviance[diagnostics_df$peptide == good_pep], "\n")
-cat("Poor fit peptide:", poor_pep, "- deviance:",
-    diagnostics_df$deviance[diagnostics_df$peptide == poor_pep], "\n")
-
-# Extract standardized residuals
-extract_resid <- function(pep, diag_df) {
-  idx <- which(diag_df$peptide == pep)
-  if (length(idx) == 0) return(NULL)
-  diag_df$std_residuals[idx][[1]]
-}
-
-good_resid <- extract_resid(good_pep, diagnostics_df)
-poor_resid <- extract_resid(poor_pep, diagnostics_df)
-
-# Get deviance values (take first if multiple comparisons)
-good_dev <- diagnostics_df$deviance[diagnostics_df$peptide == good_pep][1]
-poor_dev <- diagnostics_df$deviance[diagnostics_df$peptide == poor_pep][1]
-
-# Create labels for QQ plots
-good_label <- paste0("Good fit (deviance = ", round(good_dev, 2), ")")
-poor_label <- paste0("Poor fit (deviance = ", round(poor_dev, 2), ")")
-
-cat("Length of good_resid:", length(good_resid), "\n")
-cat("Length of poor_resid:", length(poor_resid), "\n")
-
-# Create QQ data - use data.frame to avoid recycling issues
-qq_data <- rbind(
-  data.frame(residual = as.numeric(good_resid), type = good_label, stringsAsFactors = FALSE),
-  data.frame(residual = as.numeric(poor_resid), type = poor_label, stringsAsFactors = FALSE)
-) %>%
-  filter(!is.na(residual))
-
-cat("QQ data rows:", nrow(qq_data), "\n")
-
-panel_d <- ggplot(qq_data, aes(sample = residual)) +
-  stat_qq(alpha = 0.7, size = 2.5, color = "steelblue") +
-  stat_qq_line(color = "#BD0026", linewidth = 1) +
-  facet_wrap(~type) +
-  labs(
-    x = "Theoretical quantiles",
-    y = "Sample quantiles",
-    title = "D. Model diagnostics (QQ plots)"
-  ) +
-  theme_minimal(base_size = 11) +
-  theme(
-    plot.title = element_text(face = "bold", hjust = 0),
-    strip.text = element_text(face = "bold", size = 9)
-  )
-
-print(panel_d)
-```
-
 ## Combine Panels into Figure 1
 
-```{r figure-1, fig.width=12, fig.height=10}
+```{r figure-1, fig.width=10, fig.height=8}
 figure_1 <- plot_grid(
   panel_a,
   panel_b,
-  panel_c,
-  panel_d,
-  ncol = 2,
-  rel_heights = c(0.5, 1)
+  ncol = 1,
+  rel_heights = c(1, 1.2),
+  labels = NULL
 )
 
 print(figure_1)
 
 # Save figure
-ggsave("figure_1.pdf", figure_1, width = 12, height = 10)
-ggsave("figure_1.png", figure_1, width = 12, height = 10, dpi = 300)
+ggsave("figure_1.pdf", figure_1, width = 10, height = 8)
+ggsave("figure_1.png", figure_1, width = 10, height = 8, dpi = 300)
 cat("\nFigure 1 saved to figure_1.pdf and figure_1.png\n")
 ```
 
