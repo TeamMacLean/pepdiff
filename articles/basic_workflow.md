@@ -8,7 +8,7 @@ measurements across experimental conditions, it identifies which
 peptides show significant changes between groups.
 
 pepdiff is the analysis companion to
-[peppwR](https://github.com/macleand/peppwR), which handles power
+[peppwR](https://github.com/TeamMacLean/peppwR), which handles power
 analysis and experimental planning. The workflow is:
 
 - **peppwR**: “How many samples do I need?” (before the experiment)
@@ -18,7 +18,7 @@ analysis and experimental planning. The workflow is:
 
 ``` r
 # Install from GitHub
-devtools::install_github("macleand/pepdiff")
+devtools::install_github("TeamMacLean/pepdiff")
 ```
 
 Some features require Bioconductor packages:

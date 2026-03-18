@@ -2,7 +2,7 @@
 
 ## Authors
 
-- **Dan MacLean**. Maintainer.
+- **Dan MacLean**. Author, maintainer.
 
 ## Citation
 
