@@ -20,7 +20,7 @@ knitr::opts_chunk$set(
 
 pepdiff performs differential abundance analysis for PRM (Parallel Reaction Monitoring) proteomics data. Given peptide abundance measurements across experimental conditions, it identifies which peptides show significant changes between groups.
 
-pepdiff is the analysis companion to [peppwR](https://github.com/macleand/peppwR), which handles power analysis and experimental planning. The workflow is:
+pepdiff is the analysis companion to [peppwR](https://github.com/TeamMacLean/peppwR), which handles power analysis and experimental planning. The workflow is:
 
 - **peppwR**: "How many samples do I need?" (before the experiment)
 - **pepdiff**: "What's differentially abundant?" (after the experiment)
@@ -29,7 +29,7 @@ pepdiff is the analysis companion to [peppwR](https://github.com/macleand/peppwR
 
 ```{r eval = FALSE}
 # Install from GitHub
-devtools::install_github("macleand/pepdiff")
+devtools::install_github("TeamMacLean/pepdiff")
 ```
 
 Some features require Bioconductor packages:

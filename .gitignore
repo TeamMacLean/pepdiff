@@ -12,3 +12,6 @@ inst/doc
 renv/
 /doc/
 /Meta/
+
+pepdiff.Rcheck/
+pepdiff*.tar.gz
